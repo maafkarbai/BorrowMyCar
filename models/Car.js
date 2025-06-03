@@ -1,4 +1,6 @@
+// models/Car.js (Completely Fixed)
 import mongoose from "mongoose";
+
 const carSchema = new mongoose.Schema(
   {
     owner: {
@@ -31,7 +33,6 @@ const carSchema = new mongoose.Schema(
       ],
     },
     price: {
-      // Changed from pricePerDay to match requirements
       type: Number,
       required: true,
       min: 50, // Minimum AED 50 per day
@@ -43,12 +44,12 @@ const carSchema = new mongoose.Schema(
     availabilityTo: { type: Date, required: true },
 
     // Car details
-    make: { type: String, required: true, trim: true }, // e.g., Toyota, BMW
-    model: { type: String, required: true, trim: true }, // e.g., Camry, X5
+    make: { type: String, required: true, trim: true },
+    model: { type: String, required: true, trim: true },
     year: {
       type: Number,
       required: true,
-      min: 2010, // Only cars from 2010 onwards
+      min: 2010,
       max: new Date().getFullYear() + 1,
     },
     color: { type: String, required: true, trim: true },
@@ -58,7 +59,7 @@ const carSchema = new mongoose.Schema(
       uppercase: true,
       validate: {
         validator: function (v) {
-          return /^[A-Z]{1,3}[0-9]{1,5}$/.test(v); // UAE plate format
+          return /^[A-Z]{1,3}[0-9]{1,5}$/.test(v);
         },
         message: "Please enter a valid UAE plate number",
       },
@@ -81,7 +82,7 @@ const carSchema = new mongoose.Schema(
       type: Number,
       required: true,
       min: 0,
-      max: 500000, // 500k km max
+      max: 500000,
     },
     seatingCapacity: {
       type: Number,
@@ -128,17 +129,11 @@ const carSchema = new mongoose.Schema(
       },
     ],
 
-    // Media
+    // FIXED: Media - removed incorrect individual string validation
     images: [
       {
         type: String,
         required: true,
-        validate: {
-          validator: function (v) {
-            return v.length >= 3; // Minimum 3 images required
-          },
-          message: "At least 3 images are required",
-        },
       },
     ],
 
@@ -150,7 +145,7 @@ const carSchema = new mongoose.Schema(
     // Delivery options
     deliveryAvailable: { type: Boolean, default: false },
     deliveryFee: { type: Number, default: 0, min: 0 },
-    pickupLocations: [{ type: String }], // Array of pickup locations
+    pickupLocations: [{ type: String }],
 
     // Insurance & Security
     insuranceIncluded: { type: Boolean, default: true },
@@ -160,7 +155,7 @@ const carSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: ["active", "inactive", "deleted", "pending", "maintenance"],
-      default: "pending", // Admin approval required
+      default: "pending",
     },
     totalBookings: { type: Number, default: 0 },
     averageRating: { type: Number, default: 0, min: 0, max: 5 },
@@ -188,18 +183,24 @@ carSchema.index({
   description: "text",
   make: "text",
   model: "text",
-}); // Text search
+});
 
-// Validation: availabilityTo must be after availabilityFrom
+// FIXED: Pre-save validation with correct image count check
 carSchema.pre("save", function () {
+  // Validate date range
   if (this.availabilityTo <= this.availabilityFrom) {
     throw new Error("Availability end date must be after start date");
   }
+
+  // FIXED: Validate minimum number of images (check array length, not string length)
+  if (this.images && this.images.length < 3) {
+    throw new Error("At least 3 images are required");
+  }
 });
 
-// Hide deleted cars in queries
+// FIXED: Hide deleted cars in queries (show only non-deleted cars)
 carSchema.pre(/^find/, function () {
-  this.find({ deletedAt: { $ne: null } });
+  this.find({ deletedAt: null }); // Show cars where deletedAt IS null (not deleted)
 });
 
 export const Car = mongoose.model("Car", carSchema);
