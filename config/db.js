@@ -1,17 +1,80 @@
-// config/db.js
+// config/db.js (Enhanced)
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 
 dotenv.config();
 
+// Enhanced MongoDB connection with better error handling and options
 export const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI, {
+    // Connection options for better performance and reliability
+    const options = {
       dbName: "borrowmycar",
+      maxPoolSize: 10, // Maintain up to 10 socket connections
+      serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
+      socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+      bufferMaxEntries: 0, // Disable mongoose buffering
+      bufferCommands: false, // Disable mongoose buffering
+    };
+
+    const conn = await mongoose.connect(process.env.MONGO_URI, options);
+
+    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+    console.log(`📊 Database: ${conn.connection.name}`);
+
+    // Handle connection events
+    mongoose.connection.on("error", (error) => {
+      console.error("❌ MongoDB connection error:", error);
     });
-    console.log("✅ MongoDB connected");
+
+    mongoose.connection.on("disconnected", () => {
+      console.log("⚠️ MongoDB disconnected");
+    });
+
+    mongoose.connection.on("reconnected", () => {
+      console.log("✅ MongoDB reconnected");
+    });
+
+    // Graceful shutdown
+    process.on("SIGINT", async () => {
+      try {
+        await mongoose.connection.close();
+        console.log("📴 MongoDB connection closed through app termination");
+        process.exit(0);
+      } catch (error) {
+        console.error("❌ Error during MongoDB disconnection:", error);
+        process.exit(1);
+      }
+    });
   } catch (error) {
-    console.error("❌ MongoDB connection error:", error);
+    console.error("❌ MongoDB connection error:", error.message);
+
+    // Exit process with failure
     process.exit(1);
+  }
+};
+
+// Health check function
+export const checkDBHealth = async () => {
+  try {
+    const state = mongoose.connection.readyState;
+    const states = {
+      0: "disconnected",
+      1: "connected",
+      2: "connecting",
+      3: "disconnecting",
+    };
+
+    return {
+      status: states[state],
+      host: mongoose.connection.host,
+      name: mongoose.connection.name,
+      port: mongoose.connection.port,
+    };
+  } catch (error) {
+    return {
+      status: "error",
+      error: error.message,
+    };
   }
 };

@@ -1,52 +1,337 @@
-import { Booking } from '../models/Booking.js';
-import { Car } from '../models/Car.js';
+// controllers/bookingController.js (Fixed Imports)
+import Booking from "../models/Booking.js"; // Default import
+import Car from "../models/Car.js"; // Default import
 
-export const createBooking = async (req, res) => {
-  const { carId, startDate, endDate } = req.body;
+// Simple async error handler (if you don't have it in utils)
+const handleAsyncError = (fn) => {
+  return (req, res, next) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+};
+
+// Check for booking conflicts
+const checkBookingConflicts = async (
+  carId,
+  startDate,
+  endDate,
+  excludeBookingId = null
+) => {
+  const filter = {
+    car: carId,
+    status: { $in: ["pending", "approved", "confirmed", "active"] },
+    $or: [
+      {
+        startDate: { $lte: new Date(endDate) },
+        endDate: { $gte: new Date(startDate) },
+      },
+    ],
+  };
+
+  if (excludeBookingId) {
+    filter._id = { $ne: excludeBookingId };
+  }
+
+  const conflictingBooking = await Booking.findOne(filter);
+  return conflictingBooking;
+};
+
+// Calculate booking pricing
+const calculateBookingPricing = (
+  car,
+  startDate,
+  endDate,
+  deliveryRequested = false
+) => {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+
+  const dailyRate = car.price;
+  const totalAmount = dailyRate * totalDays;
+  const securityDeposit = car.securityDeposit || 0;
+  const deliveryFee = deliveryRequested ? car.deliveryFee || 0 : 0;
+  const totalPayable = totalAmount + securityDeposit + deliveryFee;
+
+  return {
+    totalDays,
+    dailyRate,
+    totalAmount,
+    securityDeposit,
+    deliveryFee,
+    totalPayable,
+  };
+};
+
+// CREATE BOOKING
+export const createBooking = handleAsyncError(async (req, res) => {
+  const user = req.user;
+  const {
+    carId,
+    startDate,
+    endDate,
+    paymentMethod = "Cash",
+    pickupLocation,
+    returnLocation,
+    deliveryRequested = false,
+    deliveryAddress,
+    renterNotes,
+  } = req.body;
+
+  // Basic validation
+  if (!carId || !startDate || !endDate) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing required fields: carId, startDate, endDate",
+    });
+  }
+
   try {
-    const booking = await Booking.create({
-      car: carId,
-      renter: req.user._id,
+    // Get car details
+    const car = await Car.findById(carId);
+    if (!car) {
+      return res.status(404).json({
+        success: false,
+        message: "Car not found",
+      });
+    }
+
+    // Calculate pricing
+    const pricing = calculateBookingPricing(
+      car,
       startDate,
       endDate,
+      deliveryRequested
+    );
+
+    // Create booking
+    const booking = new Booking({
+      renter: user.id,
+      car: carId,
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+      totalDays: pricing.totalDays,
+      dailyRate: pricing.dailyRate,
+      totalAmount: pricing.totalAmount,
+      securityDeposit: pricing.securityDeposit,
+      deliveryFee: pricing.deliveryFee,
+      totalPayable: pricing.totalPayable,
+      paymentMethod,
+      pickupLocation: pickupLocation || "To be determined",
+      returnLocation: returnLocation || "To be determined",
+      deliveryRequested,
+      deliveryAddress,
+      renterNotes: renterNotes || "",
     });
-    res.status(201).json(booking);
-  } catch (err) {
-    res.status(500).json({ message: 'Booking failed' });
-  }
-};
 
-export const getMyBookings = async (req, res) => {
+    const savedBooking = await booking.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Booking created successfully",
+      data: { booking: savedBooking },
+    });
+  } catch (error) {
+    console.error("Booking creation error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to create booking",
+      error: error.message,
+    });
+  }
+});
+
+// GET MY BOOKINGS
+export const getMyBookings = handleAsyncError(async (req, res) => {
   try {
-    const bookings = await Booking.find({ renter: req.user._id }).populate('car');
-    res.json(bookings);
-  } catch (err) {
-    res.status(500).json({ message: 'Failed to fetch bookings' });
-  }
-};
+    const bookings = await Booking.find({ renter: req.user.id })
+      .populate("car", "title make model year price images")
+      .sort({ createdAt: -1 });
 
-export const getBookingsForOwner = async (req, res) => {
+    res.json({
+      success: true,
+      data: { bookings },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch bookings",
+      error: error.message,
+    });
+  }
+});
+
+// GET BOOKINGS FOR OWNER
+export const getBookingsForOwner = handleAsyncError(async (req, res) => {
   try {
-    const cars = await Car.find({ owner: req.user._id });
-    const carIds = cars.map(car => car._id);
-    const bookings = await Booking.find({ car: { $in: carIds } }).populate('car renter');
-    res.json(bookings);
-  } catch (err) {
-    res.status(500).json({ message: 'Error getting owner bookings' });
-  }
-};
+    // Get all cars owned by the user
+    const ownedCars = await Car.find({ owner: req.user.id }).select("_id");
+    const carIds = ownedCars.map((car) => car._id);
 
-export const updateBookingStatus = async (req, res) => {
+    const bookings = await Booking.find({ car: { $in: carIds } })
+      .populate("car", "title make model year price images")
+      .populate("renter", "name email phone")
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      data: { bookings },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch owner bookings",
+      error: error.message,
+    });
+  }
+});
+
+// UPDATE BOOKING STATUS
+export const updateBookingStatus = handleAsyncError(async (req, res) => {
+  const { id } = req.params;
   const { status } = req.body;
+
   try {
-    const booking = await Booking.findById(req.params.id).populate('car');
-    if (!booking || booking.car.owner.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Not authorized to update this booking' });
+    const booking = await Booking.findById(id).populate("car");
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
     }
+
+    // Simple authorization check
+    const isOwner = booking.car.owner.toString() === req.user.id;
+    const isRenter = booking.renter.toString() === req.user.id;
+
+    if (!isOwner && !isRenter) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to update this booking",
+      });
+    }
+
+    // Update booking status
     booking.status = status;
     await booking.save();
-    res.json(booking);
-  } catch (err) {
-    res.status(500).json({ message: 'Failed to update booking status' });
+
+    res.json({
+      success: true,
+      message: "Booking status updated successfully",
+      data: { booking },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to update booking status",
+      error: error.message,
+    });
   }
-};
+});
+
+// GET SINGLE BOOKING
+export const getBookingById = handleAsyncError(async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const booking = await Booking.findById(id)
+      .populate("car", "title make model year price images city")
+      .populate("renter", "name email phone");
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: { booking },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch booking",
+      error: error.message,
+    });
+  }
+});
+
+// CANCEL BOOKING
+export const cancelBooking = handleAsyncError(async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const booking = await Booking.findById(id);
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
+    }
+
+    booking.status = "cancelled";
+    await booking.save();
+
+    res.json({
+      success: true,
+      message: "Booking cancelled successfully",
+      data: { booking },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to cancel booking",
+      error: error.message,
+    });
+  }
+});
+
+// ADD REVIEW
+export const addReview = handleAsyncError(async (req, res) => {
+  const { id } = req.params;
+  const { rating, comment } = req.body;
+
+  try {
+    const booking = await Booking.findById(id);
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
+    }
+
+    // Simple review logic - you can enhance this
+    const reviewData = {
+      rating: parseInt(rating),
+      comment: comment || "",
+      reviewedAt: new Date(),
+    };
+
+    // Determine if this is renter or owner review
+    const isRenter = booking.renter.toString() === req.user.id;
+
+    if (isRenter) {
+      booking.renterReview = reviewData;
+    } else {
+      booking.ownerReview = reviewData;
+    }
+
+    await booking.save();
+
+    res.json({
+      success: true,
+      message: "Review added successfully",
+      data: { booking },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to add review",
+      error: error.message,
+    });
+  }
+});
