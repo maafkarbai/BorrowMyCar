@@ -1,4 +1,4 @@
-// models/User.js (Fixed)
+// models/User.js (Fixed with Correct Soft Delete)
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
@@ -64,10 +64,10 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Indexes for performance
-userSchema.index({ email: 1 });
+// Indexes for performance (email already has unique index, so skip it)
 userSchema.index({ phone: 1 });
 userSchema.index({ isApproved: 1, role: 1 });
+userSchema.index({ role: 1 });
 
 // Hash password before saving
 userSchema.pre("save", async function () {
@@ -79,9 +79,9 @@ userSchema.methods.matchPassword = function (enteredPassword) {
   return bcrypt.compare(enteredPassword, this.password);
 };
 
-// Hide deleted users in queries
+// FIXED: Hide deleted users in queries (correct filter)
 userSchema.pre(/^find/, function () {
-  this.find({ deletedAt: { $ne: null } });
+  this.find({ deletedAt: null });
 });
 
 export const User = mongoose.model("User", userSchema);

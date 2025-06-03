@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 const carSchema = new mongoose.Schema(
   {
     owner: {
@@ -202,3 +203,4 @@ carSchema.pre(/^find/, function () {
 });
 
 export const Car = mongoose.model("Car", carSchema);
+export default Car;

@@ -1,3 +1,4 @@
+// controllers/authController.js (Fixed - No Duplicate Imports)
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { User } from "../models/User.js";
@@ -5,11 +6,10 @@ import {
   uploadImagesToCloud,
   deleteImagesFromCloud,
 } from "../utils/cloudUploader.js";
-
-import { User } from "../models/User.js";
+import { handleAsyncError } from "../utils/errorHandler.js";
 
 // Enhanced async error handler
-const handleAsyncError = (fn) => {
+const handleAsyncErrorLocal = (fn) => {
   return (req, res, next) => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };
@@ -70,7 +70,7 @@ const validateUserData = (data, isSignup = false) => {
 };
 
 // ENHANCED SIGNUP with document upload
-export const signup = handleAsyncError(async (req, res) => {
+export const signup = handleAsyncErrorLocal(async (req, res) => {
   // Sanitize input data
   const userData = sanitizeUserData(req.body);
   const {
@@ -194,7 +194,7 @@ export const signup = handleAsyncError(async (req, res) => {
 });
 
 // ENHANCED LOGIN
-export const login = handleAsyncError(async (req, res) => {
+export const login = handleAsyncErrorLocal(async (req, res) => {
   const { email, password } = req.body;
 
   // Input validation
@@ -253,7 +253,7 @@ export const login = handleAsyncError(async (req, res) => {
 });
 
 // Get user profile
-export const getProfile = handleAsyncError(async (req, res) => {
+export const getProfile = handleAsyncErrorLocal(async (req, res) => {
   const user = await User.findById(req.user.id).select("-password");
 
   res.json({
@@ -263,7 +263,7 @@ export const getProfile = handleAsyncError(async (req, res) => {
 });
 
 // Update user profile
-export const updateProfile = handleAsyncError(async (req, res) => {
+export const updateProfile = handleAsyncErrorLocal(async (req, res) => {
   const userId = req.user.id;
   const updates = sanitizeUserData(req.body);
 

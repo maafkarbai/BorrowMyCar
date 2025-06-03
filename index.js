@@ -1,37 +1,43 @@
-// index.js (Updated)
+// index.js
+import dotenv from "dotenv";
+dotenv.config(); // Load environment variables ASAP
+
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import { connectDB, checkDBHealth } from "./config/db.js";
 import { globalErrorHandler } from "./utils/errorHandler.js";
 import { generalLimiter } from "./utils/validators.js";
 import { checkCloudinaryHealth } from "./utils/cloudinary.js";
 
-// Import routes
+// Routes
 import authRoutes from "./routes/authRoutes.js";
 import carRoutes from "./routes/carRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
 
-dotenv.config();
-
 const app = express();
 
-// Connect to database
-connectDB();
+// Connect to database (with try/catch)
+try {
+  await connectDB();
+  console.log("✅ Database connected");
+} catch (err) {
+  console.error("❌ Database connection failed:", err.message);
+  process.exit(1); // Stop app if DB fails to connect
+}
 
-// CORS configuration
+// CORS config
 const corsOptions = {
   origin: process.env.FRONTEND_URL || "http://localhost:3000",
   credentials: true,
   optionsSuccessStatus: 200,
 };
 
-// Global middleware
+// Middlewares
 app.use(cors(corsOptions));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// Security middleware
+// Security headers
 app.use((req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
@@ -39,15 +45,15 @@ app.use((req, res, next) => {
   next();
 });
 
-// Apply rate limiting to all routes
+// Rate limiter
 app.use(generalLimiter);
 
-// API Routes
+// API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/cars", carRoutes);
 app.use("/api/bookings", bookingRoutes);
 
-// Health check endpoint
+// Health check
 app.get("/api/health", async (req, res) => {
   try {
     const [dbHealth, cloudinaryHealth] = await Promise.all([
@@ -78,7 +84,7 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
-// API info endpoint
+// API info
 app.get("/api", (req, res) => {
   res.json({
     success: true,
@@ -90,12 +96,12 @@ app.get("/api", (req, res) => {
       bookings: "/api/bookings",
       health: "/api/health",
     },
-    documentation: "https://api.borrowmycar.com/docs", // Update with actual docs URL
+    documentation: "https://api.borrowmycar.com/docs", // Replace with real link
   });
 });
 
-// Handle undefined routes
-app.all("*", (req, res) => {
+// Handle unknown routes
+app.use((req, res) => {
   res.status(404).json({
     success: false,
     message: `Route ${req.originalUrl} not found`,
@@ -103,38 +109,35 @@ app.all("*", (req, res) => {
   });
 });
 
-// Global error handler (must be last middleware)
+// Global error handler
 app.use(globalErrorHandler);
 
+// Start server
 const PORT = process.env.PORT || 5000;
-
 const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
-  console.log(`📝 API Documentation: http://localhost:${PORT}/api`);
+  console.log(`📝 API Info: http://localhost:${PORT}/api`);
   console.log(`💚 Health Check: http://localhost:${PORT}/api/health`);
 });
 
-// Handle server shutdown gracefully
+// Graceful shutdown
 process.on("SIGTERM", () => {
-  console.log("👋 SIGTERM received");
-  console.log("🔧 Shutting down gracefully");
+  console.log("👋 SIGTERM received. Shutting down...");
   server.close(() => {
-    console.log("💥 Process terminated");
+    console.log("💥 Server closed.");
   });
 });
 
 process.on("unhandledRejection", (err) => {
-  console.error("💥 UNHANDLED PROMISE REJECTION! Shutting down...");
-  console.error(err.name, err.message);
-  server.close(() => {
-    process.exit(1);
-  });
+  console.error("💥 UNHANDLED PROMISE REJECTION!");
+  console.error(err);
+  server.close(() => process.exit(1));
 });
 
 process.on("uncaughtException", (err) => {
-  console.error("💥 UNCAUGHT EXCEPTION! Shutting down...");
-  console.error(err.name, err.message);
+  console.error("💥 UNCAUGHT EXCEPTION!");
+  console.error(err);
   process.exit(1);
 });
 

@@ -1,82 +1,45 @@
-// routes/bookingRoutes.js (Fixed - Complete File)
+// routes/authRoutes.js (Authentication Routes Only)
 import express from "express";
 import {
-  createBooking,
-  getMyBookings,
-  getBookingsForOwner,
-  updateBookingStatus,
-  getBookingById,
-  cancelBooking,
-  addReview,
-} from "../controllers/bookingController.js";
+  signup,
+  login,
+  getProfile,
+  updateProfile,
+} from "../controllers/authController.js";
+import { protect, authLimiter } from "../middlewares/authMiddleware.js";
 import {
-  protect,
-  restrictTo,
-  requireApproval,
-} from "../middlewares/authMiddleware.js";
+  uploadUserDocuments,
+  uploadProfileImage,
+} from "../middlewares/multer.js";
 import {
-  validateCreateBooking,
-  validateUpdateBookingStatus,
-  validateAddReview,
-  validatePagination,
-  validateMongoId,
+  validateSignup,
+  validateLogin,
   handleValidationErrors,
 } from "../utils/validators.js";
 
 const router = express.Router();
 
-// All booking routes require authentication
-router.use(protect);
-
-// Renter routes
+// Public routes with rate limiting
 router.post(
-  "/",
-  requireApproval,
-  validateCreateBooking,
+  "/signup",
+  authLimiter,
+  uploadUserDocuments,
+  validateSignup,
   handleValidationErrors,
-  createBooking
-);
-
-router.get(
-  "/my-bookings",
-  validatePagination,
-  handleValidationErrors,
-  getMyBookings
-);
-
-router.patch(
-  "/:id/cancel",
-  validateMongoId,
-  handleValidationErrors,
-  cancelBooking
+  signup
 );
 
 router.post(
-  "/:id/review",
-  validateMongoId,
-  validateAddReview,
+  "/login",
+  authLimiter,
+  validateLogin,
   handleValidationErrors,
-  addReview
+  login
 );
 
-// Owner routes
-router.get(
-  "/owner",
-  restrictTo("owner"),
-  validatePagination,
-  handleValidationErrors,
-  getBookingsForOwner
-);
-
-router.patch(
-  "/:id/status",
-  validateMongoId,
-  validateUpdateBookingStatus,
-  handleValidationErrors,
-  updateBookingStatus
-);
-
-// Shared routes (both renter and owner can access)
-router.get("/:id", validateMongoId, handleValidationErrors, getBookingById);
+// Protected routes
+router.use(protect); // All routes below require authentication
+router.get("/profile", getProfile);
+router.patch("/profile", uploadProfileImage, updateProfile);
 
 export default router;
