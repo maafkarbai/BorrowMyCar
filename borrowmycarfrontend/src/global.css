@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+.input {
+  @apply px-4 py-2 rounded-xl border-2 border-gray-300 focus:outline-none focus:bg-gray-50 focus:ring-2 focus:ring-green-500;
+}
+
+.accent-color {
+  @apply text-green-500;
+}
+
+p {
+  font-size: 1rem;
+  line-height: 1.6;
+}
