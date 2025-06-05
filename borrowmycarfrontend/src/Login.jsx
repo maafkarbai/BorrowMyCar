@@ -1,7 +1,6 @@
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import API from "./api";
-import { Link } from "react-router-dom";
-import ButtonAccent from "./components/ButtonAccent";
 import Logo from "./assets/BorrowMyCar.png";
 import { Helmet } from "react-helmet";
 
@@ -9,6 +8,7 @@ const Login = () => {
   const [form, setForm] = useState({ email: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -17,18 +17,58 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Basic validation
+    if (!form.email || !form.password) {
+      setError("Please fill in all fields");
+      return;
+    }
+
     setIsLoading(true);
     setError("");
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      console.log("Login attempt:", form);
-      // Replace with actual API call: const res = await API.post("/auth/login", form);
-      // localStorage.setItem("token", res.data.token);
-      // navigate("/");
+      console.log("Attempting login with:", { email: form.email });
+
+      const response = await API.post("/auth/login", {
+        email: form.email.trim(),
+        password: form.password,
+      });
+
+      console.log("Login response:", response.data);
+
+      // Store token and user data
+      if (response.data.token) {
+        localStorage.setItem("token", response.data.token);
+
+        // If user data is returned, you can store it too
+        if (response.data.user) {
+          localStorage.setItem("user", JSON.stringify(response.data.user));
+        }
+
+        // Redirect to homepage or dashboard
+        navigate("/", { replace: true });
+      } else {
+        setError("Login successful but no token received");
+      }
     } catch (err) {
-      setError("Login failed. Please try again.");
+      console.error("Login error:", err);
+
+      // Handle different error types
+      if (err.response) {
+        // Server responded with error status
+        const message =
+          err.response.data?.message ||
+          err.response.data?.error ||
+          "Login failed";
+        setError(message);
+      } else if (err.request) {
+        // Network error
+        setError("Network error. Please check your connection and try again.");
+      } else {
+        // Other error
+        setError("An unexpected error occurred. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -44,7 +84,7 @@ const Login = () => {
         <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
           <div className="w-full max-w-md space-y-8">
             {/* Header */}
-            <div className="">
+            <div>
               <div className="mx-auto h-20 sm:h-24 w-48 sm:w-64 flex items-center justify-center">
                 <img
                   src={Logo}
@@ -67,7 +107,7 @@ const Login = () => {
             </div>
 
             {/* Form */}
-            <div className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-4">
                 {/* Email Input */}
                 <div>
@@ -123,8 +163,7 @@ const Login = () => {
                   <span className="ml-2 text-gray-700">Remember me</span>
                 </label>
                 <Link
-                  type="button"
-                  to={"/forgot-password"}
+                  to="/forgot-password"
                   className="accent-color hover:text-green-700 hover:underline transition-colors duration-200"
                 >
                   Forgot your password?
@@ -133,8 +172,7 @@ const Login = () => {
 
               {/* Submit Button */}
               <button
-                type="button"
-                onClick={handleSubmit}
+                type="submit"
                 disabled={isLoading}
                 className="w-full bg-green-500 hover:bg-green-600 disabled:bg-green-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 text-sm sm:text-base focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
               >
@@ -172,13 +210,12 @@ const Login = () => {
                 Don't have an account?{" "}
                 <Link
                   to="/signup"
-                  type="button"
                   className="font-semibold accent-color hover:text-green-700 hover:underline transition-colors duration-200"
                 >
                   Sign up here
                 </Link>
               </p>
-            </div>
+            </form>
           </div>
         </div>
 

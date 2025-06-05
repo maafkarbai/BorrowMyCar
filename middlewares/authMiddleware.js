@@ -1,6 +1,6 @@
 // middlewares/authMiddleware.js (Enhanced)
 import jwt from "jsonwebtoken";
-import { User } from "../models/User.js";
+import User from "../models/User.js";
 
 // Enhanced async error handler
 const handleAsyncError = (fn) => {

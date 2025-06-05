@@ -1,3 +1,4 @@
+// src/CarListingSection.jsx - Fixed price field references
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import CarFilterBar from "./CarFilterBar";
@@ -21,7 +22,6 @@ const CarListingSection = () => {
   const fetchCars = async (page = 1, newFilters = filters) => {
     setLoading(true);
     setError("");
-
     try {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -39,8 +39,8 @@ const CarListingSection = () => {
       });
 
       const response = await API.get(`/cars?${params.toString()}`);
-      const { cars: fetchedCars, pagination: paginationData } =
-        response.data.data;
+      const { cars: fetchedCars, pagination: paginationData } = response.data
+        .data || { cars: [], pagination: {} };
 
       setCars(fetchedCars);
       setPagination((prev) => ({
@@ -98,12 +98,10 @@ const CarListingSection = () => {
           alt={car.title}
           className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
         />
-
-        {/* Price Badge */}
+        {/* Price Badge - FIXED: Use car.price not car.pricePerDay */}
         <div className="absolute top-3 right-3 bg-green-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
-          AED {car.pricePerDay}/day
+          AED {car.price || car.pricePerDay}/day
         </div>
-
         {/* Status Badge */}
         <div className="absolute top-3 left-3 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
           Available
@@ -145,7 +143,6 @@ const CarListingSection = () => {
             </svg>
             <span>{car.city}</span>
           </div>
-
           {car.year && (
             <div className="flex items-center gap-1">
               <svg
@@ -211,7 +208,6 @@ const CarListingSection = () => {
     const pages = [];
     const maxVisiblePages = 5;
     const halfVisible = Math.floor(maxVisiblePages / 2);
-
     let startPage = Math.max(1, pagination.currentPage - halfVisible);
     let endPage = Math.min(
       pagination.totalPages,
@@ -283,7 +279,7 @@ const CarListingSection = () => {
           )}
         </div>
 
-        {/* Sort Options */}
+        {/* Sort Options - FIXED: Use correct field names */}
         <div className="flex items-center gap-3">
           <span className="text-sm text-gray-600">Sort by:</span>
           <select
@@ -296,8 +292,8 @@ const CarListingSection = () => {
           >
             <option value="createdAt-desc">Newest First</option>
             <option value="createdAt-asc">Oldest First</option>
-            <option value="pricePerDay-asc">Price: Low to High</option>
-            <option value="pricePerDay-desc">Price: High to Low</option>
+            <option value="price-asc">Price: Low to High</option>
+            <option value="price-desc">Price: High to Low</option>
             <option value="title-asc">Name: A to Z</option>
             <option value="title-desc">Name: Z to A</option>
           </select>

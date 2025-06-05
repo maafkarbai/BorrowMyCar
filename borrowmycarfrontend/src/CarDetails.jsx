@@ -20,7 +20,7 @@ const CarDetails = () => {
     const fetchCar = async () => {
       try {
         const res = await API.get(`/cars/${id}`);
-        setCar(res.data);
+        setCar(res.data.data.car);
       } catch (err) {
         setError("Car not found or failed to load");
         console.error("Error fetching car:", err);

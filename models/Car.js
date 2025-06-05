@@ -1,4 +1,4 @@
-// models/Car.js (Completely Fixed)
+// models/Car.js - Fixed with consistent field naming
 import mongoose from "mongoose";
 
 const carSchema = new mongoose.Schema(
@@ -32,27 +32,44 @@ const carSchema = new mongoose.Schema(
         "Umm Al Quwain",
       ],
     },
+    // FIXED: Use consistent field name 'price' (not pricePerDay)
     price: {
       type: Number,
       required: true,
       min: 50, // Minimum AED 50 per day
       max: 5000, // Maximum AED 5000 per day
     },
-
     // Availability
-    availabilityFrom: { type: Date, required: true },
-    availabilityTo: { type: Date, required: true },
-
+    availabilityFrom: {
+      type: Date,
+      required: true,
+    },
+    availabilityTo: {
+      type: Date,
+      required: true,
+    },
     // Car details
-    make: { type: String, required: true, trim: true },
-    model: { type: String, required: true, trim: true },
+    make: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    model: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     year: {
       type: Number,
       required: true,
       min: 2010,
       max: new Date().getFullYear() + 1,
     },
-    color: { type: String, required: true, trim: true },
+    color: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     plateNumber: {
       type: String,
       required: true,
@@ -64,7 +81,6 @@ const carSchema = new mongoose.Schema(
         message: "Please enter a valid UAE plate number",
       },
     },
-
     // Technical specs
     transmission: {
       type: String,
@@ -103,7 +119,6 @@ const carSchema = new mongoose.Schema(
       required: true,
       default: "GCC Specs",
     },
-
     // Features
     features: [
       {
@@ -128,44 +143,77 @@ const carSchema = new mongoose.Schema(
         ],
       },
     ],
-
-    // FIXED: Media - removed incorrect individual string validation
+    // Media
     images: [
       {
         type: String,
         required: true,
       },
     ],
-
     // Booking settings
-    isInstantApproval: { type: Boolean, default: true },
-    minimumRentalDays: { type: Number, default: 1, min: 1 },
-    maximumRentalDays: { type: Number, default: 30, min: 1 },
-
+    isInstantApproval: {
+      type: Boolean,
+      default: true,
+    },
+    minimumRentalDays: {
+      type: Number,
+      default: 1,
+      min: 1,
+    },
+    maximumRentalDays: {
+      type: Number,
+      default: 30,
+      min: 1,
+    },
     // Delivery options
-    deliveryAvailable: { type: Boolean, default: false },
-    deliveryFee: { type: Number, default: 0, min: 0 },
+    deliveryAvailable: {
+      type: Boolean,
+      default: false,
+    },
+    deliveryFee: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     pickupLocations: [{ type: String }],
-
     // Insurance & Security
-    insuranceIncluded: { type: Boolean, default: true },
-    securityDeposit: { type: Number, default: 500, min: 0 },
-
+    insuranceIncluded: {
+      type: Boolean,
+      default: true,
+    },
+    securityDeposit: {
+      type: Number,
+      default: 500,
+      min: 0,
+    },
     // Status and metrics
     status: {
       type: String,
       enum: ["active", "inactive", "deleted", "pending", "maintenance"],
       default: "pending",
     },
-    totalBookings: { type: Number, default: 0 },
-    averageRating: { type: Number, default: 0, min: 0, max: 5 },
-
+    totalBookings: {
+      type: Number,
+      default: 0,
+    },
+    averageRating: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 5,
+    },
     // Admin fields
-    adminNotes: { type: String },
-    rejectionReason: { type: String },
-
+    adminNotes: {
+      type: String,
+    },
+    rejectionReason: {
+      type: String,
+    },
     // Soft delete
-    deletedAt: { type: Date, default: null },
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -185,23 +233,32 @@ carSchema.index({
   model: "text",
 });
 
-// FIXED: Pre-save validation with correct image count check
+// Pre-save validation
 carSchema.pre("save", function () {
   // Validate date range
   if (this.availabilityTo <= this.availabilityFrom) {
     throw new Error("Availability end date must be after start date");
   }
 
-  // FIXED: Validate minimum number of images (check array length, not string length)
+  // Validate minimum number of images
   if (this.images && this.images.length < 3) {
     throw new Error("At least 3 images are required");
   }
 });
 
-// FIXED: Hide deleted cars in queries (show only non-deleted cars)
+// Hide deleted cars in queries
 carSchema.pre(/^find/, function () {
-  this.find({ deletedAt: null }); // Show cars where deletedAt IS null (not deleted)
+  this.find({ deletedAt: null });
 });
+
+// Virtual for frontend compatibility
+carSchema.virtual("pricePerDay").get(function () {
+  return this.price;
+});
+
+// Ensure virtual fields are serialized
+carSchema.set("toJSON", { virtuals: true });
+carSchema.set("toObject", { virtuals: true });
 
 export const Car = mongoose.model("Car", carSchema);
 export default Car;

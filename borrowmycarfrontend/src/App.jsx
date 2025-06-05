@@ -1,15 +1,11 @@
-import { Outlet } from "react-router-dom";
 import { Helmet } from "react-helmet";
-import CarFilterBar from "./CarFilterBar";
-import ListCar from "./ListCar";
-import CarDetails from "./CarDetails";
 import CarListingSection from "./CarListingSection";
 
 const App = () => {
   return (
     <>
       <Helmet>
-        <title>BorrowMyCar | Home </title>
+        <title>BorrowMyCar | Home</title>
       </Helmet>
       <div className="min-h-screen">
         <div className="min-h-fit">
@@ -25,7 +21,6 @@ const App = () => {
           <CarListingSection />
         </div>
       </div>
-      <Outlet />
     </>
   );
 };
