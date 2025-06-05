@@ -4,7 +4,8 @@
   "type": "module",
   "devDependencies": {
     "@types/bun": "latest",
-      "nodemon": "^3.0.0"
+    "nodemon": "^3.0.0",
+    "concurrently": "^8.2.2"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
@@ -12,6 +13,10 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
+    "dev:frontend": "cd borrowmycarfrontend && npm run dev",
+    "dev:both": "concurrently \"npm run dev\" \"npm run dev:frontend\"",
+    "seed": "node scripts/seedData.js",
+    "setup": "npm install && cd borrowmycarfrontend && npm install",
     "prod": "NODE_ENV=production node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -29,5 +34,4 @@
     "multer": "^2.0.0",
     "multer-storage-cloudinary": "^4.0.0"
   }
- 
 }

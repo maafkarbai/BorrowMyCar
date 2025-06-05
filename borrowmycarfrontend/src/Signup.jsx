@@ -1,6 +1,8 @@
+// src/Signup.jsx - Updated with UAE Phone Input
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import API from "./api";
+import PhoneInput from "./components/PhoneInput";
 
 const Signup = () => {
   const [form, setForm] = useState({
@@ -26,6 +28,7 @@ const Signup = () => {
   const [errors, setErrors] = useState({});
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
+
   const navigate = useNavigate();
 
   const uaeCities = [
@@ -81,6 +84,16 @@ const Signup = () => {
     }
   };
 
+  // Special handler for phone input
+  const handlePhoneChange = (phoneValue) => {
+    setForm({ ...form, phone: phoneValue });
+
+    // Clear phone error when user starts typing
+    if (errors.phone) {
+      setErrors({ ...errors, phone: "" });
+    }
+  };
+
   const handleFileChange = (e) => {
     const { name, files: selectedFiles } = e.target;
     const file = selectedFiles[0];
@@ -123,11 +136,20 @@ const Signup = () => {
       newErrors.email = "Please enter a valid email address";
     }
 
-    if (
-      !form.phone.trim() ||
-      !/^(\+971|00971|971)?[0-9]{8,9}$/.test(form.phone)
-    ) {
-      newErrors.phone = "Please enter a valid UAE phone number";
+    // Validate UAE phone number
+    if (!form.phone.trim()) {
+      newErrors.phone = "Phone number is required";
+    } else {
+      const phoneDigits = form.phone.replace(/\D/g, "");
+      // UAE mobile: 0501234567 (10 digits starting with 05)
+      // UAE landline: 043001234 (9 digits starting with 04/02/03/06/07/09)
+      const validMobile = /^05[0-9]{8}$/.test(phoneDigits);
+      const validLandline = /^0[2-4679][0-9]{7}$/.test(phoneDigits);
+
+      if (!validMobile && !validLandline) {
+        newErrors.phone =
+          "Please enter a valid UAE phone number (e.g., 0501234567)";
+      }
     }
 
     if (!form.password || form.password.length < 6) {
@@ -144,9 +166,11 @@ const Signup = () => {
 
   const validateStep2 = () => {
     const newErrors = {};
+
     if (!files.drivingLicense) {
       newErrors.drivingLicense = "Driving license is required";
     }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -191,8 +215,7 @@ const Signup = () => {
       });
 
       console.log("Submitting registration...");
-
-      const response = await API.post("/auth/register", formData, {
+      const response = await API.post("/auth/signup", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -204,7 +227,6 @@ const Signup = () => {
       setStep(4); // Success step
     } catch (error) {
       console.error("Registration error:", error);
-
       if (error.response) {
         // Server responded with error status
         const message =
@@ -289,7 +311,7 @@ const Signup = () => {
           )}
         </div>
 
-        {/* Phone */}
+        {/* Phone - Using the new PhoneInput component */}
         <div>
           <label
             htmlFor="phone"
@@ -297,20 +319,13 @@ const Signup = () => {
           >
             UAE Phone Number *
           </label>
-          <input
-            id="phone"
-            name="phone"
-            type="tel"
+          <PhoneInput
             value={form.phone}
-            onChange={handleChange}
-            placeholder="+971 50 123 4567"
-            className={`w-full px-3 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
-              errors.phone ? "border-red-500" : "border-gray-300"
-            }`}
+            onChange={handlePhoneChange}
+            error={errors.phone}
+            placeholder="0501234567"
+            required={true}
           />
-          {errors.phone && (
-            <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
-          )}
         </div>
 
         {/* Role */}
@@ -405,7 +420,6 @@ const Signup = () => {
               </p>
             </div>
           )}
-
           {errors.password && (
             <p className="text-red-500 text-xs mt-1">{errors.password}</p>
           )}
@@ -441,7 +455,6 @@ const Signup = () => {
               )}
             </div>
           )}
-
           {errors.confirmPassword && (
             <p className="text-red-500 text-xs mt-1">
               {errors.confirmPassword}
@@ -466,7 +479,7 @@ const Signup = () => {
         {/* Driving License - Required */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            UAE Driving License *
+            UAE Driving License *{" "}
             <span className="text-green-600 text-xs ml-1">(Required)</span>
           </label>
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-green-500 transition-colors">
@@ -500,7 +513,7 @@ const Signup = () => {
         {/* Emirates ID - Optional */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Emirates ID
+            Emirates ID{" "}
             <span className="text-gray-500 text-xs ml-1">(Optional)</span>
           </label>
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-green-500 transition-colors">
@@ -531,7 +544,7 @@ const Signup = () => {
         {/* Profile Image - Optional */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Profile Photo
+            Profile Photo{" "}
             <span className="text-gray-500 text-xs ml-1">(Optional)</span>
           </label>
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-green-500 transition-colors">
@@ -611,7 +624,9 @@ const Signup = () => {
             </div>
             <div>
               <span className="text-gray-500">Phone:</span>
-              <span className="ml-2 font-medium">{form.phone}</span>
+              <span className="ml-2 font-medium">
+                🇦🇪 +971{form.phone.replace(/^0/, "")}
+              </span>
             </div>
             <div>
               <span className="text-gray-500">Role:</span>
@@ -686,6 +701,7 @@ const Signup = () => {
       <div className="mx-auto w-24 h-24 bg-green-100 rounded-full flex items-center justify-center">
         <span className="text-green-600 text-4xl">✓</span>
       </div>
+
       <div className="space-y-2">
         <h2 className="text-2xl font-bold text-gray-900">
           Registration Successful!
@@ -694,6 +710,7 @@ const Signup = () => {
           Welcome to BorrowMyCar! Your account has been created successfully.
         </p>
       </div>
+
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h3 className="font-medium text-blue-900 mb-2">What's Next?</h3>
         <div className="text-sm text-blue-800 space-y-1">
@@ -702,6 +719,7 @@ const Signup = () => {
           <p>🎉 You'll receive approval notification via email</p>
         </div>
       </div>
+
       <div className="space-y-3">
         <Link
           to="/login"
@@ -818,6 +836,7 @@ const Signup = () => {
                     Back
                   </button>
                 )}
+
                 {step < 3 ? (
                   <button
                     type="button"

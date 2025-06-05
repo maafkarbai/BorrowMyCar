@@ -1,4 +1,4 @@
-// routes/carRoutes.js (Fully Consistent - Fixed Upload Limits)
+// routes/carRoutes.js (Updated with all routes)
 import express from "express";
 import {
   createCar,
@@ -7,6 +7,7 @@ import {
   updateCar,
   deleteCar,
   getCarsByOwner,
+  getMyCars,
 } from "../controllers/carController.js";
 import {
   protect,
@@ -15,7 +16,7 @@ import {
   optionalAuth,
   uploadLimiter,
 } from "../middlewares/authMiddleware.js";
-import { uploadCarImages } from "../middlewares/multer.js"; // Uses proper middleware that allows up to 10 images
+import { uploadCarImages } from "../middlewares/multer.js";
 import { body, validationResult } from "express-validator";
 
 const router = express.Router();
@@ -48,11 +49,20 @@ const carValidationRules = [
     ])
     .withMessage("Please select a valid UAE city"),
 
+  // Handle both price and pricePerDay from frontend
   body("price")
+    .optional()
     .isNumeric()
     .withMessage("Price must be a number")
     .isFloat({ min: 50, max: 5000 })
     .withMessage("Price must be between AED 50 and AED 5000 per day"),
+
+  body("pricePerDay")
+    .optional()
+    .isNumeric()
+    .withMessage("Price per day must be a number")
+    .isFloat({ min: 50, max: 5000 })
+    .withMessage("Price per day must be between AED 50 and AED 5000"),
 
   body("make")
     .notEmpty()
@@ -121,12 +131,7 @@ const handleValidationErrors = (req, res, next) => {
   next();
 };
 
-// REMOVED: Custom image processing middleware - let controller handle image validation
-// The uploadCarImages middleware from multer.js already handles the file processing
-// and the controller has proper validation for 3-10 images
-
 // PUBLIC ROUTES
-
 // GET /api/cars - Get all cars with filtering
 router.get(
   "/",
@@ -137,11 +142,14 @@ router.get(
 // GET /api/cars/:id - Get single car
 router.get("/:id", optionalAuth, getCarById);
 
-// GET /api/cars/owner/:ownerId - Get cars by owner
+// GET /api/cars/owner/:ownerId - Get cars by specific owner
 router.get("/owner/:ownerId", getCarsByOwner);
 
 // PROTECTED ROUTES (Authentication required)
-router.use(protect); // All routes below require authentication
+router.use(protect); // Apply protection to all routes below
+
+// GET /api/cars/my/cars - Get current user's cars (Owner only)
+router.get("/my/cars", restrictTo("owner"), getMyCars);
 
 // POST /api/cars - Create new car (Owner only)
 router.post(
@@ -149,10 +157,10 @@ router.post(
   restrictTo("owner"), // Only owners can create cars
   requireApproval, // Account must be approved
   uploadLimiter, // Rate limiting for uploads
-  uploadCarImages, // Handle file upload (up to 10 images) - from middlewares/multer.js
+  uploadCarImages, // Handle file upload (up to 10 images)
   carValidationRules, // Validate input data
   handleValidationErrors, // Handle validation errors
-  createCar // Create car controller (handles image validation internally)
+  createCar // Create car controller
 );
 
 // PUT /api/cars/:id - Update car (Owner only, own cars)

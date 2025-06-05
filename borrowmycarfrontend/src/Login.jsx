@@ -37,19 +37,37 @@ const Login = () => {
 
       console.log("Login response:", response.data);
 
-      // Store token and user data
-      if (response.data.token) {
-        localStorage.setItem("token", response.data.token);
+      // FIXED: Handle both response structures
+      let token = null;
+      let userData = null;
 
-        // If user data is returned, you can store it too
-        if (response.data.user) {
-          localStorage.setItem("user", JSON.stringify(response.data.user));
+      // Try to get token from multiple possible locations
+      if (response.data.token) {
+        token = response.data.token;
+        userData = response.data.user;
+      } else if (response.data.data && response.data.data.token) {
+        token = response.data.data.token;
+        userData = response.data.data.user;
+      }
+
+      if (token) {
+        // Store token and user data
+        localStorage.setItem("token", token);
+
+        if (userData) {
+          localStorage.setItem("user", JSON.stringify(userData));
+          console.log("User data stored:", userData);
         }
+
+        console.log("Login successful, token stored");
 
         // Redirect to homepage or dashboard
         navigate("/", { replace: true });
       } else {
-        setError("Login successful but no token received");
+        console.error("No token in response:", response.data);
+        setError(
+          "Login successful but no authentication token received. Please try again."
+        );
       }
     } catch (err) {
       console.error("Login error:", err);
@@ -60,7 +78,7 @@ const Login = () => {
         const message =
           err.response.data?.message ||
           err.response.data?.error ||
-          "Login failed";
+          `Login failed (${err.response.status})`;
         setError(message);
       } else if (err.request) {
         // Network error

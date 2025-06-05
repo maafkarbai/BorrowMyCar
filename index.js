@@ -26,10 +26,25 @@ try {
 }
 
 // CORS config
+// index.js - Updated CORS configuration
+// CORS config - UPDATED to handle multiple origins
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || "http://localhost:3000",
+  origin: [
+    "http://localhost:3000",
+    "http://localhost:5173", // Vite default port
+    "http://127.0.0.1:5173",
+    process.env.FRONTEND_URL,
+  ].filter(Boolean), // Remove any undefined values
   credentials: true,
   optionsSuccessStatus: 200,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "Origin",
+    "X-Requested-With",
+    "Accept",
+  ],
 };
 
 // Middlewares

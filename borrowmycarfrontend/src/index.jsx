@@ -1,14 +1,21 @@
+// borrowmycarfrontend/src/index.jsx - FIXED VERSION
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 import App from "./App.jsx";
+import BrowseCars from "./BrowseCars.jsx";
 import Login from "./Login.jsx";
 import Signup from "./Signup.jsx";
 import CarDetails from "./CarDetails.jsx";
 import ListCar from "./ListCar.jsx";
+import HowItWorks from "./HowItWorks.jsx";
+import MyBookings from "./MyBookings.jsx";
+import Settings from "./Settings.jsx";
 import NotFound from "./NotFound.jsx";
 import Navbar from "./Navbar.jsx";
 import Footer from "./Footer.jsx";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import { AuthProvider } from "./context/AuthProvider.jsx";
 import "./global.css";
 
 // Main Layout Component
@@ -35,56 +42,54 @@ const router = createBrowserRouter([
     path: "/",
     element: <Layout />,
     children: [
-      {
-        index: true,
-        element: <App />,
-      },
-      {
-        path: "browse",
-        element: <App />,
-      },
-      {
-        path: "cars/:id",
-        element: <CarDetails />,
-      },
+      { index: true, element: <App /> },
+      { path: "browse", element: <BrowseCars /> },
+      { path: "how-it-works", element: <HowItWorks /> },
+      { path: "cars/:id", element: <CarDetails /> },
       {
         path: "list-car",
-        element: <ListCar />,
+        element: (
+          <ProtectedRoute requiredRole="owner" requireApproval={true}>
+            <ListCar />
+          </ProtectedRoute>
+        ),
       },
-      // Add other protected routes here
+      {
+        path: "my-bookings",
+        element: (
+          <ProtectedRoute>
+            <MyBookings />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "settings",
+        element: (
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        ),
+      },
     ],
   },
   {
     path: "/auth",
     element: <AuthLayout />,
     children: [
-      {
-        path: "login",
-        element: <Login />,
-      },
-      {
-        path: "signup",
-        element: <Signup />,
-      },
+      { path: "login", element: <Login /> },
+      { path: "signup", element: <Signup /> },
     ],
   },
   // Keep login/signup at root level for backward compatibility
-  {
-    path: "/login",
-    element: <Login />,
-  },
-  {
-    path: "/signup",
-    element: <Signup />,
-  },
-  {
-    path: "*",
-    element: <NotFound />,
-  },
+  { path: "/login", element: <Login /> },
+  { path: "/signup", element: <Signup /> },
+  { path: "*", element: <NotFound /> },
 ]);
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
   </StrictMode>
 );

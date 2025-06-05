@@ -1,10 +1,12 @@
-// routes/authRoutes.js (Authentication Routes Only)
+// routes/authRoutes.js - FIXED VERSION
 import express from "express";
 import {
   signup,
   login,
   getProfile,
   updateProfile,
+  changePassword,
+  logout,
 } from "../controllers/authController.js";
 import { protect, authLimiter } from "../middlewares/authMiddleware.js";
 import {
@@ -19,9 +21,18 @@ import {
 
 const router = express.Router();
 
-// Public routes with rate limiting
+// PUBLIC ROUTES (No authentication required)
 router.post(
   "/signup",
+  authLimiter,
+  uploadUserDocuments,
+  validateSignup,
+  handleValidationErrors,
+  signup
+);
+
+router.post(
+  "/register", // Alternative endpoint name
   authLimiter,
   uploadUserDocuments,
   validateSignup,
@@ -37,9 +48,12 @@ router.post(
   login
 );
 
-// Protected routes
-router.use(protect); // All routes below require authentication
+// PROTECTED ROUTES (Authentication required)
+router.use(protect); // Apply protection to all routes below
+
 router.get("/profile", getProfile);
 router.patch("/profile", uploadProfileImage, updateProfile);
+router.patch("/change-password", changePassword);
+router.post("/logout", logout);
 
 export default router;

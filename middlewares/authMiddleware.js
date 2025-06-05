@@ -1,6 +1,7 @@
-// middlewares/authMiddleware.js (Enhanced)
+// middlewares/authMiddleware.js (Fixed Imports)
 import jwt from "jsonwebtoken";
-import User from "../models/User.js";
+import { User } from "../models/User.js"; // Fixed import
+import rateLimit from "express-rate-limit";
 
 // Enhanced async error handler
 const handleAsyncError = (fn) => {
@@ -122,7 +123,6 @@ export const optionalAuth = handleAsyncError(async (req, res, next) => {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const user = await User.findById(decoded.id).select("-password");
-
       if (user && !user.deletedAt) {
         req.user = user;
       }
@@ -134,9 +134,6 @@ export const optionalAuth = handleAsyncError(async (req, res, next) => {
 
   next();
 });
-
-// Rate limiting middleware
-import rateLimit from "express-rate-limit";
 
 // Auth rate limiter (stricter for login/signup)
 export const authLimiter = rateLimit({

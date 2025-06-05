@@ -1,3 +1,4 @@
+// borrowmycarfrontend/src/api.js (Fixed)
 import axios from "axios";
 
 // Create API instance with base URL from environment variables
@@ -18,10 +19,12 @@ API.interceptors.request.use(
     }
 
     // Log request for debugging (remove in production)
-    console.log(`${req.method?.toUpperCase()} ${req.url}`, {
-      data: req.data,
-      headers: req.headers,
-    });
+    if (import.meta.env.DEV) {
+      console.log(`${req.method?.toUpperCase()} ${req.url}`, {
+        data: req.data,
+        headers: req.headers,
+      });
+    }
 
     return req;
   },
@@ -35,7 +38,9 @@ API.interceptors.request.use(
 API.interceptors.response.use(
   (response) => {
     // Log successful responses (remove in production)
-    console.log(`Response ${response.status}:`, response.data);
+    if (import.meta.env.DEV) {
+      console.log(`Response ${response.status}:`, response.data);
+    }
     return response;
   },
   (error) => {
@@ -43,11 +48,14 @@ API.interceptors.response.use(
 
     // Handle token expiration
     if (error.response?.status === 401) {
+      const currentPath = window.location.pathname;
+
+      // Clear auth data
       localStorage.removeItem("token");
       localStorage.removeItem("user");
 
-      // Only redirect if not already on login page
-      if (!window.location.pathname.includes("/login")) {
+      // Only redirect if not already on login/signup page
+      if (!currentPath.includes("/login") && !currentPath.includes("/signup")) {
         window.location.href = "/login";
       }
     }
@@ -57,6 +65,9 @@ API.interceptors.response.use(
       error.message = "Request timeout. Please check your connection.";
     } else if (!error.response) {
       error.message = "Network error. Please check your connection.";
+    } else if (error.response?.data?.message) {
+      // Use server error message if available
+      error.message = error.response.data.message;
     }
 
     return Promise.reject(error);
