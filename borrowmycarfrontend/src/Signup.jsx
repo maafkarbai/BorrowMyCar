@@ -509,7 +509,6 @@ const Signup = () => {
             <p className="text-red-500 text-xs mt-1">{errors.drivingLicense}</p>
           )}
         </div>
-
         {/* Emirates ID - Optional */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -540,35 +539,111 @@ const Signup = () => {
             </label>
           </div>
         </div>
-
         {/* Profile Image - Optional */}
+        // src/Signup.jsx - Enhanced Profile Picture Upload Section // Replace
+        the profile image section in renderStep2() with this enhanced version:
+        {/* Profile Image - Enhanced */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Profile Photo{" "}
             <span className="text-gray-500 text-xs ml-1">(Optional)</span>
           </label>
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-green-500 transition-colors">
-            <input
-              type="file"
-              name="profileImage"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="hidden"
-              id="profileImage"
-            />
-            <label htmlFor="profileImage" className="cursor-pointer">
-              {files.profileImage ? (
-                <div className="text-green-600">
-                  <p className="font-medium">✓ {files.profileImage.name}</p>
-                  <p className="text-xs">Click to change</p>
-                </div>
-              ) : (
-                <div className="text-gray-500">
-                  <p className="font-medium">📸 Upload Profile Photo</p>
-                  <p className="text-xs">Click to select file</p>
-                </div>
+
+          {/* Profile Picture Preview and Upload */}
+          <div className="flex items-center space-x-4">
+            {/* Preview */}
+            <div className="relative">
+              <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-gray-200 bg-gray-100 flex items-center justify-center">
+                {files.profileImage ? (
+                  <img
+                    src={URL.createObjectURL(files.profileImage)}
+                    alt="Profile preview"
+                    className="w-full h-full object-cover"
+                    onLoad={() => URL.revokeObjectURL(files.profileImage)}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center w-full h-full bg-gradient-to-br from-gray-200 to-gray-300">
+                    <svg
+                      className="w-8 h-8 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
+                  </div>
+                )}
+              </div>
+
+              {/* Remove button for preview */}
+              {files.profileImage && (
+                <button
+                  type="button"
+                  onClick={() => setFiles({ ...files, profileImage: null })}
+                  className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-lg transition-colors"
+                  title="Remove image"
+                >
+                  ×
+                </button>
               )}
-            </label>
+            </div>
+
+            {/* Upload Area */}
+            <div className="flex-1">
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-green-500 transition-colors">
+                <input
+                  type="file"
+                  name="profileImage"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                  id="profileImage"
+                />
+                <label htmlFor="profileImage" className="cursor-pointer">
+                  {files.profileImage ? (
+                    <div className="text-green-600">
+                      <p className="font-medium">✓ {files.profileImage.name}</p>
+                      <p className="text-xs">Click to change</p>
+                    </div>
+                  ) : (
+                    <div className="text-gray-500">
+                      <svg
+                        className="w-8 h-8 mx-auto mb-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                        />
+                      </svg>
+                      <p className="font-medium">Upload Profile Photo</p>
+                      <p className="text-xs">PNG, JPG, WebP up to 5MB</p>
+                    </div>
+                  )}
+                </label>
+              </div>
+
+              {/* Profile Image Error */}
+              {errors.profileImage && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.profileImage}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-2 text-xs text-gray-500">
+            💡 <strong>Tip:</strong> A clear profile photo helps build trust
+            with other users
           </div>
         </div>
       </div>

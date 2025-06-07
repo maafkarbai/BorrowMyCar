@@ -1,4 +1,4 @@
-// controllers/authController.js (Complete Fixed Version)
+// controllers/authController.js - Enhanced with Profile Picture Management
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { User } from "../models/User.js";
@@ -6,6 +6,7 @@ import {
   uploadImagesToCloud,
   deleteImagesFromCloud,
 } from "../utils/cloudUploader.js";
+import { formatUAEPhone, validateUAEPhone } from "../utils/phoneUtils.js";
 
 // Enhanced async error handler
 const handleAsyncErrorLocal = (fn) => {
@@ -14,7 +15,7 @@ const handleAsyncErrorLocal = (fn) => {
   };
 };
 
-// Token generator with enhanced payload
+// Token generator
 const generateToken = (user) => {
   return jwt.sign(
     {
@@ -27,7 +28,7 @@ const generateToken = (user) => {
   );
 };
 
-// Enhanced data sanitizer for user
+// Enhanced data sanitizer
 const sanitizeUserData = (data) => {
   const sanitized = {};
   if (data.name) sanitized.name = data.name.toString().trim();
@@ -40,23 +41,36 @@ const sanitizeUserData = (data) => {
   return sanitized;
 };
 
-// Enhanced user validation
+// FIXED validation function
 const validateUserData = (data, isSignup = false) => {
   const errors = [];
 
   if (isSignup) {
+    // Name validation
     if (!data.name || data.name.length < 2) {
       errors.push("Name must be at least 2 characters long");
     }
+
+    // Email validation
     if (!data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
       errors.push("Please provide a valid email address");
     }
-    if (!data.phone || !/^(\+971|00971|971)?[0-9]{8,9}$/.test(data.phone)) {
-      errors.push("Please provide a valid UAE phone number");
+
+    // FIXED: Phone validation with better error messaging
+    if (!data.phone) {
+      errors.push("Phone number is required");
+    } else if (!validateUAEPhone(data.phone)) {
+      console.log("Phone validation failed for:", data.phone);
+      console.log("Clean phone:", data.phone.replace(/\D/g, ""));
+      errors.push("Please provide a valid UAE phone number (e.g., 0501234567)");
     }
+
+    // Password validation
     if (!data.password || data.password.length < 6) {
       errors.push("Password must be at least 6 characters long");
     }
+
+    // Role validation
     if (data.role && !["renter", "owner"].includes(data.role)) {
       errors.push("Role must be either 'renter' or 'owner'");
     }
@@ -68,10 +82,19 @@ const validateUserData = (data, isSignup = false) => {
   };
 };
 
-// SIGNUP CONTROLLER
+// FIXED SIGNUP CONTROLLER
 export const signup = handleAsyncErrorLocal(async (req, res) => {
+  console.log("=== SIGNUP DEBUG ===");
+  console.log("Request body:", req.body);
+  console.log(
+    "Request files:",
+    req.files ? Object.keys(req.files) : "No files"
+  );
+
   // Sanitize input data
   const userData = sanitizeUserData(req.body);
+  console.log("Sanitized data:", userData);
+
   const {
     name,
     email,
@@ -81,23 +104,40 @@ export const signup = handleAsyncErrorLocal(async (req, res) => {
     preferredCity,
   } = userData;
 
-  // Validate input
+  // COMPREHENSIVE validation with detailed logging
   const validationResult = validateUserData(userData, true);
   if (!validationResult.isValid) {
+    console.log("Validation errors:", validationResult.errors);
     return res.status(400).json({
       success: false,
       message: "Validation failed",
       errors: validationResult.errors,
       code: "VALIDATION_ERROR",
+      debug: {
+        receivedPhone: phone,
+        cleanPhone: phone ? phone.replace(/\D/g, "") : null,
+        phoneIsValid: phone ? validateUAEPhone(phone) : false,
+      },
     });
   }
 
+  // Format phone number for storage
+  const formattedPhone = formatUAEPhone(phone);
+  console.log("Phone formatting:", {
+    original: phone,
+    formatted: formattedPhone,
+  });
+
   // Check if user already exists
   const existingUser = await User.findOne({
-    $or: [{ email }, { phone }],
+    $or: [{ email }, { phone: formattedPhone }],
   });
 
   if (existingUser) {
+    console.log(
+      "User already exists:",
+      existingUser.email === email ? "email" : "phone"
+    );
     return res.status(400).json({
       success: false,
       message:
@@ -112,6 +152,8 @@ export const signup = handleAsyncErrorLocal(async (req, res) => {
   let documentUrls = {};
   if (req.files) {
     try {
+      console.log("Processing file uploads...");
+
       // Validate required documents
       if (!req.files.drivingLicense) {
         return res.status(400).json({
@@ -127,21 +169,25 @@ export const signup = handleAsyncErrorLocal(async (req, res) => {
           req.files.drivingLicense
         );
         documentUrls.drivingLicenseUrl = drivingLicenseUrl;
+        console.log("Uploaded driving license");
       }
 
       if (req.files.emiratesId) {
         const [emiratesIdUrl] = await uploadImagesToCloud(req.files.emiratesId);
         documentUrls.emiratesIdUrl = emiratesIdUrl;
+        console.log("Uploaded Emirates ID");
       }
 
       if (req.files.visa) {
         const [visaUrl] = await uploadImagesToCloud(req.files.visa);
         documentUrls.visaUrl = visaUrl;
+        console.log("Uploaded visa");
       }
 
       if (req.files.passport) {
         const [passportUrl] = await uploadImagesToCloud(req.files.passport);
         documentUrls.passportUrl = passportUrl;
+        console.log("Uploaded passport");
       }
 
       if (req.files.profileImage) {
@@ -149,6 +195,7 @@ export const signup = handleAsyncErrorLocal(async (req, res) => {
           req.files.profileImage
         );
         documentUrls.profileImage = profileImageUrl;
+        console.log("Uploaded profile image");
       }
     } catch (uploadError) {
       console.error("Document upload error:", uploadError);
@@ -160,21 +207,29 @@ export const signup = handleAsyncErrorLocal(async (req, res) => {
     }
   }
 
-  // Create user
-  const user = await User.create({
+  // Create user with formatted phone
+  const userCreateData = {
     name,
     email,
-    phone,
+    phone: formattedPhone, // Use formatted phone
     password,
     role,
     preferredCity,
     ...documentUrls,
     isApproved: false, // Requires admin approval
+  };
+
+  console.log("Creating user with data:", {
+    ...userCreateData,
+    password: "[HIDDEN]",
   });
+
+  const user = await User.create(userCreateData);
+  console.log("User created successfully:", user._id);
 
   const token = generateToken(user);
 
-  // Return consistent response structure
+  // Return response with both root-level and nested data for compatibility
   res.status(201).json({
     success: true,
     message: "Account created successfully. Awaiting admin approval.",
@@ -220,6 +275,7 @@ export const login = handleAsyncErrorLocal(async (req, res) => {
   try {
     // Find user and include password for comparison
     const user = await User.findOne({ email }).select("+password");
+
     if (!user) {
       console.log("User not found:", email);
       return res.status(401).json({
@@ -326,7 +382,7 @@ export const getProfile = handleAsyncErrorLocal(async (req, res) => {
   }
 });
 
-// UPDATE USER PROFILE
+// UPDATE USER PROFILE - ENHANCED with Profile Picture Support
 export const updateProfile = handleAsyncErrorLocal(async (req, res) => {
   try {
     const userId = req.user.id;
@@ -338,9 +394,37 @@ export const updateProfile = handleAsyncErrorLocal(async (req, res) => {
     delete updates.role;
     delete updates.isApproved;
 
-    // Handle profile image upload
-    if (req.files && req.files.profileImage) {
+    // Validate name if provided
+    if (updates.name && updates.name.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: "Name must be at least 2 characters long",
+        code: "INVALID_NAME",
+      });
+    }
+
+    // Validate preferred city if provided
+    const validCities = [
+      "Dubai",
+      "Abu Dhabi",
+      "Sharjah",
+      "Ajman",
+      "Fujairah",
+      "Ras Al Khaimah",
+      "Umm Al Quwain",
+    ];
+    if (updates.preferredCity && !validCities.includes(updates.preferredCity)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please select a valid UAE city",
+        code: "INVALID_CITY",
+      });
+    }
+
+    // Handle profile image upload if provided
+    if (req.file) {
       try {
+        console.log("Processing profile image upload:", req.file);
         const user = await User.findById(userId);
 
         // Delete old profile image if exists
@@ -349,11 +433,11 @@ export const updateProfile = handleAsyncErrorLocal(async (req, res) => {
         }
 
         // Upload new profile image
-        const [profileImageUrl] = await uploadImagesToCloud(
-          req.files.profileImage
-        );
+        const [profileImageUrl] = await uploadImagesToCloud([req.file]);
         updates.profileImage = profileImageUrl;
+        console.log("Profile image uploaded successfully:", profileImageUrl);
       } catch (uploadError) {
+        console.error("Profile image upload error:", uploadError);
         return res.status(500).json({
           success: false,
           message: "Failed to upload profile image",
@@ -362,10 +446,20 @@ export const updateProfile = handleAsyncErrorLocal(async (req, res) => {
       }
     }
 
+    console.log("Updating user profile with:", updates);
+
     const updatedUser = await User.findByIdAndUpdate(userId, updates, {
       new: true,
       runValidators: true,
     }).select("-password");
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+        code: "USER_NOT_FOUND",
+      });
+    }
 
     res.json({
       success: true,
@@ -393,6 +487,128 @@ export const updateProfile = handleAsyncErrorLocal(async (req, res) => {
   }
 });
 
+// NEW: UPDATE PROFILE PICTURE ONLY
+export const updateProfilePicture = handleAsyncErrorLocal(async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "Profile image file is required",
+        code: "NO_FILE_PROVIDED",
+      });
+    }
+
+    console.log("Processing profile image update:", req.file);
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+        code: "USER_NOT_FOUND",
+      });
+    }
+
+    // Delete old profile image if exists
+    if (user.profileImage) {
+      await deleteImagesFromCloud([user.profileImage]).catch(console.error);
+      console.log("Deleted old profile image");
+    }
+
+    // Upload new profile image
+    const [profileImageUrl] = await uploadImagesToCloud([req.file]);
+    console.log("New profile image uploaded:", profileImageUrl);
+
+    // Update user with new profile image
+    user.profileImage = profileImageUrl;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Profile picture updated successfully",
+      data: {
+        profileImage: profileImageUrl,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+          isApproved: user.isApproved,
+          profileImage: user.profileImage,
+          preferredCity: user.preferredCity,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Update profile picture error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update profile picture",
+      code: "INTERNAL_ERROR",
+    });
+  }
+});
+
+// NEW: REMOVE PROFILE PICTURE
+export const removeProfilePicture = handleAsyncErrorLocal(async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+        code: "USER_NOT_FOUND",
+      });
+    }
+
+    if (!user.profileImage) {
+      return res.status(400).json({
+        success: false,
+        message: "No profile picture to remove",
+        code: "NO_PROFILE_PICTURE",
+      });
+    }
+
+    console.log("Removing profile picture:", user.profileImage);
+
+    // Delete profile image from cloud storage
+    await deleteImagesFromCloud([user.profileImage]).catch(console.error);
+
+    // Remove profile image from user document
+    user.profileImage = null;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Profile picture removed successfully",
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+          isApproved: user.isApproved,
+          profileImage: null,
+          preferredCity: user.preferredCity,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Remove profile picture error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to remove profile picture",
+      code: "INTERNAL_ERROR",
+    });
+  }
+});
+
 // CHANGE PASSWORD
 export const changePassword = handleAsyncErrorLocal(async (req, res) => {
   try {
@@ -415,8 +631,8 @@ export const changePassword = handleAsyncErrorLocal(async (req, res) => {
     }
 
     const user = await User.findById(req.user.id).select("+password");
-
     const isPasswordValid = await user.matchPassword(currentPassword);
+
     if (!isPasswordValid) {
       return res.status(400).json({
         success: false,
@@ -442,10 +658,162 @@ export const changePassword = handleAsyncErrorLocal(async (req, res) => {
   }
 });
 
+// UPDATE USER PREFERENCES (for notifications and privacy)
+export const updatePreferences = handleAsyncErrorLocal(async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { notifications, privacy } = req.body;
+
+    const updates = {};
+
+    // Handle notifications preferences
+    if (notifications) {
+      updates.notificationPreferences = {
+        emailBookings: Boolean(notifications.emailBookings),
+        emailPromotions: Boolean(notifications.emailPromotions),
+        smsBookings: Boolean(notifications.smsBookings),
+        smsReminders: Boolean(notifications.smsReminders),
+        pushNotifications: Boolean(notifications.pushNotifications),
+      };
+    }
+
+    // Handle privacy preferences
+    if (privacy) {
+      updates.privacySettings = {
+        profileVisibility: privacy.profileVisibility || "public",
+        showPhone: Boolean(privacy.showPhone),
+        showEmail: Boolean(privacy.showEmail),
+        allowMessages: Boolean(privacy.allowMessages),
+      };
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(userId, updates, {
+      new: true,
+      runValidators: true,
+    }).select("-password");
+
+    res.json({
+      success: true,
+      message: "Preferences updated successfully",
+      data: {
+        user: {
+          id: updatedUser._id,
+          name: updatedUser.name,
+          email: updatedUser.email,
+          notificationPreferences: updatedUser.notificationPreferences,
+          privacySettings: updatedUser.privacySettings,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Update preferences error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update preferences",
+      code: "INTERNAL_ERROR",
+    });
+  }
+});
+
+// EXPORT USER DATA
+export const exportUserData = handleAsyncErrorLocal(async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Get user data
+    const user = await User.findById(userId).select("-password");
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+        code: "USER_NOT_FOUND",
+      });
+    }
+
+    const exportData = {
+      exportDate: new Date().toISOString(),
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        preferredCity: user.preferredCity,
+        createdAt: user.createdAt,
+        lastLoginAt: user.lastLoginAt,
+      },
+    };
+
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="borrowmycar-data.json"'
+    );
+    res.json(exportData);
+  } catch (error) {
+    console.error("Export data error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to export data",
+      code: "INTERNAL_ERROR",
+    });
+  }
+});
+
+// DELETE USER ACCOUNT
+export const deleteAccount = handleAsyncErrorLocal(async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Get user data
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+        code: "USER_NOT_FOUND",
+      });
+    }
+
+    // Delete profile image from cloud storage
+    if (user.profileImage) {
+      await deleteImagesFromCloud([user.profileImage]).catch(console.error);
+    }
+
+    // Delete document images from cloud storage
+    const documentUrls = [
+      user.drivingLicenseUrl,
+      user.emiratesIdUrl,
+      user.visaUrl,
+      user.passportUrl,
+    ].filter(Boolean);
+
+    if (documentUrls.length > 0) {
+      await deleteImagesFromCloud(documentUrls).catch(console.error);
+    }
+
+    // Soft delete user (mark as deleted)
+    user.deletedAt = new Date();
+    user.email = `deleted_${user._id}@borrowmycar.deleted`;
+    user.phone = `deleted_${user._id}`;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Account deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete account error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete account",
+      code: "INTERNAL_ERROR",
+    });
+  }
+});
+
 // LOGOUT (Optional - mainly client-side)
 export const logout = handleAsyncErrorLocal(async (req, res) => {
-  // Since we're using stateless JWT, logout is mainly handled on the client side
-  // But we can track logout time if needed
   try {
     res.json({
       success: true,

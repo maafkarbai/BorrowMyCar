@@ -1,33 +1,67 @@
-// utils/validators.js (Updated Phone Validation)
+// utils/validators.js - FIXED VERSION
 import { body, param, query, validationResult } from "express-validator";
 import rateLimit from "express-rate-limit";
 import { validateUAEPhone } from "./phoneUtils.js";
 
-// User validation rules
+// FIXED User validation rules
 export const validateSignup = [
   body("name")
     .trim()
     .isLength({ min: 2, max: 50 })
     .withMessage("Name must be between 2 and 50 characters"),
+
   body("email")
     .isEmail()
     .normalizeEmail()
     .withMessage("Please provide a valid email"),
-  body("phone").custom((value) => {
-    if (!validateUAEPhone(value)) {
-      throw new Error(
-        "Please provide a valid UAE phone number (e.g., 0501234567)"
-      );
-    }
-    return true;
-  }),
+
+  // FIXED: More flexible phone validation
+  body("phone")
+    .notEmpty()
+    .withMessage("Phone number is required")
+    .custom((value) => {
+      console.log("Validating phone in validator:", value);
+
+      if (!value) {
+        throw new Error("Phone number is required");
+      }
+
+      // Clean the phone number
+      const cleanPhone = value.replace(/\D/g, "");
+      console.log("Clean phone in validator:", cleanPhone);
+
+      if (!validateUAEPhone(value)) {
+        console.log("Phone validation failed in validator for:", value);
+        throw new Error(
+          "Please provide a valid UAE phone number (e.g., 0501234567)"
+        );
+      }
+
+      console.log("Phone validation passed in validator");
+      return true;
+    }),
+
   body("password")
     .isLength({ min: 6 })
     .withMessage("Password must be at least 6 characters long"),
+
   body("role")
     .optional()
     .isIn(["renter", "owner"])
     .withMessage("Role must be either renter or owner"),
+
+  body("preferredCity")
+    .optional()
+    .isIn([
+      "Dubai",
+      "Abu Dhabi",
+      "Sharjah",
+      "Ajman",
+      "Fujairah",
+      "Ras Al Khaimah",
+      "Umm Al Quwain",
+    ])
+    .withMessage("Please select a valid UAE city"),
 ];
 
 export const validateLogin = [
@@ -38,7 +72,7 @@ export const validateLogin = [
   body("password").notEmpty().withMessage("Password is required"),
 ];
 
-// Car validation rules
+// Car validation rules (unchanged)
 export const validateCreateCar = [
   body("title")
     .trim()
@@ -70,9 +104,15 @@ export const validateCreateCar = [
   body("year")
     .isInt({ min: 2010, max: new Date().getFullYear() + 1 })
     .withMessage("Car year must be between 2010 and current year"),
+  // Handle both price and pricePerDay
   body("price")
+    .optional()
     .isFloat({ min: 50, max: 5000 })
     .withMessage("Price must be between AED 50 and AED 5000 per day"),
+  body("pricePerDay")
+    .optional()
+    .isFloat({ min: 50, max: 5000 })
+    .withMessage("Price per day must be between AED 50 and AED 5000 per day"),
   body("mileage")
     .isInt({ min: 0, max: 500000 })
     .withMessage("Mileage must be between 0 and 500,000 km"),
@@ -108,10 +148,12 @@ export const validateCreateBooking = [
     .isIn(["Cash", "Card", "BankTransfer", "DigitalWallet"])
     .withMessage("Please select a valid payment method"),
   body("pickupLocation")
+    .optional()
     .trim()
     .isLength({ min: 5, max: 200 })
     .withMessage("Pickup location must be between 5 and 200 characters"),
   body("returnLocation")
+    .optional()
     .trim()
     .isLength({ min: 5, max: 200 })
     .withMessage("Return location must be between 5 and 200 characters"),
@@ -178,111 +220,20 @@ export const validatePagination = [
     .withMessage("Limit must be between 1 and 50"),
 ];
 
-export const validateCarFilters = [
-  query("city")
-    .optional()
-    .isIn([
-      "Dubai",
-      "Abu Dhabi",
-      "Sharjah",
-      "Ajman",
-      "Fujairah",
-      "Ras Al Khaimah",
-      "Umm Al Quwain",
-    ])
-    .withMessage("Please select a valid UAE city"),
-  query("minPrice")
-    .optional()
-    .isFloat({ min: 0 })
-    .withMessage("Minimum price must be a positive number"),
-  query("maxPrice")
-    .optional()
-    .isFloat({ min: 0 })
-    .withMessage("Maximum price must be a positive number"),
-  query("year")
-    .optional()
-    .isInt({ min: 2010, max: new Date().getFullYear() + 1 })
-    .withMessage("Year must be between 2010 and current year"),
-  query("transmission")
-    .optional()
-    .isIn(["Automatic", "Manual", "CVT", "Semi-Automatic"])
-    .withMessage("Please select a valid transmission type"),
-  query("fuelType")
-    .optional()
-    .isIn(["Petrol", "Diesel", "Electric", "Hybrid", "Plug-in Hybrid"])
-    .withMessage("Please select a valid fuel type"),
-  query("seatingCapacity")
-    .optional()
-    .isInt({ min: 2, max: 8 })
-    .withMessage("Seating capacity must be between 2 and 8"),
-  query("sortBy")
-    .optional()
-    .isIn(["createdAt", "price", "year", "totalBookings", "averageRating"])
-    .withMessage("Please select a valid sort field"),
-  query("sortOrder")
-    .optional()
-    .isIn(["asc", "desc"])
-    .withMessage("Sort order must be asc or desc"),
-];
-
-// Parameter validation
-export const validateMongoId = [
-  param("id").isMongoId().withMessage("Please provide a valid ID"),
-];
-
-// Custom validation functions
-export const customValidations = {
-  // Check if end date is after start date
-  isEndDateAfterStartDate: (endDate, { req }) => {
-    if (
-      req.body.startDate &&
-      new Date(endDate) <= new Date(req.body.startDate)
-    ) {
-      throw new Error("End date must be after start date");
-    }
-    return true;
-  },
-
-  // Check if date is not in the past
-  isNotPastDate: (date) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (new Date(date) < today) {
-      throw new Error("Date cannot be in the past");
-    }
-    return true;
-  },
-
-  // Check UAE phone number format
-  isValidUAEPhone: (phone) => {
-    if (!validateUAEPhone(phone)) {
-      throw new Error(
-        "Please provide a valid UAE phone number (e.g., 0501234567)"
-      );
-    }
-    return true;
-  },
-
-  // Check UAE plate number format
-  isValidUAEPlate: (plateNumber) => {
-    const uaePlateRegex = /^[A-Z]{1,3}[0-9]{1,5}$/;
-    if (!uaePlateRegex.test(plateNumber.toUpperCase())) {
-      throw new Error(
-        "Please provide a valid UAE plate number (e.g., A12345, ABC123)"
-      );
-    }
-    return true;
-  },
-};
-
-// Express validator error handler middleware
+// Enhanced validation error handler with better debugging
 export const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
+
   if (!errors.isEmpty()) {
+    console.log("=== VALIDATION ERRORS ===");
+    console.log("Request body:", req.body);
+    console.log("Validation errors:", errors.array());
+
     const formattedErrors = errors.array().map((error) => ({
       field: error.path || error.param,
       message: error.msg,
       value: error.value,
+      location: error.location,
     }));
 
     return res.status(400).json({
@@ -290,13 +241,18 @@ export const handleValidationErrors = (req, res, next) => {
       message: "Validation failed",
       errors: formattedErrors,
       code: "VALIDATION_ERROR",
+      debug: {
+        totalErrors: formattedErrors.length,
+        requestBody: req.body,
+      },
     });
   }
+
+  console.log("✅ Validation passed");
   next();
 };
 
 // Rate limiting configurations
-// General rate limiter
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per windowMs

@@ -1,3 +1,4 @@
+// src/Settings.jsx - Enhanced with Profile Picture Management
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet";
@@ -17,15 +18,24 @@ import {
   Database,
   Download,
   UserX,
+  User,
+  Edit3,
 } from "lucide-react";
 import API from "./api";
+import ProfilePictureManager from "./components/ProfilePictureManager";
 
 const Settings = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("security");
+  const [activeTab, setActiveTab] = useState("profile");
   const [updateLoading, setUpdateLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
+
+  // Profile form state
+  const [profileForm, setProfileForm] = useState({
+    name: "",
+    preferredCity: "",
+  });
 
   // Security settings
   const [passwordForm, setPasswordForm] = useState({
@@ -33,6 +43,7 @@ const Settings = () => {
     newPassword: "",
     confirmPassword: "",
   });
+
   const [showPasswords, setShowPasswords] = useState({
     current: false,
     new: false,
@@ -65,7 +76,15 @@ const Settings = () => {
   const fetchUserData = async () => {
     try {
       const response = await API.get("/auth/profile");
-      setUser(response.data.data.user);
+      const userData = response.data.data.user;
+      setUser(userData);
+
+      // Initialize profile form
+      setProfileForm({
+        name: userData.name || "",
+        preferredCity: userData.preferredCity || "",
+      });
+
       // Load user preferences (mock data for now)
       // In real app, these would come from the API
     } catch (err) {
@@ -85,6 +104,35 @@ const Settings = () => {
   const showMessage = (type, text) => {
     setMessage({ type, text });
     setTimeout(() => setMessage({ type: "", text: "" }), 5000);
+  };
+
+  const handleProfileUpdate = async (e) => {
+    e.preventDefault();
+    setUpdateLoading(true);
+
+    try {
+      const response = await API.patch("/auth/profile", profileForm);
+      if (response.data.success) {
+        setUser(response.data.data.user);
+        showMessage("success", "Profile updated successfully");
+      }
+    } catch (err) {
+      showMessage(
+        "error",
+        err.response?.data?.message || "Failed to update profile"
+      );
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
+
+  const handleProfilePictureUpdate = (updatedUser) => {
+    setUser(updatedUser);
+    showMessage("success", "Profile picture updated successfully");
+  };
+
+  const handleProfilePictureError = (error) => {
+    showMessage("error", error);
   };
 
   const handlePasswordUpdate = async (e) => {
@@ -153,7 +201,6 @@ const Settings = () => {
       const response = await API.get("/auth/export-data", {
         responseType: "blob",
       });
-
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
@@ -161,7 +208,6 @@ const Settings = () => {
       document.body.appendChild(link);
       link.click();
       link.remove();
-
       showMessage(
         "success",
         "Data export started. Download will begin shortly."
@@ -177,13 +223,11 @@ const Settings = () => {
     const confirmDelete = window.confirm(
       "Are you sure you want to delete your account? This action cannot be undone."
     );
-
     if (!confirmDelete) return;
 
     const finalConfirm = window.confirm(
       "This will permanently delete all your data, bookings, and car listings. Type 'DELETE' to confirm."
     );
-
     if (!finalConfirm) return;
 
     setUpdateLoading(true);
@@ -200,6 +244,7 @@ const Settings = () => {
   };
 
   const tabs = [
+    { id: "profile", label: "Profile", icon: User },
     { id: "security", label: "Security", icon: Shield },
     { id: "notifications", label: "Notifications", icon: Bell },
     { id: "privacy", label: "Privacy", icon: Eye },
@@ -228,7 +273,6 @@ const Settings = () => {
       <Helmet>
         <title>Account Settings - BorrowMyCar</title>
       </Helmet>
-
       <div className="max-w-4xl mx-auto p-6">
         {/* Header */}
         <div className="mb-6">
@@ -279,6 +323,153 @@ const Settings = () => {
 
           {/* Tab Content */}
           <div className="p-6">
+            {/* Profile Tab */}
+            {activeTab === "profile" && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                    Profile Information
+                  </h2>
+
+                  <div className="flex flex-col lg:flex-row lg:items-start lg:space-x-8 space-y-6 lg:space-y-0">
+                    {/* Profile Picture Section */}
+                    <div className="flex flex-col items-center space-y-4">
+                      <ProfilePictureManager
+                        user={user}
+                        onUpdateSuccess={handleProfilePictureUpdate}
+                        onError={handleProfilePictureError}
+                        size="xl"
+                      />
+                      <div className="text-center">
+                        <h3 className="font-medium text-gray-900">
+                          {user.name}
+                        </h3>
+                        <p className="text-sm text-gray-500 capitalize">
+                          {user.role}
+                        </p>
+                        <div className="flex items-center justify-center mt-2">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              user.isApproved
+                                ? "bg-green-100 text-green-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {user.isApproved ? "Verified" : "Pending"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Profile Form */}
+                    <div className="flex-1">
+                      <form
+                        onSubmit={handleProfileUpdate}
+                        className="space-y-4"
+                      >
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Full Name
+                          </label>
+                          <input
+                            type="text"
+                            value={profileForm.name}
+                            onChange={(e) =>
+                              setProfileForm({
+                                ...profileForm,
+                                name: e.target.value,
+                              })
+                            }
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Email Address
+                          </label>
+                          <input
+                            type="email"
+                            value={user.email}
+                            disabled
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Email cannot be changed for security reasons
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Phone Number
+                          </label>
+                          <input
+                            type="text"
+                            value={user.phone}
+                            disabled
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Phone number cannot be changed for security reasons
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Preferred City
+                          </label>
+                          <select
+                            value={profileForm.preferredCity}
+                            onChange={(e) =>
+                              setProfileForm({
+                                ...profileForm,
+                                preferredCity: e.target.value,
+                              })
+                            }
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          >
+                            <option value="">Select a city</option>
+                            {[
+                              "Dubai",
+                              "Abu Dhabi",
+                              "Sharjah",
+                              "Ajman",
+                              "Fujairah",
+                              "Ras Al Khaimah",
+                              "Umm Al Quwain",
+                            ].map((city) => (
+                              <option key={city} value={city}>
+                                {city}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <button
+                          type="submit"
+                          disabled={updateLoading}
+                          className="flex items-center bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-6 py-2 rounded-lg transition-colors"
+                        >
+                          {updateLoading ? (
+                            <>
+                              <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                              Updating...
+                            </>
+                          ) : (
+                            <>
+                              <Save className="w-4 h-4 mr-2" />
+                              Update Profile
+                            </>
+                          )}
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Security Tab */}
             {activeTab === "security" && (
               <div className="space-y-6">
@@ -286,7 +477,6 @@ const Settings = () => {
                   <h2 className="text-xl font-semibold text-gray-900 mb-4">
                     Password & Security
                   </h2>
-
                   <form onSubmit={handlePasswordUpdate} className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -448,7 +638,6 @@ const Settings = () => {
                   <h2 className="text-xl font-semibold text-gray-900 mb-4">
                     Notification Preferences
                   </h2>
-
                   <div className="space-y-4">
                     {/* Email Notifications */}
                     <div>
@@ -598,7 +787,6 @@ const Settings = () => {
                   <h2 className="text-xl font-semibold text-gray-900 mb-4">
                     Privacy Settings
                   </h2>
-
                   <div className="space-y-4">
                     <div>
                       <h3 className="text-lg font-medium text-gray-900 mb-3">
@@ -629,7 +817,6 @@ const Settings = () => {
                             </p>
                           </label>
                         </div>
-
                         <div className="flex items-center">
                           <input
                             type="radio"
@@ -771,7 +958,6 @@ const Settings = () => {
                   <h2 className="text-xl font-semibold text-gray-900 mb-4">
                     Data & Account Management
                   </h2>
-
                   <div className="space-y-6">
                     {/* Data Export */}
                     <div className="bg-blue-50 p-4 rounded-lg">

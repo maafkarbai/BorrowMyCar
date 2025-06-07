@@ -1,8 +1,7 @@
-// src/CarListingSection.jsx - Fixed price field references
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import CarFilterBar from "./CarFilterBar";
-import API from "../src/api";
+import API from "./api";
 
 const CarListingSection = () => {
   const [cars, setCars] = useState([]);
@@ -22,6 +21,7 @@ const CarListingSection = () => {
   const fetchCars = async (page = 1, newFilters = filters) => {
     setLoading(true);
     setError("");
+
     try {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -38,13 +38,29 @@ const CarListingSection = () => {
         }
       });
 
-      const response = await API.get(`/cars?${params.toString()}`);
-      const { cars: fetchedCars, pagination: paginationData } = response.data
-        .data || { cars: [], pagination: {} };
+      console.log("Fetching cars with params:", params.toString());
 
-      setCars(fetchedCars);
+      const response = await API.get(`/cars?${params.toString()}`);
+      console.log("Cars API response:", response.data);
+
+      // Handle different response structures
+      let carsData = [];
+      let paginationData = {};
+
+      if (response.data.data) {
+        carsData = response.data.data.cars || response.data.data;
+        paginationData = response.data.data.pagination || {};
+      } else if (response.data.cars) {
+        carsData = response.data.cars;
+        paginationData = response.data.pagination || {};
+      } else {
+        carsData = Array.isArray(response.data) ? response.data : [];
+      }
+
+      setCars(carsData);
       setPagination((prev) => ({
         ...prev,
+        currentPage: page,
         ...paginationData,
       }));
     } catch (err) {
@@ -85,65 +101,56 @@ const CarListingSection = () => {
     setSortOrder(newSortOrder);
   };
 
-  // Car Card Component
-  const CarCard = ({ car }) => (
-    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200">
-      {/* Car Image */}
-      <div className="relative aspect-video bg-gray-100 overflow-hidden">
-        <img
-          src={
-            car.images?.[0] ||
-            "https://via.placeholder.com/400x240?text=No+Image"
-          }
-          alt={car.title}
-          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-        />
-        {/* Price Badge - FIXED: Use car.price not car.pricePerDay */}
-        <div className="absolute top-3 right-3 bg-green-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
-          AED {car.price || car.pricePerDay}/day
-        </div>
-        {/* Status Badge */}
-        <div className="absolute top-3 left-3 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-          Available
-        </div>
-      </div>
+  // Car Card Component with proper price handling
+  const CarCard = ({ car }) => {
+    // Handle different price field names
+    const getCarPrice = () => {
+      return car.price || car.pricePerDay || car.dailyRate || 0;
+    };
 
-      {/* Car Details */}
-      <div className="p-4 space-y-3">
-        <div>
-          <h3 className="font-semibold text-gray-900 text-lg mb-1 line-clamp-1">
-            {car.title}
-          </h3>
-          <p className="text-gray-600 text-sm line-clamp-2">
-            {car.description}
-          </p>
-        </div>
+    const carPrice = getCarPrice();
 
-        {/* Car Info */}
-        <div className="flex items-center justify-between text-sm text-gray-500">
-          <div className="flex items-center gap-1">
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-            </svg>
-            <span>{car.city}</span>
+    return (
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200">
+        {/* Car Image */}
+        <div className="relative aspect-video bg-gray-100 overflow-hidden">
+          <img
+            src={
+              car.images?.[0] ||
+              "https://via.placeholder.com/400x240?text=No+Image"
+            }
+            alt={car.title}
+            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+            onError={(e) => {
+              e.target.src =
+                "https://via.placeholder.com/400x240?text=Car+Image";
+            }}
+          />
+
+          {/* Price Badge */}
+          <div className="absolute top-3 right-3 bg-green-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+            AED {carPrice}/day
           </div>
-          {car.year && (
+
+          {/* Status Badge */}
+          <div className="absolute top-3 left-3 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+            {car.status === "active" ? "Available" : car.status || "Available"}
+          </div>
+        </div>
+
+        {/* Car Details */}
+        <div className="p-4 space-y-3">
+          <div>
+            <h3 className="font-semibold text-gray-900 text-lg mb-1 line-clamp-1">
+              {car.title}
+            </h3>
+            <p className="text-gray-600 text-sm line-clamp-2">
+              {car.description}
+            </p>
+          </div>
+
+          {/* Car Info */}
+          <div className="flex items-center justify-between text-sm text-gray-500">
             <div className="flex items-center gap-1">
               <svg
                 className="w-4 h-4"
@@ -155,31 +162,55 @@ const CarListingSection = () => {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                 />
               </svg>
-              <span>{car.year}</span>
+              <span>{car.city}</span>
             </div>
-          )}
-        </div>
+            {car.year && (
+              <div className="flex items-center gap-1">
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+                <span>{car.year}</span>
+              </div>
+            )}
+          </div>
 
-        {/* Additional Info */}
-        <div className="flex items-center justify-between text-xs text-gray-400">
-          <span>{car.transmission || "Automatic"}</span>
-          <span>{car.fuelType || "Petrol"}</span>
-          {car.mileage && <span>{car.mileage} km</span>}
-        </div>
+          {/* Additional Info */}
+          <div className="flex items-center justify-between text-xs text-gray-400">
+            <span>{car.transmission || "Automatic"}</span>
+            <span>{car.fuelType || "Petrol"}</span>
+            {car.mileage && <span>{car.mileage} km</span>}
+          </div>
 
-        {/* Action Button */}
-        <Link
-          to={`/cars/${car._id}`}
-          className="block w-full bg-green-600 hover:bg-green-700 text-white text-center py-2 px-4 rounded-lg font-medium transition-colors duration-200"
-        >
-          View Details
-        </Link>
+          {/* Action Button */}
+          <Link
+            to={`/cars/${car._id}`}
+            className="block w-full bg-green-600 hover:bg-green-700 text-white text-center py-2 px-4 rounded-lg font-medium transition-colors duration-200"
+          >
+            View Details
+          </Link>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Loading Skeleton
   const LoadingSkeleton = () => (
@@ -227,7 +258,7 @@ const CarListingSection = () => {
         {/* Previous Button */}
         <button
           onClick={() => handlePageChange(pagination.currentPage - 1)}
-          disabled={!pagination.hasPrev}
+          disabled={pagination.currentPage === 1}
           className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Previous
@@ -251,7 +282,7 @@ const CarListingSection = () => {
         {/* Next Button */}
         <button
           onClick={() => handlePageChange(pagination.currentPage + 1)}
-          disabled={!pagination.hasNext}
+          disabled={pagination.currentPage === pagination.totalPages}
           className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Next
@@ -274,12 +305,12 @@ const CarListingSection = () => {
           <h2 className="text-2xl font-bold text-gray-900">Available Cars</h2>
           {!loading && (
             <span className="text-gray-600 text-sm">
-              {pagination.totalCount} cars found
+              {pagination.totalCount || cars.length} cars found
             </span>
           )}
         </div>
 
-        {/* Sort Options - FIXED: Use correct field names */}
+        {/* Sort Options */}
         <div className="flex items-center gap-3">
           <span className="text-sm text-gray-600">Sort by:</span>
           <select

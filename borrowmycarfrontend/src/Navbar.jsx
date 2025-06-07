@@ -469,7 +469,6 @@ const Navbar = () => {
                     List Car
                   </Link>
                 )}
-
                 {/* Notifications */}
                 <button
                   onClick={() => navigate("/notifications")}
@@ -482,26 +481,34 @@ const Navbar = () => {
                     </span>
                   )}
                 </button>
-
-                {/* Profile Dropdown */}
                 <div className="relative" ref={profileRef}>
                   <button
                     onClick={toggleProfile}
                     className="flex items-center space-x-3 text-gray-700 hover:text-green-600 p-1 rounded-lg focus:outline-none transition-colors"
                   >
                     <div className="flex items-center space-x-2">
-                      <img
-                        className="h-8 w-8 rounded-full object-cover ring-2 ring-white shadow-sm"
-                        src={
-                          user.profileImage ||
-                          "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                        }
-                        alt="Profile"
-                        onError={(e) => {
-                          e.target.src =
-                            "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80";
-                        }}
-                      />
+                      {/* Enhanced Profile Picture */}
+                      <div className="relative">
+                        <img
+                          className="h-8 w-8 rounded-full object-cover ring-2 ring-white shadow-sm"
+                          src={
+                            user.profileImage ||
+                            `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                              user.name || "User"
+                            )}&background=10b981&color=ffffff&size=64`
+                          }
+                          alt="Profile"
+                          onError={(e) => {
+                            // Fallback to UI Avatars if image fails to load
+                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                              user.name || "User"
+                            )}&background=10b981&color=ffffff&size=64`;
+                          }}
+                        />
+                        {/* Online Status Indicator */}
+                        <div className="absolute bottom-0 right-0 h-2.5 w-2.5 bg-green-400 border-2 border-white rounded-full"></div>
+                      </div>
+
                       <div className="hidden md:block text-left">
                         <div className="text-sm font-medium">{user.name}</div>
                         <div className="text-xs text-gray-500 capitalize">
@@ -526,12 +533,15 @@ const Navbar = () => {
                             className="h-10 w-10 rounded-full object-cover"
                             src={
                               user.profileImage ||
-                              "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                              `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                user.name || "User"
+                              )}&background=10b981&color=ffffff&size=80`
                             }
                             alt="Profile"
                             onError={(e) => {
-                              e.target.src =
-                                "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80";
+                              e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                user.name || "User"
+                              )}&background=10b981&color=ffffff&size=80`;
                             }}
                           />
                           <div>
@@ -572,7 +582,6 @@ const Navbar = () => {
                             {item.label}
                           </Link>
                         ))}
-
                         {/* Logout Button */}
                         <button
                           onClick={handleLogout}

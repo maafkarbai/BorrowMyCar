@@ -1,13 +1,15 @@
 // index.js
 import dotenv from "dotenv";
 dotenv.config(); // Load environment variables ASAP
-
+import { Server } from "socket.io";
+import jwt from "jsonwebtoken";
 import express from "express";
 import cors from "cors";
 import { connectDB, checkDBHealth } from "./config/db.js";
 import { globalErrorHandler } from "./utils/errorHandler.js";
 import { generalLimiter } from "./utils/validators.js";
 import { checkCloudinaryHealth } from "./utils/cloudinary.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
 
 // Routes
 import authRoutes from "./routes/authRoutes.js";
@@ -49,6 +51,8 @@ const corsOptions = {
 
 // Middlewares
 app.use(cors(corsOptions));
+app.use("/api/payments/webhook", paymentRoutes);
+app.use("/api/payments", paymentRoutes);
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 

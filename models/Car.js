@@ -1,4 +1,4 @@
-// models/Car.js - Fixed with consistent field naming
+// models/Car.js - FIXED VERSION
 import mongoose from "mongoose";
 
 const carSchema = new mongoose.Schema(
@@ -10,147 +10,165 @@ const carSchema = new mongoose.Schema(
     },
     title: {
       type: String,
-      required: true,
+      required: [true, "Car title is required"],
       trim: true,
-      maxlength: 100,
+      maxlength: [100, "Title cannot exceed 100 characters"],
     },
     description: {
       type: String,
-      required: true,
-      maxlength: 1000,
+      required: [true, "Car description is required"],
+      maxlength: [1000, "Description cannot exceed 1000 characters"],
     },
     city: {
       type: String,
-      required: true,
-      enum: [
-        "Dubai",
-        "Abu Dhabi",
-        "Sharjah",
-        "Ajman",
-        "Fujairah",
-        "Ras Al Khaimah",
-        "Umm Al Quwain",
-      ],
+      required: [true, "City is required"],
+      enum: {
+        values: [
+          "Dubai",
+          "Abu Dhabi",
+          "Sharjah",
+          "Ajman",
+          "Fujairah",
+          "Ras Al Khaimah",
+          "Umm Al Quwain",
+        ],
+        message: "Please select a valid UAE city",
+      },
     },
-    // FIXED: Use consistent field name 'price' (not pricePerDay)
+    // FIXED: Consistent pricing field
     price: {
       type: Number,
-      required: true,
-      min: 50, // Minimum AED 50 per day
-      max: 5000, // Maximum AED 5000 per day
+      required: [true, "Price per day is required"],
+      min: [50, "Price cannot be less than AED 50 per day"],
+      max: [5000, "Price cannot exceed AED 5000 per day"],
     },
-    // Availability
+    // Availability dates
     availabilityFrom: {
       type: Date,
-      required: true,
+      required: [true, "Availability start date is required"],
     },
     availabilityTo: {
       type: Date,
-      required: true,
+      required: [true, "Availability end date is required"],
     },
-    // Car details
+    // Car specifications
     make: {
       type: String,
-      required: true,
+      required: [true, "Car make is required"],
       trim: true,
     },
     model: {
       type: String,
-      required: true,
+      required: [true, "Car model is required"],
       trim: true,
     },
     year: {
       type: Number,
-      required: true,
-      min: 2010,
-      max: new Date().getFullYear() + 1,
+      required: [true, "Car year is required"],
+      min: [2010, "Car year cannot be before 2010"],
+      max: [new Date().getFullYear() + 1, "Invalid car year"],
     },
     color: {
       type: String,
-      required: true,
+      required: [true, "Car color is required"],
       trim: true,
     },
     plateNumber: {
       type: String,
-      required: true,
+      required: [true, "Plate number is required"],
       uppercase: true,
       validate: {
         validator: function (v) {
           return /^[A-Z]{1,3}[0-9]{1,5}$/.test(v);
         },
-        message: "Please enter a valid UAE plate number",
+        message: "Please enter a valid UAE plate number (e.g., A12345)",
       },
     },
-    // Technical specs
     transmission: {
       type: String,
-      enum: ["Automatic", "Manual", "CVT", "Semi-Automatic"],
+      enum: {
+        values: ["Automatic", "Manual", "CVT", "Semi-Automatic"],
+        message: "Please select a valid transmission type",
+      },
       required: true,
       default: "Automatic",
     },
     fuelType: {
       type: String,
-      enum: ["Petrol", "Diesel", "Electric", "Hybrid", "Plug-in Hybrid"],
+      enum: {
+        values: ["Petrol", "Diesel", "Electric", "Hybrid", "Plug-in Hybrid"],
+        message: "Please select a valid fuel type",
+      },
       required: true,
       default: "Petrol",
     },
     mileage: {
       type: Number,
-      required: true,
-      min: 0,
-      max: 500000,
+      required: [true, "Mileage is required"],
+      min: [0, "Mileage cannot be negative"],
+      max: [500000, "Mileage seems too high"],
     },
     seatingCapacity: {
       type: Number,
-      required: true,
-      min: 2,
-      max: 8,
+      required: [true, "Seating capacity is required"],
+      min: [2, "Minimum 2 seats required"],
+      max: [8, "Maximum 8 seats allowed"],
     },
     specifications: {
       type: String,
-      enum: [
-        "GCC Specs",
-        "US Specs",
-        "Japanese Specs",
-        "European Specs",
-        "Canadian Specs",
-        "Korean Specs",
-      ],
+      enum: {
+        values: [
+          "GCC Specs",
+          "US Specs",
+          "Japanese Specs",
+          "European Specs",
+          "Canadian Specs",
+          "Korean Specs",
+        ],
+        message: "Please select valid specifications",
+      },
       required: true,
       default: "GCC Specs",
     },
-    // Features
+    // Car features with VALID enum values
     features: [
       {
         type: String,
-        enum: [
-          "GPS Navigation",
-          "Bluetooth",
-          "USB Charging",
-          "Wireless Charging",
-          "Sunroof",
-          "Leather Seats",
-          "Heated Seats",
-          "Cooled Seats",
-          "Backup Camera",
-          "Parking Sensors",
-          "Cruise Control",
-          "Keyless Entry",
-          "Push Start",
-          "Auto AC",
-          "Dual Zone AC",
-          "Premium Sound System",
-        ],
+        enum: {
+          values: [
+            "GPS Navigation",
+            "Bluetooth",
+            "USB Charging",
+            "Wireless Charging",
+            "Sunroof",
+            "Leather Seats",
+            "Heated Seats",
+            "Cooled Seats",
+            "Backup Camera",
+            "Parking Sensors",
+            "Cruise Control",
+            "Keyless Entry",
+            "Push Start",
+            "Auto AC",
+            "Dual Zone AC",
+            "Premium Sound System",
+          ],
+          message: "Invalid feature selected",
+        },
       },
     ],
-    // Media
-    images: [
-      {
-        type: String,
-        required: true,
+    // Images array - minimum 3 required
+    images: {
+      type: [String],
+      required: [true, "Car images are required"],
+      validate: {
+        validator: function (v) {
+          return v && v.length >= 3;
+        },
+        message: "At least 3 images are required",
       },
-    ],
-    // Booking settings
+    },
+    // Additional settings
     isInstantApproval: {
       type: Boolean,
       default: true,
@@ -165,7 +183,6 @@ const carSchema = new mongoose.Schema(
       default: 30,
       min: 1,
     },
-    // Delivery options
     deliveryAvailable: {
       type: Boolean,
       default: false,
@@ -175,22 +192,19 @@ const carSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
-    pickupLocations: [{ type: String }],
-    // Insurance & Security
-    insuranceIncluded: {
-      type: Boolean,
-      default: true,
-    },
     securityDeposit: {
       type: Number,
       default: 500,
       min: 0,
     },
-    // Status and metrics
+    // Status tracking
     status: {
       type: String,
-      enum: ["active", "inactive", "deleted", "pending", "maintenance"],
-      default: "pending",
+      enum: {
+        values: ["active", "inactive", "deleted", "pending", "maintenance"],
+        message: "Invalid status",
+      },
+      default: "active", // Changed from pending to active for demo
     },
     totalBookings: {
       type: Number,
@@ -203,12 +217,8 @@ const carSchema = new mongoose.Schema(
       max: 5,
     },
     // Admin fields
-    adminNotes: {
-      type: String,
-    },
-    rejectionReason: {
-      type: String,
-    },
+    adminNotes: String,
+    rejectionReason: String,
     // Soft delete
     deletedAt: {
       type: Date,
@@ -220,7 +230,7 @@ const carSchema = new mongoose.Schema(
   }
 );
 
-// Indexes for performance and search
+// Indexes for performance
 carSchema.index({ city: 1, status: 1 });
 carSchema.index({ price: 1 });
 carSchema.index({ make: 1, model: 1 });
@@ -234,21 +244,19 @@ carSchema.index({
 });
 
 // Pre-save validation
-carSchema.pre("save", function () {
+carSchema.pre("save", function (next) {
   // Validate date range
   if (this.availabilityTo <= this.availabilityFrom) {
-    throw new Error("Availability end date must be after start date");
+    const error = new Error("Availability end date must be after start date");
+    return next(error);
   }
-
-  // Validate minimum number of images
-  if (this.images && this.images.length < 3) {
-    throw new Error("At least 3 images are required");
-  }
+  next();
 });
 
 // Hide deleted cars in queries
-carSchema.pre(/^find/, function () {
+carSchema.pre(/^find/, function (next) {
   this.find({ deletedAt: null });
+  next();
 });
 
 // Virtual for frontend compatibility
@@ -260,5 +268,4 @@ carSchema.virtual("pricePerDay").get(function () {
 carSchema.set("toJSON", { virtuals: true });
 carSchema.set("toObject", { virtuals: true });
 
-export const Car = mongoose.model("Car", carSchema);
-export default Car;
+export default mongoose.model("Car", carSchema);

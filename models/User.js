@@ -1,4 +1,4 @@
-// models/User.js (Updated with UAE Phone Validation)
+// models/User.js (Enhanced with Preferences)
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import {
@@ -76,6 +76,49 @@ const userSchema = new mongoose.Schema(
         "Umm Al Quwain",
       ],
     },
+    // Notification preferences
+    notificationPreferences: {
+      emailBookings: {
+        type: Boolean,
+        default: true,
+      },
+      emailPromotions: {
+        type: Boolean,
+        default: false,
+      },
+      smsBookings: {
+        type: Boolean,
+        default: true,
+      },
+      smsReminders: {
+        type: Boolean,
+        default: true,
+      },
+      pushNotifications: {
+        type: Boolean,
+        default: true,
+      },
+    },
+    // Privacy settings
+    privacySettings: {
+      profileVisibility: {
+        type: String,
+        enum: ["public", "private"],
+        default: "public",
+      },
+      showPhone: {
+        type: Boolean,
+        default: false,
+      },
+      showEmail: {
+        type: Boolean,
+        default: false,
+      },
+      allowMessages: {
+        type: Boolean,
+        default: true,
+      },
+    },
     // Account status
     isEmailVerified: {
       type: Boolean,
@@ -144,6 +187,58 @@ userSchema.pre(/^find/, function (next) {
 userSchema.virtual("phoneDisplay").get(function () {
   return displayUAEPhone(this.phone);
 });
+
+// Method to get public profile data
+userSchema.methods.getPublicProfile = function () {
+  const publicData = {
+    id: this._id,
+    name: this.name,
+    role: this.role,
+    profileImage: this.profileImage,
+    preferredCity: this.preferredCity,
+    createdAt: this.createdAt,
+  };
+
+  // Add contact info based on privacy settings
+  if (this.privacySettings?.showEmail) {
+    publicData.email = this.email;
+  }
+
+  if (this.privacySettings?.showPhone) {
+    publicData.phone = this.phone;
+  }
+
+  return publicData;
+};
+
+// Method to get full profile data (for owner)
+userSchema.methods.getPrivateProfile = function () {
+  return {
+    id: this._id,
+    name: this.name,
+    email: this.email,
+    phone: this.phone,
+    role: this.role,
+    isApproved: this.isApproved,
+    profileImage: this.profileImage,
+    preferredCity: this.preferredCity,
+    notificationPreferences: this.notificationPreferences,
+    privacySettings: this.privacySettings,
+    isEmailVerified: this.isEmailVerified,
+    isPhoneVerified: this.isPhoneVerified,
+    createdAt: this.createdAt,
+    lastLoginAt: this.lastLoginAt,
+  };
+};
+
+// Static method to find users with public profiles
+userSchema.statics.findPublicProfiles = function (query = {}) {
+  return this.find({
+    ...query,
+    deletedAt: null,
+    "privacySettings.profileVisibility": "public",
+  });
+};
 
 // Ensure virtual fields are serialized
 userSchema.set("toJSON", { virtuals: true });
