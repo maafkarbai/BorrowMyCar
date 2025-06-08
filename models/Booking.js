@@ -1,4 +1,4 @@
-// models/Booking.js (Complete Fixed Version)
+// models/Booking.js - FIXED to remove duplicate indexes
 import mongoose from "mongoose";
 
 const bookingSchema = new mongoose.Schema(
@@ -13,23 +13,16 @@ const bookingSchema = new mongoose.Schema(
       ref: "Car",
       required: true,
     },
-
     // Booking dates
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },
-    totalDays: {
-      type: Number,
-      required: true,
-      min: 1,
-    },
-
+    totalDays: { type: Number, required: true, min: 1 },
     // Pricing
     dailyRate: { type: Number, required: true },
     totalAmount: { type: Number, required: true },
     securityDeposit: { type: Number, default: 0 },
     deliveryFee: { type: Number, default: 0 },
     totalPayable: { type: Number, required: true }, // totalAmount + securityDeposit + deliveryFee
-
     // Status tracking
     status: {
       type: String,
@@ -45,7 +38,6 @@ const bookingSchema = new mongoose.Schema(
       ],
       default: "pending",
     },
-
     // Payment details
     paymentMethod: {
       type: String,
@@ -59,29 +51,26 @@ const bookingSchema = new mongoose.Schema(
       default: "pending",
     },
     transactionId: { type: String }, // For card payments
-
+    paymentIntentId: { type: String }, // For Stripe integration
+    paidAt: { type: Date }, // When payment was completed
     // Pickup/Return details
     pickupLocation: { type: String, required: true },
     returnLocation: { type: String, required: true },
     pickupTime: { type: Date },
     returnTime: { type: Date },
     actualReturnTime: { type: Date },
-
     // Delivery options
     deliveryRequested: { type: Boolean, default: false },
     deliveryAddress: { type: String },
-
     // Communication
     renterNotes: { type: String, maxlength: 500 },
     ownerNotes: { type: String, maxlength: 500 },
     adminNotes: { type: String, maxlength: 500 },
-
     // Car condition tracking
     preRentalCondition: { type: String }, // Photos/notes before rental
     postRentalCondition: { type: String }, // Photos/notes after return
     damageReported: { type: Boolean, default: false },
     damageDescription: { type: String },
-
     // Cancellation
     cancellationReason: { type: String },
     cancelledBy: {
@@ -89,7 +78,6 @@ const bookingSchema = new mongoose.Schema(
       enum: ["renter", "owner", "admin", "system"],
     },
     cancellationFee: { type: Number, default: 0 },
-
     // Review system
     renterReview: {
       rating: { type: Number, min: 1, max: 5 },
@@ -101,7 +89,6 @@ const bookingSchema = new mongoose.Schema(
       comment: { type: String, maxlength: 500 },
       reviewedAt: { type: Date },
     },
-
     // System tracking
     approvedAt: { type: Date },
     confirmedAt: { type: Date },
@@ -113,11 +100,14 @@ const bookingSchema = new mongoose.Schema(
   }
 );
 
-// Indexes for performance
-bookingSchema.index({ renter: 1, status: 1 });
-bookingSchema.index({ car: 1, status: 1 });
-bookingSchema.index({ startDate: 1, endDate: 1 });
+// FIXED: Consolidated index definitions (no duplicates)
+bookingSchema.index({ renter: 1, status: 1 }); // Renter's bookings by status
+bookingSchema.index({ car: 1, status: 1 }); // Car bookings by status
+bookingSchema.index({ startDate: 1, endDate: 1 }); // Date range queries
 bookingSchema.index({ status: 1, expiresAt: 1 }); // For cleanup jobs
+bookingSchema.index({ status: 1 }); // General status queries
+bookingSchema.index({ paymentStatus: 1 }); // Payment status queries
+bookingSchema.index({ createdAt: -1 }); // Recent bookings first
 
 // Calculate total days before saving
 bookingSchema.pre("save", function () {
@@ -142,6 +132,31 @@ bookingSchema.pre("save", function () {
       (this.deliveryFee || 0);
   }
 });
+
+// Static method to find conflicting bookings
+bookingSchema.statics.findConflictingBookings = function (
+  carId,
+  startDate,
+  endDate,
+  excludeBookingId = null
+) {
+  const filter = {
+    car: carId,
+    status: { $in: ["pending", "approved", "confirmed", "active"] },
+    $or: [
+      {
+        startDate: { $lte: new Date(endDate) },
+        endDate: { $gte: new Date(startDate) },
+      },
+    ],
+  };
+
+  if (excludeBookingId) {
+    filter._id = { $ne: excludeBookingId };
+  }
+
+  return this.findOne(filter);
+};
 
 export const Booking = mongoose.model("Booking", bookingSchema);
 export default Booking;

@@ -1,4 +1,4 @@
-
+// src/components/PaymentModal.jsx - Updated with Payment Service Integration
 import { useState, useEffect } from "react";
 import {
   X,
@@ -13,7 +13,7 @@ import {
   Banknote,
   Wallet,
 } from "lucide-react";
-import API from "../api";
+import paymentService from "../assets/services/paymentService"; // Import your payment service
 
 const PaymentModal = ({
   isOpen,
@@ -118,8 +118,8 @@ const PaymentModal = ({
 
   const fetchSavedCards = async () => {
     try {
-      const response = await API.get("/payments/saved-cards");
-      setSavedCards(response.data.data.cards || []);
+      const cards = await paymentService.getSavedPaymentMethods();
+      setSavedCards(cards);
     } catch (error) {
       console.error("Failed to fetch saved cards:", error);
     }
@@ -256,16 +256,15 @@ const PaymentModal = ({
 
     try {
       let paymentData = {
-        bookingId: bookingData.bookingId,
+        ...bookingData,
+        paymentMethod: paymentMethod,
         amount: bookingData.totalAmount,
         currency: "AED",
-        paymentMethod: paymentMethod,
-        ...bookingData,
       };
 
       let isValid = false;
 
-      // Validate based on payment method
+      // Validate and add payment method specific data
       switch (paymentMethod) {
         case "stripe":
           isValid = validateStripeForm();
@@ -300,25 +299,47 @@ const PaymentModal = ({
         return;
       }
 
-      const response = await API.post("/payments/process", paymentData);
+      // Process payment using the payment service
+      const result = await paymentService.processPayment(paymentData);
 
-      if (response.data.success) {
-        onPaymentSuccess?.(response.data.data);
+      if (result.success) {
+        onPaymentSuccess?.(result);
         onClose();
       } else {
-        throw new Error(response.data.message || "Payment failed");
+        throw new Error(result.message || "Payment failed");
       }
     } catch (error) {
       console.error("Payment error:", error);
-      onPaymentError?.(
-        error.response?.data?.message || error.message || "Payment failed"
-      );
+      onPaymentError?.(error.message || "Payment failed. Please try again.");
     } finally {
       setProcessing(false);
     }
   };
 
   if (!isOpen) return null;
+
+  // Calculate fees based on payment method
+  const calculateFees = () => {
+    const baseAmount = bookingData?.totalAmount || 0;
+    let fee = 0;
+
+    switch (paymentMethod) {
+      case "stripe":
+        fee = Math.round(baseAmount * 0.035 + 1.5);
+        break;
+      case "digital_wallet":
+        fee = Math.round(baseAmount * 0.029 + 1.0);
+        break;
+      default:
+        fee = 0;
+    }
+
+    return fee;
+  };
+
+  const paymentFee = calculateFees();
+  const finalAmount = (bookingData?.totalAmount || 0) + paymentFee;
+  
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -938,20 +959,10 @@ const PaymentModal = ({
                 </div>
 
                 {/* Payment Method Fees */}
-                {paymentMethod === "stripe" && (
+                {paymentFee > 0 && (
                   <div className="flex justify-between text-orange-600">
                     <span>Payment Processing:</span>
-                    <span>
-                      AED {(bookingData?.totalAmount * 0.035 + 1.5).toFixed(2)}
-                    </span>
-                  </div>
-                )}
-                {paymentMethod === "digital_wallet" && (
-                  <div className="flex justify-between text-orange-600">
-                    <span>Payment Processing:</span>
-                    <span>
-                      AED {(bookingData?.totalAmount * 0.029 + 1.0).toFixed(2)}
-                    </span>
+                    <span>AED {paymentFee.toFixed(2)}</span>
                   </div>
                 )}
 
@@ -959,7 +970,7 @@ const PaymentModal = ({
                 <div className="flex justify-between font-semibold text-lg">
                   <span>Total:</span>
                   <span className="text-green-600">
-                    AED {bookingData?.totalAmount}
+                    AED {finalAmount.toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -1018,7 +1029,7 @@ const PaymentModal = ({
                     ) : (
                       <>
                         <Lock className="w-5 h-5 mr-2" />
-                        Pay AED {bookingData?.totalAmount}
+                        Pay AED {finalAmount.toFixed(2)}
                       </>
                     )}
                   </>

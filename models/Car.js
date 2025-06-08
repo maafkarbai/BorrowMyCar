@@ -1,4 +1,4 @@
-// models/Car.js - FIXED VERSION
+// models/Car.js - FIXED to remove duplicate indexes
 import mongoose from "mongoose";
 
 const carSchema = new mongoose.Schema(
@@ -169,34 +169,12 @@ const carSchema = new mongoose.Schema(
       },
     },
     // Additional settings
-    isInstantApproval: {
-      type: Boolean,
-      default: true,
-    },
-    minimumRentalDays: {
-      type: Number,
-      default: 1,
-      min: 1,
-    },
-    maximumRentalDays: {
-      type: Number,
-      default: 30,
-      min: 1,
-    },
-    deliveryAvailable: {
-      type: Boolean,
-      default: false,
-    },
-    deliveryFee: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
-    securityDeposit: {
-      type: Number,
-      default: 500,
-      min: 0,
-    },
+    isInstantApproval: { type: Boolean, default: true },
+    minimumRentalDays: { type: Number, default: 1, min: 1 },
+    maximumRentalDays: { type: Number, default: 30, min: 1 },
+    deliveryAvailable: { type: Boolean, default: false },
+    deliveryFee: { type: Number, default: 0, min: 0 },
+    securityDeposit: { type: Number, default: 500, min: 0 },
     // Status tracking
     status: {
       type: String,
@@ -206,42 +184,32 @@ const carSchema = new mongoose.Schema(
       },
       default: "active", // Changed from pending to active for demo
     },
-    totalBookings: {
-      type: Number,
-      default: 0,
-    },
-    averageRating: {
-      type: Number,
-      default: 0,
-      min: 0,
-      max: 5,
-    },
+    totalBookings: { type: Number, default: 0 },
+    averageRating: { type: Number, default: 0, min: 0, max: 5 },
     // Admin fields
     adminNotes: String,
     rejectionReason: String,
     // Soft delete
-    deletedAt: {
-      type: Date,
-      default: null,
-    },
+    deletedAt: { type: Date, default: null },
   },
   {
     timestamps: true,
   }
 );
 
-// Indexes for performance
-carSchema.index({ city: 1, status: 1 });
-carSchema.index({ price: 1 });
-carSchema.index({ make: 1, model: 1 });
-carSchema.index({ availabilityFrom: 1, availabilityTo: 1 });
-carSchema.index({ owner: 1 });
+// FIXED: Consolidated index definitions (no duplicates)
+carSchema.index({ city: 1, status: 1 }); // Compound index for city + status queries
+carSchema.index({ price: 1 }); // Price range queries
+carSchema.index({ make: 1, model: 1 }); // Make + model searches
+carSchema.index({ availabilityFrom: 1, availabilityTo: 1 }); // Date range queries
+carSchema.index({ owner: 1 }); // Owner's cars
+carSchema.index({ status: 1 }); // Status queries
 carSchema.index({
   title: "text",
   description: "text",
   make: "text",
   model: "text",
-});
+}); // Text search index
 
 // Pre-save validation
 carSchema.pre("save", function (next) {

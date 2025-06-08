@@ -1,4 +1,4 @@
-// src/context/AuthProvider.jsx - COMPLETE FIX
+// src/context/AuthProvider.jsx - FIXED with better error handling
 import { createContext, useContext, useReducer, useEffect } from "react";
 import API from "../api";
 
@@ -33,11 +33,14 @@ const authReducer = (state, action) => {
         user: null,
         token: null,
         error: null,
+        loading: false,
       };
     case "CLEAR_ERROR":
       return { ...state, error: null };
     case "SET_LOADING":
       return { ...state, loading: action.payload };
+    case "UPDATE_USER":
+      return { ...state, user: action.payload };
     default:
       return state;
   }
@@ -68,9 +71,17 @@ export const AuthProvider = ({ children }) => {
     try {
       dispatch({ type: "SET_LOADING", payload: true });
       const res = await API.get("/auth/profile");
+      console.log("Get current user response:", res.data);
 
-      // Handle profile response format
-      const user = res.data.data?.user || res.data.user;
+      // Handle different response formats robustly
+      let user = null;
+      if (res.data.data?.user) {
+        user = res.data.data.user;
+      } else if (res.data.user) {
+        user = res.data.user;
+      } else if (res.data.data && !res.data.data.user) {
+        user = res.data.data;
+      }
 
       if (user) {
         dispatch({
@@ -85,6 +96,7 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error("Get current user error:", error);
+      // Clear invalid tokens
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       dispatch({ type: "LOGOUT" });
@@ -95,14 +107,21 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (credentials) => {
     dispatch({ type: "LOGIN_START" });
-    try {
-      const res = await API.post("/auth/login", credentials);
 
-      // ROBUST handling of different response formats
+    try {
+      console.log("Login attempt with:", { email: credentials.email });
+      const res = await API.post("/auth/login", {
+        email: credentials.email.trim(),
+        password: credentials.password,
+      });
+
+      console.log("Login response:", res.data);
+
+      // FIXED: Robust handling of different response formats
       let token = null;
       let user = null;
 
-      // Check multiple possible response structures
+      // Try different response structures
       if (res.data.token && res.data.user) {
         // Direct format: { token, user }
         token = res.data.token;
@@ -115,9 +134,14 @@ export const AuthProvider = ({ children }) => {
         // Success format: { success: true, token, user }
         token = res.data.token;
         user = res.data.user;
+      } else if (res.data.accessToken) {
+        // Alternative token field
+        token = res.data.accessToken;
+        user = res.data.user || res.data.data?.user;
       }
 
       if (token && user) {
+        // Store authentication data
         localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify(user));
 
@@ -126,13 +150,18 @@ export const AuthProvider = ({ children }) => {
           payload: { user, token },
         });
 
-        return { success: true };
+        return { success: true, user };
       } else {
-        throw new Error("Invalid login response format");
+        console.error("Invalid login response format:", res.data);
+        throw new Error("Invalid response format - missing token or user data");
       }
     } catch (error) {
+      console.error("Login error:", error);
       const message =
-        error.response?.data?.message || error.message || "Login failed";
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "Login failed. Please check your credentials.";
 
       dispatch({ type: "LOGIN_FAILURE", payload: message });
       return { success: false, error: message };
@@ -141,10 +170,11 @@ export const AuthProvider = ({ children }) => {
 
   const signup = async (userData) => {
     dispatch({ type: "LOGIN_START" });
+
     try {
       const formData = new FormData();
 
-      // Append form fields
+      // Append form fields (exclude confirmPassword and files)
       Object.keys(userData).forEach((key) => {
         if (
           key !== "confirmPassword" &&
@@ -164,9 +194,14 @@ export const AuthProvider = ({ children }) => {
         });
       }
 
+      console.log("Signup attempt...");
       const res = await API.post("/auth/signup", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       });
+
+      console.log("Signup response:", res.data);
 
       // Handle signup response (same robust logic as login)
       let token = null;
@@ -178,6 +213,9 @@ export const AuthProvider = ({ children }) => {
       } else if (res.data.data?.token && res.data.data?.user) {
         token = res.data.data.token;
         user = res.data.data.user;
+      } else if (res.data.success) {
+        token = res.data.token;
+        user = res.data.user || res.data.data?.user;
       }
 
       if (token && user) {
@@ -189,13 +227,25 @@ export const AuthProvider = ({ children }) => {
           payload: { user, token },
         });
 
-        return { success: true };
+        return { success: true, user };
       } else {
-        throw new Error("Invalid signup response format");
+        // Signup successful but no immediate login (approval required)
+        dispatch({ type: "SET_LOADING", payload: false });
+        return {
+          success: true,
+          requiresApproval: true,
+          message:
+            res.data.message ||
+            "Account created successfully. Awaiting admin approval.",
+        };
       }
     } catch (error) {
+      console.error("Signup error:", error);
       const message =
-        error.response?.data?.message || error.message || "Signup failed";
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "Registration failed. Please try again.";
 
       dispatch({ type: "LOGIN_FAILURE", payload: message });
       return { success: false, error: message };
@@ -203,13 +253,33 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    // Clear local storage
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+
+    // Clear state
     dispatch({ type: "LOGOUT" });
+
+    // Optional: Call logout endpoint
+    try {
+      API.post("/auth/logout").catch(() => {
+        // Ignore logout endpoint errors
+      });
+    } catch (error) {
+      // Ignore errors
+    }
   };
 
   const clearError = () => {
     dispatch({ type: "CLEAR_ERROR" });
+  };
+
+  const updateUser = (userData) => {
+    // Update user in state
+    dispatch({ type: "UPDATE_USER", payload: userData });
+
+    // Update localStorage
+    localStorage.setItem("user", JSON.stringify(userData));
   };
 
   const value = {
@@ -219,6 +289,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     clearError,
     getCurrentUser,
+    updateUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -231,3 +302,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+export default AuthProvider;

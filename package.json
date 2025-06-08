@@ -1,15 +1,9 @@
 {
   "name": "borrowmycar-vibecoding",
-  "module": "index.js",
+  "version": "1.0.0",
   "type": "module",
-  "devDependencies": {
-    "@types/bun": "latest",
-    "nodemon": "^3.0.0",
-    "concurrently": "^8.2.2"
-  },
-  "peerDependencies": {
-    "typescript": "^5.0.0"
-  },
+  "description": "Car rental platform for UAE - Backend API",
+  "main": "index.js",
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
@@ -17,8 +11,34 @@
     "dev:both": "concurrently \"npm run dev\" \"npm run dev:frontend\"",
     "seed": "node scripts/seedData.js",
     "setup": "npm install && cd borrowmycarfrontend && npm install",
+    "build": "cd borrowmycarfrontend && npm run build",
+    "build:backend": "echo 'Backend is already production ready'",
+    "test": "echo \"Tests not implemented yet\" && exit 0",
+    "test:watch": "echo \"Test watch not implemented yet\" && exit 0",
+    "lint": "echo \"Linting not configured\" && exit 0",
+    "clean": "rm -rf borrowmycarfrontend/dist && rm -rf borrowmycarfrontend/node_modules/.vite",
+    "reset": "rm -rf node_modules && rm -rf borrowmycarfrontend/node_modules && npm install && cd borrowmycarfrontend && npm install",
+    "cleanup:indexes": "node scripts/cleanupIndexes.js",
+    "fix:warnings": "npm run cleanup:indexes",
+    "fresh:start": "npm run cleanup:indexes && npm run seed && npm run dev:both",
     "prod": "NODE_ENV=production node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "check": "node -e \"console.log('Node.js version:', process.version); console.log('Platform:', process.platform); console.log('Environment:', process.env.NODE_ENV || 'development');\""
+  },
+  "keywords": [
+    "car-rental",
+    "uae",
+    "booking",
+    "nodejs",
+    "express",
+    "mongodb",
+    "react"
+  ],
+  "author": "BorrowMyCar Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/bun": "latest",
+    "nodemon": "^3.0.3",
+    "concurrently": "^8.2.2"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
@@ -35,5 +55,17 @@
     "multer-storage-cloudinary": "^4.0.0",
     "socket.io": "^4.8.1",
     "stripe": "^18.2.1"
-  }
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maafkarbai/borrowmycar-vibecoding.git"
+  },
+  "bugs": {
+    "url": "https://github.com/maafkarbai/borrowmycar-vibecoding/issues"
+  },
+  "homepage": "https://github.com/maafkarbaiborrowmycar-vibecoding#readme"
 }

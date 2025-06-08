@@ -1,4 +1,4 @@
-// controllers/carController.js - COMPLETE FIXED VERSION
+// controllers/carController.js - FIXED with consistent price handling
 import Car from "../models/Car.js";
 import Booking from "../models/Booking.js";
 import {
@@ -80,6 +80,7 @@ export const createCar = handleAsyncError(async (req, res) => {
 
   // Extract and sanitize input data
   const carData = sanitizeCarData(req.body);
+  console.log("Sanitized car data:", carData);
 
   // VALIDATION: Ensure price is set
   if (!carData.price || carData.price <= 0) {
@@ -104,6 +105,7 @@ export const createCar = handleAsyncError(async (req, res) => {
     try {
       imageUrls = await uploadImagesToCloud(req.files);
     } catch (uploadError) {
+      console.error("Image upload error:", uploadError);
       return res.status(500).json({
         success: false,
         message: "Failed to upload images. Please try again.",
@@ -129,10 +131,16 @@ export const createCar = handleAsyncError(async (req, res) => {
   const savedCar = await newCar.save();
   await savedCar.populate("owner", "name email phone");
 
+  // Add pricePerDay for frontend compatibility
+  const responseData = {
+    ...savedCar.toObject(),
+    pricePerDay: savedCar.price,
+  };
+
   res.status(201).json({
     success: true,
     message: "Car listed successfully!",
-    data: { car: savedCar },
+    data: { car: responseData },
   });
 });
 
@@ -156,6 +164,8 @@ export const getCars = handleAsyncError(async (req, res) => {
     sortOrder = "desc",
     search,
   } = req.query;
+
+  console.log("GET Cars query params:", req.query);
 
   // Build filter object
   const filter = { status: "active" };
@@ -203,6 +213,8 @@ export const getCars = handleAsyncError(async (req, res) => {
   // Only show available cars
   filter.availabilityTo = { $gte: new Date() };
 
+  console.log("Cars filter:", filter);
+
   // Pagination
   const skip = (parseInt(page) - 1) * parseInt(limit);
   const sortOptions = {};
@@ -218,6 +230,8 @@ export const getCars = handleAsyncError(async (req, res) => {
       .lean(),
     Car.countDocuments(filter),
   ]);
+
+  console.log(`Found ${cars.length} cars out of ${totalCount} total`);
 
   // ADD pricePerDay field for frontend compatibility
   const enhancedCars = cars.map((car) => ({

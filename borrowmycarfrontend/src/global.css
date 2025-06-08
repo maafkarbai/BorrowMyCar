@@ -12,3 +12,30 @@ p {
   font-size: 1rem;
   line-height: 1.6;
 }
+
+.mapboxgl-popup-content {
+  padding: 8px !important;
+  border-radius: 8px !important;
+}
+
+.mapboxgl-popup-tip {
+  border-top-color: white !important;
+}
+
+.mapboxgl-ctrl-group {
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+
+.mapboxgl-marker {
+  cursor: pointer;
+}
+
+/* Geocoder customizations */
+.mapboxgl-ctrl-geocoder {
+  min-width: 300px !important;
+}
+
+.mapboxgl-ctrl-geocoder input {
+  font-size: 14px !important;
+}

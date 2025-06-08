@@ -1,4 +1,4 @@
-// models/User.js (Enhanced with Preferences)
+// models/User.js - FIXED to remove duplicate indexes
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import {
@@ -17,7 +17,7 @@ const userSchema = new mongoose.Schema(
     email: {
       type: String,
       required: true,
-      unique: true,
+      unique: true, // REMOVED: index: true (this was causing duplicate)
       lowercase: true,
       trim: true,
     },
@@ -78,26 +78,11 @@ const userSchema = new mongoose.Schema(
     },
     // Notification preferences
     notificationPreferences: {
-      emailBookings: {
-        type: Boolean,
-        default: true,
-      },
-      emailPromotions: {
-        type: Boolean,
-        default: false,
-      },
-      smsBookings: {
-        type: Boolean,
-        default: true,
-      },
-      smsReminders: {
-        type: Boolean,
-        default: true,
-      },
-      pushNotifications: {
-        type: Boolean,
-        default: true,
-      },
+      emailBookings: { type: Boolean, default: true },
+      emailPromotions: { type: Boolean, default: false },
+      smsBookings: { type: Boolean, default: true },
+      smsReminders: { type: Boolean, default: true },
+      pushNotifications: { type: Boolean, default: true },
     },
     // Privacy settings
     privacySettings: {
@@ -106,48 +91,28 @@ const userSchema = new mongoose.Schema(
         enum: ["public", "private"],
         default: "public",
       },
-      showPhone: {
-        type: Boolean,
-        default: false,
-      },
-      showEmail: {
-        type: Boolean,
-        default: false,
-      },
-      allowMessages: {
-        type: Boolean,
-        default: true,
-      },
+      showPhone: { type: Boolean, default: false },
+      showEmail: { type: Boolean, default: false },
+      allowMessages: { type: Boolean, default: true },
     },
     // Account status
-    isEmailVerified: {
-      type: Boolean,
-      default: false,
-    },
-    isPhoneVerified: {
-      type: Boolean,
-      default: false,
-    },
-    lastLoginAt: {
-      type: Date,
-    },
+    isEmailVerified: { type: Boolean, default: false },
+    isPhoneVerified: { type: Boolean, default: false },
+    lastLoginAt: { type: Date },
     // Soft delete
-    deletedAt: {
-      type: Date,
-      default: null,
-    },
+    deletedAt: { type: Date, default: null },
   },
   {
     timestamps: true,
   }
 );
 
-// Indexes for performance
-userSchema.index({ email: 1 });
-userSchema.index({ phone: 1 });
-userSchema.index({ isApproved: 1, role: 1 });
-userSchema.index({ role: 1 });
-userSchema.index({ deletedAt: 1 });
+// FIXED: Consolidated index definitions (no duplicates)
+userSchema.index({ email: 1 }); // Single email index
+userSchema.index({ phone: 1 }); // Phone index
+userSchema.index({ isApproved: 1, role: 1 }); // Compound index for queries
+userSchema.index({ role: 1 }); // Role index
+userSchema.index({ deletedAt: 1 }); // Soft delete index
 
 // Pre-save middleware to format phone number
 userSchema.pre("save", function (next) {
@@ -203,7 +168,6 @@ userSchema.methods.getPublicProfile = function () {
   if (this.privacySettings?.showEmail) {
     publicData.email = this.email;
   }
-
   if (this.privacySettings?.showPhone) {
     publicData.phone = this.phone;
   }

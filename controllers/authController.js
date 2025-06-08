@@ -1,4 +1,4 @@
-// controllers/authController.js - Enhanced with Profile Picture Management
+// controllers/authController.js - FIXED with consistent response format
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { User } from "../models/User.js";
@@ -22,10 +22,42 @@ const generateToken = (user) => {
       id: user._id,
       role: user.role,
       isApproved: user.isApproved,
+      email: user.email,
+      name: user.name,
     },
     process.env.JWT_SECRET,
     { expiresIn: "7d" }
   );
+};
+
+// FIXED: Consistent response helper
+const sendTokenResponse = (user, statusCode, res, message = "Success") => {
+  const token = generateToken(user);
+
+  const userData = {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    role: user.role,
+    isApproved: user.isApproved,
+    profileImage: user.profileImage,
+    preferredCity: user.preferredCity,
+    createdAt: user.createdAt,
+    lastLoginAt: user.lastLoginAt,
+  };
+
+  // CONSISTENT response format for all auth endpoints
+  res.status(statusCode).json({
+    success: true,
+    message,
+    token, // Frontend expects this at root level
+    user: userData, // Frontend expects this at root level
+    data: {
+      token,
+      user: userData,
+    },
+  });
 };
 
 // Enhanced data sanitizer
@@ -56,12 +88,10 @@ const validateUserData = (data, isSignup = false) => {
       errors.push("Please provide a valid email address");
     }
 
-    // FIXED: Phone validation with better error messaging
+    // FIXED: Phone validation
     if (!data.phone) {
       errors.push("Phone number is required");
     } else if (!validateUAEPhone(data.phone)) {
-      console.log("Phone validation failed for:", data.phone);
-      console.log("Clean phone:", data.phone.replace(/\D/g, ""));
       errors.push("Please provide a valid UAE phone number (e.g., 0501234567)");
     }
 
@@ -93,7 +123,7 @@ export const signup = handleAsyncErrorLocal(async (req, res) => {
 
   // Sanitize input data
   const userData = sanitizeUserData(req.body);
-  console.log("Sanitized data:", userData);
+  console.log("Sanitized data:", { ...userData, password: "[HIDDEN]" });
 
   const {
     name,
@@ -104,7 +134,7 @@ export const signup = handleAsyncErrorLocal(async (req, res) => {
     preferredCity,
   } = userData;
 
-  // COMPREHENSIVE validation with detailed logging
+  // Validate data
   const validationResult = validateUserData(userData, true);
   if (!validationResult.isValid) {
     console.log("Validation errors:", validationResult.errors);
@@ -113,15 +143,10 @@ export const signup = handleAsyncErrorLocal(async (req, res) => {
       message: "Validation failed",
       errors: validationResult.errors,
       code: "VALIDATION_ERROR",
-      debug: {
-        receivedPhone: phone,
-        cleanPhone: phone ? phone.replace(/\D/g, "") : null,
-        phoneIsValid: phone ? validateUAEPhone(phone) : false,
-      },
     });
   }
 
-  // Format phone number for storage
+  // Format phone number
   const formattedPhone = formatUAEPhone(phone);
   console.log("Phone formatting:", {
     original: phone,
@@ -134,10 +159,6 @@ export const signup = handleAsyncErrorLocal(async (req, res) => {
   });
 
   if (existingUser) {
-    console.log(
-      "User already exists:",
-      existingUser.email === email ? "email" : "phone"
-    );
     return res.status(400).json({
       success: false,
       message:
@@ -152,8 +173,6 @@ export const signup = handleAsyncErrorLocal(async (req, res) => {
   let documentUrls = {};
   if (req.files) {
     try {
-      console.log("Processing file uploads...");
-
       // Validate required documents
       if (!req.files.drivingLicense) {
         return res.status(400).json({
@@ -163,31 +182,27 @@ export const signup = handleAsyncErrorLocal(async (req, res) => {
         });
       }
 
-      // Upload documents to cloud
+      // Upload documents
       if (req.files.drivingLicense) {
         const [drivingLicenseUrl] = await uploadImagesToCloud(
           req.files.drivingLicense
         );
         documentUrls.drivingLicenseUrl = drivingLicenseUrl;
-        console.log("Uploaded driving license");
       }
 
       if (req.files.emiratesId) {
         const [emiratesIdUrl] = await uploadImagesToCloud(req.files.emiratesId);
         documentUrls.emiratesIdUrl = emiratesIdUrl;
-        console.log("Uploaded Emirates ID");
       }
 
       if (req.files.visa) {
         const [visaUrl] = await uploadImagesToCloud(req.files.visa);
         documentUrls.visaUrl = visaUrl;
-        console.log("Uploaded visa");
       }
 
       if (req.files.passport) {
         const [passportUrl] = await uploadImagesToCloud(req.files.passport);
         documentUrls.passportUrl = passportUrl;
-        console.log("Uploaded passport");
       }
 
       if (req.files.profileImage) {
@@ -195,7 +210,6 @@ export const signup = handleAsyncErrorLocal(async (req, res) => {
           req.files.profileImage
         );
         documentUrls.profileImage = profileImageUrl;
-        console.log("Uploaded profile image");
       }
     } catch (uploadError) {
       console.error("Document upload error:", uploadError);
@@ -207,58 +221,31 @@ export const signup = handleAsyncErrorLocal(async (req, res) => {
     }
   }
 
-  // Create user with formatted phone
+  // Create user
   const userCreateData = {
     name,
     email,
-    phone: formattedPhone, // Use formatted phone
+    phone: formattedPhone,
     password,
     role,
     preferredCity,
     ...documentUrls,
-    isApproved: false, // Requires admin approval
+    isApproved: false,
   };
-
-  console.log("Creating user with data:", {
-    ...userCreateData,
-    password: "[HIDDEN]",
-  });
 
   const user = await User.create(userCreateData);
   console.log("User created successfully:", user._id);
 
-  const token = generateToken(user);
-
-  // Return response with both root-level and nested data for compatibility
-  res.status(201).json({
-    success: true,
-    message: "Account created successfully. Awaiting admin approval.",
-    token, // Root level token
-    user: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-      isApproved: user.isApproved,
-      profileImage: user.profileImage,
-    },
-    data: {
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        isApproved: user.isApproved,
-        profileImage: user.profileImage,
-      },
-    },
-  });
+  // Send consistent response
+  sendTokenResponse(
+    user,
+    201,
+    res,
+    "Account created successfully. Awaiting admin approval."
+  );
 });
 
-// LOGIN CONTROLLER
+// FIXED LOGIN CONTROLLER
 export const login = handleAsyncErrorLocal(async (req, res) => {
   const { email, password } = req.body;
   console.log("Login attempt for:", email);
@@ -273,11 +260,9 @@ export const login = handleAsyncErrorLocal(async (req, res) => {
   }
 
   try {
-    // Find user and include password for comparison
+    // Find user and include password
     const user = await User.findOne({ email }).select("+password");
-
     if (!user) {
-      console.log("User not found:", email);
       return res.status(401).json({
         success: false,
         message: "Invalid email or password",
@@ -288,7 +273,6 @@ export const login = handleAsyncErrorLocal(async (req, res) => {
     // Check password
     const isPasswordValid = await user.matchPassword(password);
     if (!isPasswordValid) {
-      console.log("Invalid password for user:", email);
       return res.status(401).json({
         success: false,
         message: "Invalid email or password",
@@ -300,38 +284,10 @@ export const login = handleAsyncErrorLocal(async (req, res) => {
     user.lastLoginAt = new Date();
     await user.save({ validateBeforeSave: false });
 
-    const token = generateToken(user);
     console.log("Login successful for:", email);
 
-    // Return token at root level for frontend compatibility
-    res.status(200).json({
-      success: true,
-      message: "Login successful",
-      token, // Root level token (frontend expects this)
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        isApproved: user.isApproved,
-        profileImage: user.profileImage,
-        lastLoginAt: user.lastLoginAt,
-      },
-      data: {
-        token,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          role: user.role,
-          isApproved: user.isApproved,
-          profileImage: user.profileImage,
-          lastLoginAt: user.lastLoginAt,
-        },
-      },
-    });
+    // Send consistent response
+    sendTokenResponse(user, 200, res, "Login successful");
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({
@@ -342,11 +298,10 @@ export const login = handleAsyncErrorLocal(async (req, res) => {
   }
 });
 
-// GET USER PROFILE
+// GET USER PROFILE - FIXED
 export const getProfile = handleAsyncErrorLocal(async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
-
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -382,19 +337,19 @@ export const getProfile = handleAsyncErrorLocal(async (req, res) => {
   }
 });
 
-// UPDATE USER PROFILE - ENHANCED with Profile Picture Support
+// UPDATE USER PROFILE - FIXED
 export const updateProfile = handleAsyncErrorLocal(async (req, res) => {
   try {
     const userId = req.user.id;
     const updates = sanitizeUserData(req.body);
 
-    // Remove sensitive fields that shouldn't be updated via this endpoint
+    // Remove sensitive fields
     delete updates.password;
     delete updates.email;
     delete updates.role;
     delete updates.isApproved;
 
-    // Validate name if provided
+    // Validate updates
     if (updates.name && updates.name.length < 2) {
       return res.status(400).json({
         success: false,
@@ -403,31 +358,12 @@ export const updateProfile = handleAsyncErrorLocal(async (req, res) => {
       });
     }
 
-    // Validate preferred city if provided
-    const validCities = [
-      "Dubai",
-      "Abu Dhabi",
-      "Sharjah",
-      "Ajman",
-      "Fujairah",
-      "Ras Al Khaimah",
-      "Umm Al Quwain",
-    ];
-    if (updates.preferredCity && !validCities.includes(updates.preferredCity)) {
-      return res.status(400).json({
-        success: false,
-        message: "Please select a valid UAE city",
-        code: "INVALID_CITY",
-      });
-    }
-
-    // Handle profile image upload if provided
+    // Handle profile image upload
     if (req.file) {
       try {
-        console.log("Processing profile image upload:", req.file);
         const user = await User.findById(userId);
 
-        // Delete old profile image if exists
+        // Delete old profile image
         if (user.profileImage) {
           await deleteImagesFromCloud([user.profileImage]).catch(console.error);
         }
@@ -435,7 +371,6 @@ export const updateProfile = handleAsyncErrorLocal(async (req, res) => {
         // Upload new profile image
         const [profileImageUrl] = await uploadImagesToCloud([req.file]);
         updates.profileImage = profileImageUrl;
-        console.log("Profile image uploaded successfully:", profileImageUrl);
       } catch (uploadError) {
         console.error("Profile image upload error:", uploadError);
         return res.status(500).json({
@@ -445,8 +380,6 @@ export const updateProfile = handleAsyncErrorLocal(async (req, res) => {
         });
       }
     }
-
-    console.log("Updating user profile with:", updates);
 
     const updatedUser = await User.findByIdAndUpdate(userId, updates, {
       new: true,
@@ -500,9 +433,7 @@ export const updateProfilePicture = handleAsyncErrorLocal(async (req, res) => {
       });
     }
 
-    console.log("Processing profile image update:", req.file);
     const user = await User.findById(userId);
-
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -511,17 +442,15 @@ export const updateProfilePicture = handleAsyncErrorLocal(async (req, res) => {
       });
     }
 
-    // Delete old profile image if exists
+    // Delete old profile image
     if (user.profileImage) {
       await deleteImagesFromCloud([user.profileImage]).catch(console.error);
-      console.log("Deleted old profile image");
     }
 
     // Upload new profile image
     const [profileImageUrl] = await uploadImagesToCloud([req.file]);
-    console.log("New profile image uploaded:", profileImageUrl);
 
-    // Update user with new profile image
+    // Update user
     user.profileImage = profileImageUrl;
     await user.save();
 
@@ -552,7 +481,7 @@ export const updateProfilePicture = handleAsyncErrorLocal(async (req, res) => {
   }
 });
 
-// NEW: REMOVE PROFILE PICTURE
+// REMOVE PROFILE PICTURE
 export const removeProfilePicture = handleAsyncErrorLocal(async (req, res) => {
   try {
     const userId = req.user.id;
@@ -574,12 +503,10 @@ export const removeProfilePicture = handleAsyncErrorLocal(async (req, res) => {
       });
     }
 
-    console.log("Removing profile picture:", user.profileImage);
-
-    // Delete profile image from cloud storage
+    // Delete from cloud storage
     await deleteImagesFromCloud([user.profileImage]).catch(console.error);
 
-    // Remove profile image from user document
+    // Remove from user document
     user.profileImage = null;
     await user.save();
 
@@ -658,7 +585,7 @@ export const changePassword = handleAsyncErrorLocal(async (req, res) => {
   }
 });
 
-// UPDATE USER PREFERENCES (for notifications and privacy)
+// UPDATE USER PREFERENCES
 export const updatePreferences = handleAsyncErrorLocal(async (req, res) => {
   try {
     const userId = req.user.id;
@@ -666,7 +593,6 @@ export const updatePreferences = handleAsyncErrorLocal(async (req, res) => {
 
     const updates = {};
 
-    // Handle notifications preferences
     if (notifications) {
       updates.notificationPreferences = {
         emailBookings: Boolean(notifications.emailBookings),
@@ -677,7 +603,6 @@ export const updatePreferences = handleAsyncErrorLocal(async (req, res) => {
       };
     }
 
-    // Handle privacy preferences
     if (privacy) {
       updates.privacySettings = {
         profileVisibility: privacy.profileVisibility || "public",
@@ -719,9 +644,8 @@ export const updatePreferences = handleAsyncErrorLocal(async (req, res) => {
 export const exportUserData = handleAsyncErrorLocal(async (req, res) => {
   try {
     const userId = req.user.id;
-
-    // Get user data
     const user = await User.findById(userId).select("-password");
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -764,9 +688,8 @@ export const exportUserData = handleAsyncErrorLocal(async (req, res) => {
 export const deleteAccount = handleAsyncErrorLocal(async (req, res) => {
   try {
     const userId = req.user.id;
-
-    // Get user data
     const user = await User.findById(userId);
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -775,24 +698,20 @@ export const deleteAccount = handleAsyncErrorLocal(async (req, res) => {
       });
     }
 
-    // Delete profile image from cloud storage
-    if (user.profileImage) {
-      await deleteImagesFromCloud([user.profileImage]).catch(console.error);
-    }
-
-    // Delete document images from cloud storage
-    const documentUrls = [
+    // Delete images from cloud storage
+    const imagesToDelete = [
+      user.profileImage,
       user.drivingLicenseUrl,
       user.emiratesIdUrl,
       user.visaUrl,
       user.passportUrl,
     ].filter(Boolean);
 
-    if (documentUrls.length > 0) {
-      await deleteImagesFromCloud(documentUrls).catch(console.error);
+    if (imagesToDelete.length > 0) {
+      await deleteImagesFromCloud(imagesToDelete).catch(console.error);
     }
 
-    // Soft delete user (mark as deleted)
+    // Soft delete
     user.deletedAt = new Date();
     user.email = `deleted_${user._id}@borrowmycar.deleted`;
     user.phone = `deleted_${user._id}`;
@@ -812,22 +731,13 @@ export const deleteAccount = handleAsyncErrorLocal(async (req, res) => {
   }
 });
 
-// LOGOUT (Optional - mainly client-side)
+// LOGOUT
 export const logout = handleAsyncErrorLocal(async (req, res) => {
-  try {
-    res.json({
-      success: true,
-      message: "Logged out successfully",
-    });
-  } catch (error) {
-    console.error("Logout error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Logout failed",
-      code: "INTERNAL_ERROR",
-    });
-  }
+  res.json({
+    success: true,
+    message: "Logged out successfully",
+  });
 });
 
-// EXPORT ALTERNATIVE NAMES FOR COMPATIBILITY
-export const register = signup; // Alternative name for signup
+// Export alternative names for compatibility
+export const register = signup;

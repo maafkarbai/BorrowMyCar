@@ -1,4 +1,4 @@
-// borrowmycarfrontend/src/api.js - COMPLETELY FIXED VERSION
+// borrowmycarfrontend/src/api.js - Fixed API client
 import axios from "axios";
 
 // Create API instance with comprehensive configuration
@@ -73,33 +73,28 @@ API.interceptors.response.use(
           ) {
             // Delay redirect to prevent immediate redirect loops
             setTimeout(() => {
-              window.location.href = "/login";
+              window.location.href = "/auth/login";
             }, 100);
           }
           break;
 
         case 403:
-          // Forbidden - user doesn't have permission
           console.log("🚫 Access forbidden");
           break;
 
         case 404:
-          // Not found
           console.log("❓ Resource not found");
           break;
 
         case 422:
-          // Validation error
           console.log("⚠️ Validation error:", data.errors);
           break;
 
         case 429:
-          // Rate limit exceeded
           console.log("🐌 Rate limit exceeded");
           break;
 
         case 500:
-          // Server error
           console.log("💥 Server error");
           break;
 
@@ -128,10 +123,6 @@ API.interceptors.response.use(
 );
 
 // Helper functions for common API operations
-
-/**
- * Generic GET request with error handling
- */
 export const apiGet = async (url, config = {}) => {
   try {
     const response = await API.get(url, config);
@@ -141,9 +132,6 @@ export const apiGet = async (url, config = {}) => {
   }
 };
 
-/**
- * Generic POST request with error handling
- */
 export const apiPost = async (url, data = {}, config = {}) => {
   try {
     const response = await API.post(url, data, config);
@@ -153,9 +141,6 @@ export const apiPost = async (url, data = {}, config = {}) => {
   }
 };
 
-/**
- * Generic PUT request with error handling
- */
 export const apiPut = async (url, data = {}, config = {}) => {
   try {
     const response = await API.put(url, data, config);
@@ -165,9 +150,6 @@ export const apiPut = async (url, data = {}, config = {}) => {
   }
 };
 
-/**
- * Generic PATCH request with error handling
- */
 export const apiPatch = async (url, data = {}, config = {}) => {
   try {
     const response = await API.patch(url, data, config);
@@ -177,9 +159,6 @@ export const apiPatch = async (url, data = {}, config = {}) => {
   }
 };
 
-/**
- * Generic DELETE request with error handling
- */
 export const apiDelete = async (url, config = {}) => {
   try {
     const response = await API.delete(url, config);
@@ -189,9 +168,7 @@ export const apiDelete = async (url, config = {}) => {
   }
 };
 
-/**
- * Upload file with progress tracking
- */
+// Upload file with progress tracking
 export const uploadFile = async (url, formData, onProgress = null) => {
   try {
     const response = await API.post(url, formData, {
@@ -206,9 +183,7 @@ export const uploadFile = async (url, formData, onProgress = null) => {
   }
 };
 
-/**
- * Check if user is authenticated
- */
+// Check if user is authenticated
 export const isAuthenticated = () => {
   const token = localStorage.getItem("token");
   if (!token) return false;
@@ -223,9 +198,7 @@ export const isAuthenticated = () => {
   }
 };
 
-/**
- * Get current user from token
- */
+// Get current user from token
 export const getCurrentUser = () => {
   const token = localStorage.getItem("token");
   if (!token) return null;
@@ -244,17 +217,13 @@ export const getCurrentUser = () => {
   }
 };
 
-/**
- * Clear authentication data
- */
+// Clear authentication data
 export const clearAuth = () => {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
 };
 
-/**
- * API Health check
- */
+// API Health check
 export const checkAPIHealth = async () => {
   try {
     const response = await API.get("/health");
@@ -264,19 +233,15 @@ export const checkAPIHealth = async () => {
   }
 };
 
-/**
- * Refresh token (if your backend supports it)
- */
+// Refresh token (if your backend supports it)
 export const refreshToken = async () => {
   try {
     const response = await API.post("/auth/refresh");
     const { token } = response.data;
-
     if (token) {
       localStorage.setItem("token", token);
       return { success: true, token };
     }
-
     throw new Error("No token received");
   } catch (error) {
     clearAuth();
@@ -284,45 +249,7 @@ export const refreshToken = async () => {
   }
 };
 
-/**
- * Get user profile
- */
-export const getUserProfile = async () => {
-  try {
-    const response = await API.get("/auth/profile");
-    return { success: true, data: response.data };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-};
-
-/**
- * Update user profile
- */
-export const updateUserProfile = async (userData) => {
-  try {
-    const response = await API.patch("/auth/profile", userData);
-    return { success: true, data: response.data };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-};
-
-/**
- * Change password
- */
-export const changePassword = async (passwordData) => {
-  try {
-    const response = await API.patch("/auth/change-password", passwordData);
-    return { success: true, data: response.data };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-};
-
-/**
- * Cars API functions
- */
+// Cars API functions
 export const getCars = async (params = {}) => {
   try {
     const queryString = new URLSearchParams(params).toString();
@@ -353,9 +280,7 @@ export const createCar = async (carData) => {
   }
 };
 
-/**
- * Bookings API functions
- */
+// Bookings API functions
 export const getBookings = async (type = "me") => {
   try {
     const endpoint = type === "owner" ? "/bookings/owner" : "/bookings/me";
@@ -378,6 +303,34 @@ export const createBooking = async (bookingData) => {
 export const updateBooking = async (bookingId, updateData) => {
   try {
     const response = await API.put(`/bookings/${bookingId}`, updateData);
+    return { success: true, data: response.data };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
+
+// Auth API functions
+export const loginUser = async (credentials) => {
+  try {
+    const response = await API.post("/auth/login", credentials);
+    return { success: true, data: response.data };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
+
+export const registerUser = async (userData) => {
+  try {
+    const response = await API.post("/auth/signup", userData);
+    return { success: true, data: response.data };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
+
+export const getUserProfile = async () => {
+  try {
+    const response = await API.get("/auth/profile");
     return { success: true, data: response.data };
   } catch (error) {
     return { success: false, error: error.message };

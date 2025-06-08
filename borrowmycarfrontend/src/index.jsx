@@ -1,7 +1,12 @@
-// src/index.jsx - Updated with PaymentProvider
+// src/index.jsx - Fixed Router v7 Implementation
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Outlet,
+  Navigate,
+} from "react-router-dom";
 import App from "./App.jsx";
 import BrowseCars from "./BrowseCars.jsx";
 import Login from "./Login.jsx";
@@ -19,7 +24,7 @@ import Navbar from "./Navbar.jsx";
 import Footer from "./Footer.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import { AuthProvider } from "./context/AuthProvider.jsx";
-import { PaymentProvider } from "./context/PaymentContext.jsx"; // NEW
+import { PaymentProvider } from "./context/PaymentContext.jsx";
 import "./global.css";
 
 // Main Layout Component
@@ -40,16 +45,29 @@ const AuthLayout = () => (
   </main>
 );
 
-// Define routes properly
+// Define routes with React Router v7 syntax
 const router = createBrowserRouter([
   {
     path: "/",
     element: <Layout />,
+    errorElement: <NotFound />,
     children: [
-      { index: true, element: <App /> },
-      { path: "browse", element: <BrowseCars /> },
-      { path: "how-it-works", element: <HowItWorks /> },
-      { path: "cars/:id", element: <CarDetails /> },
+      {
+        index: true,
+        element: <App />,
+      },
+      {
+        path: "browse",
+        element: <BrowseCars />,
+      },
+      {
+        path: "how-it-works",
+        element: <HowItWorks />,
+      },
+      {
+        path: "cars/:id",
+        element: <CarDetails />,
+      },
       {
         path: "checkout/:carId",
         element: (
@@ -104,14 +122,29 @@ const router = createBrowserRouter([
     path: "/auth",
     element: <AuthLayout />,
     children: [
-      { path: "login", element: <Login /> },
-      { path: "signup", element: <Signup /> },
+      {
+        path: "login",
+        element: <Login />,
+      },
+      {
+        path: "signup",
+        element: <Signup />,
+      },
     ],
   },
-  // Keep login/signup at root level for backward compatibility
-  { path: "/login", element: <Login /> },
-  { path: "/signup", element: <Signup /> },
-  { path: "*", element: <NotFound /> },
+  // Compatibility routes
+  {
+    path: "/login",
+    element: <Navigate to="/auth/login" replace />,
+  },
+  {
+    path: "/signup",
+    element: <Navigate to="/auth/signup" replace />,
+  },
+  {
+    path: "*",
+    element: <NotFound />,
+  },
 ]);
 
 createRoot(document.getElementById("root")).render(
