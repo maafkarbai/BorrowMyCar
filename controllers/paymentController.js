@@ -55,7 +55,7 @@ export const processPayment = handleAsyncError(async (req, res) => {
     let booking;
 
     // If bookingId is provided, find existing booking
-    if (bookingId && bookingId !== `temp_${Date.now()}`) {
+    if (bookingId && !bookingId.startsWith("temp_")) {
       booking = await Booking.findById(bookingId)
         .populate("car", "title price owner")
         .populate("renter", "name email");
