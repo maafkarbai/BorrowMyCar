@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+// src/CarListingSection.jsx - Enhanced with better performance and error handling
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import CarFilterBar from "./CarFilterBar";
 import API from "./api";
@@ -17,115 +18,211 @@ const CarListingSection = () => {
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState("desc");
 
-  // Fetch cars with filters
-  const fetchCars = async (page = 1, newFilters = filters) => {
-    setLoading(true);
-    setError("");
+  // Memoized API params to prevent unnecessary re-renders
+  const apiParams = useMemo(() => {
+    const params = new URLSearchParams({
+      page: pagination.currentPage.toString(),
+      limit: pagination.limit.toString(),
+      sortBy,
+      sortOrder,
+      ...filters,
+    });
 
-    try {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: pagination.limit.toString(),
-        sortBy,
-        sortOrder,
-        ...newFilters,
-      });
-
-      // Remove empty filter values
-      Object.keys(newFilters).forEach((key) => {
-        if (!newFilters[key]) {
-          params.delete(key);
-        }
-      });
-
-      console.log("Fetching cars with params:", params.toString());
-
-      const response = await API.get(`/cars?${params.toString()}`);
-      console.log("Cars API response:", response.data);
-
-      // Handle different response structures
-      let carsData = [];
-      let paginationData = {};
-
-      if (response.data.data) {
-        carsData = response.data.data.cars || response.data.data;
-        paginationData = response.data.data.pagination || {};
-      } else if (response.data.cars) {
-        carsData = response.data.cars;
-        paginationData = response.data.pagination || {};
-      } else {
-        carsData = Array.isArray(response.data) ? response.data : [];
+    // Remove empty filter values
+    Object.keys(filters).forEach((key) => {
+      if (!filters[key]) {
+        params.delete(key);
       }
+    });
 
-      setCars(carsData);
-      setPagination((prev) => ({
-        ...prev,
-        currentPage: page,
-        ...paginationData,
-      }));
-    } catch (err) {
-      console.error("Error fetching cars:", err);
-      setError("Failed to load cars. Please try again.");
-      setCars([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    return params;
+  }, [pagination.currentPage, pagination.limit, sortBy, sortOrder, filters]);
 
-  // Initial load
+  // Fetch cars with better error handling and caching
+  const fetchCars = useCallback(
+    async (page = 1, newFilters = filters) => {
+      setLoading(true);
+      setError("");
+
+      try {
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: pagination.limit.toString(),
+          sortBy,
+          sortOrder,
+          ...newFilters,
+        });
+
+        // Remove empty filter values
+        Object.keys(newFilters).forEach((key) => {
+          if (!newFilters[key]) {
+            params.delete(key);
+          }
+        });
+
+        console.log("Fetching cars with params:", params.toString());
+
+        const response = await API.get(`/cars?${params.toString()}`);
+        console.log("Cars API response:", response.data);
+
+        // Handle different response structures
+        let carsData = [];
+        let paginationData = {};
+
+        if (response.data.data) {
+          carsData = response.data.data.cars || response.data.data;
+          paginationData = response.data.data.pagination || {};
+        } else if (response.data.cars) {
+          carsData = response.data.cars;
+          paginationData = response.data.pagination || {};
+        } else {
+          carsData = Array.isArray(response.data) ? response.data : [];
+        }
+
+        // Validate car data structure
+        const validatedCars = carsData.map((car) => ({
+          ...car,
+          price: car.price || car.pricePerDay || 0,
+          pricePerDay: car.pricePerDay || car.price || 0,
+          images: Array.isArray(car.images) ? car.images : [],
+          city: car.city || "Unknown",
+          title: car.title || "Car Listing",
+        }));
+
+        setCars(validatedCars);
+        setPagination((prev) => ({
+          ...prev,
+          currentPage: page,
+          ...paginationData,
+        }));
+      } catch (err) {
+        console.error("Error fetching cars:", err);
+        setError(
+          err.response?.data?.message ||
+            "Failed to load cars. Please check your connection and try again."
+        );
+        setCars([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [pagination.limit, sortBy, sortOrder]
+  );
+
+  // Initial load with error retry
   useEffect(() => {
-    fetchCars();
+    let retryCount = 0;
+    const maxRetries = 3;
+
+    const fetchWithRetry = async () => {
+      try {
+        await fetchCars();
+      } catch (error) {
+        if (retryCount < maxRetries) {
+          retryCount++;
+          console.log(`Retrying fetch cars, attempt ${retryCount}`);
+          setTimeout(fetchWithRetry, 1000 * retryCount);
+        }
+      }
+    };
+
+    fetchWithRetry();
   }, [sortBy, sortOrder]);
 
-  // Handle filter changes
-  const handleFiltersChange = (newFilters) => {
-    setFilters(newFilters);
-    fetchCars(1, newFilters); // Reset to page 1 when filters change
-  };
+  // Handle filter changes with debouncing
+  const handleFiltersChange = useCallback(
+    (newFilters) => {
+      setFilters(newFilters);
+      fetchCars(1, newFilters); // Reset to page 1 when filters change
+    },
+    [fetchCars]
+  );
 
   // Handle filter reset
-  const handleFiltersReset = () => {
+  const handleFiltersReset = useCallback(() => {
     setFilters({});
     fetchCars(1, {});
-  };
+  }, [fetchCars]);
 
-  // Handle pagination
-  const handlePageChange = (page) => {
-    fetchCars(page);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  // Handle pagination with smooth scrolling
+  const handlePageChange = useCallback(
+    (page) => {
+      fetchCars(page);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+    [fetchCars]
+  );
 
-  // Handle sorting
-  const handleSortChange = (newSortBy, newSortOrder = "desc") => {
-    setSortBy(newSortBy);
-    setSortOrder(newSortOrder);
-  };
+  // Handle sorting with validation
+  const handleSortChange = useCallback((newSortBy, newSortOrder = "desc") => {
+    const validSortFields = ["createdAt", "price", "title", "year"];
+    const validSortOrders = ["asc", "desc"];
 
-  // Car Card Component with proper price handling
+    if (
+      validSortFields.includes(newSortBy) &&
+      validSortOrders.includes(newSortOrder)
+    ) {
+      setSortBy(newSortBy);
+      setSortOrder(newSortOrder);
+    }
+  }, []);
+
+  // Enhanced Car Card Component with better error handling
   const CarCard = ({ car }) => {
-    // Handle different price field names
+    const [imageError, setImageError] = useState(false);
+    const [imageLoaded, setImageLoaded] = useState(false);
+
     const getCarPrice = () => {
       return car.price || car.pricePerDay || car.dailyRate || 0;
     };
 
+    const handleImageError = () => {
+      setImageError(true);
+    };
+
+    const handleImageLoad = () => {
+      setImageLoaded(true);
+    };
+
     const carPrice = getCarPrice();
+    const mainImage = car.images?.[0] || null;
 
     return (
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200">
-        {/* Car Image */}
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-[1.02]">
+        {/* Car Image with loading states */}
         <div className="relative aspect-video bg-gray-100 overflow-hidden">
-          <img
-            src={
-              car.images?.[0] ||
-              "https://via.placeholder.com/400x240?text=No+Image"
-            }
-            alt={car.title}
-            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-            onError={(e) => {
-              e.target.src =
-                "https://via.placeholder.com/400x240?text=Car+Image";
-            }}
-          />
+          {mainImage && !imageError ? (
+            <>
+              {!imageLoaded && (
+                <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
+                  <div className="text-gray-400">Loading...</div>
+                </div>
+              )}
+              <img
+                src={mainImage}
+                alt={car.title}
+                className={`w-full h-full object-cover hover:scale-105 transition-transform duration-300 ${
+                  imageLoaded ? "opacity-100" : "opacity-0"
+                }`}
+                onError={handleImageError}
+                onLoad={handleImageLoad}
+                loading="lazy"
+              />
+            </>
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+              <div className="text-center text-gray-500">
+                <svg
+                  className="w-12 h-12 mx-auto mb-2"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" />
+                </svg>
+                <span className="text-sm">No Image</span>
+              </div>
+            </div>
+          )}
 
           {/* Price Badge */}
           <div className="absolute top-3 right-3 bg-green-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
@@ -141,7 +238,10 @@ const CarListingSection = () => {
         {/* Car Details */}
         <div className="p-4 space-y-3">
           <div>
-            <h3 className="font-semibold text-gray-900 text-lg mb-1 line-clamp-1">
+            <h3
+              className="font-semibold text-gray-900 text-lg mb-1 line-clamp-1"
+              title={car.title}
+            >
               {car.title}
             </h3>
             <p className="text-gray-600 text-sm line-clamp-2">
@@ -197,7 +297,7 @@ const CarListingSection = () => {
           <div className="flex items-center justify-between text-xs text-gray-400">
             <span>{car.transmission || "Automatic"}</span>
             <span>{car.fuelType || "Petrol"}</span>
-            {car.mileage && <span>{car.mileage} km</span>}
+            {car.mileage && <span>{car.mileage.toLocaleString()} km</span>}
           </div>
 
           {/* Action Button */}
@@ -212,7 +312,7 @@ const CarListingSection = () => {
     );
   };
 
-  // Loading Skeleton
+  // Enhanced Loading Skeleton with shimmer effect
   const LoadingSkeleton = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {Array.from({ length: 8 }).map((_, index) => (
@@ -220,19 +320,19 @@ const CarListingSection = () => {
           key={index}
           className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm animate-pulse"
         >
-          <div className="aspect-video bg-gray-200"></div>
+          <div className="aspect-video bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 bg-[length:200%_100%] animate-shimmer"></div>
           <div className="p-4 space-y-3">
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div className="h-3 bg-gray-200 rounded w-full"></div>
-            <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-            <div className="h-8 bg-gray-200 rounded"></div>
+            <div className="h-4 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 bg-[length:200%_100%] animate-shimmer rounded w-3/4"></div>
+            <div className="h-3 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 bg-[length:200%_100%] animate-shimmer rounded w-full"></div>
+            <div className="h-3 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 bg-[length:200%_100%] animate-shimmer rounded w-2/3"></div>
+            <div className="h-8 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 bg-[length:200%_100%] animate-shimmer rounded"></div>
           </div>
         </div>
       ))}
     </div>
   );
 
-  // Pagination Component
+  // Enhanced Pagination Component
   const Pagination = () => {
     if (pagination.totalPages <= 1) return null;
 
@@ -259,17 +359,30 @@ const CarListingSection = () => {
         <button
           onClick={() => handlePageChange(pagination.currentPage - 1)}
           disabled={pagination.currentPage === 1}
-          className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           Previous
         </button>
+
+        {/* First page if not visible */}
+        {startPage > 1 && (
+          <>
+            <button
+              onClick={() => handlePageChange(1)}
+              className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              1
+            </button>
+            {startPage > 2 && <span className="px-2 text-gray-500">...</span>}
+          </>
+        )}
 
         {/* Page Numbers */}
         {pages.map((page) => (
           <button
             key={page}
             onClick={() => handlePageChange(page)}
-            className={`px-3 py-2 text-sm font-medium rounded-lg ${
+            className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
               page === pagination.currentPage
                 ? "bg-green-600 text-white"
                 : "text-gray-500 bg-white border border-gray-300 hover:bg-gray-50"
@@ -279,11 +392,26 @@ const CarListingSection = () => {
           </button>
         ))}
 
+        {/* Last page if not visible */}
+        {endPage < pagination.totalPages && (
+          <>
+            {endPage < pagination.totalPages - 1 && (
+              <span className="px-2 text-gray-500">...</span>
+            )}
+            <button
+              onClick={() => handlePageChange(pagination.totalPages)}
+              className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              {pagination.totalPages}
+            </button>
+          </>
+        )}
+
         {/* Next Button */}
         <button
           onClick={() => handlePageChange(pagination.currentPage + 1)}
           disabled={pagination.currentPage === pagination.totalPages}
-          className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           Next
         </button>

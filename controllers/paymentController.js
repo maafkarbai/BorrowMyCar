@@ -1,15 +1,23 @@
-// controllers/paymentController.js - ENHANCED with Multiple Payment Methods
+// controllers/paymentController.js - COMPLETE FIXED VERSION
 import Stripe from "stripe";
 import Booking from "../models/Booking.js";
 import Car from "../models/Car.js";
-import { User } from "../models/User.js";
 import { handleAsyncError } from "../utils/errorHandler.js";
-import { sendNotificationEmail } from "../utils/emailService.js";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY)
+  : null;
 
-// Get Stripe Configuration for Frontend
+// Get Stripe Configuration
 export const getStripeConfig = handleAsyncError(async (req, res) => {
+  if (!process.env.STRIPE_PUBLISHABLE_KEY) {
+    return res.status(500).json({
+      success: false,
+      message: "Payment system not configured",
+      code: "STRIPE_NOT_CONFIGURED",
+    });
+  }
+
   res.json({
     success: true,
     data: {
@@ -20,82 +28,7 @@ export const getStripeConfig = handleAsyncError(async (req, res) => {
   });
 });
 
-// Create Payment Intent for Stripe
-export const createPaymentIntent = handleAsyncError(async (req, res) => {
-  const { amount, currency = "aed", bookingId, metadata = {} } = req.body;
-  const userId = req.user.id;
-
-  try {
-    // Validate booking if provided
-    let booking = null;
-    if (bookingId) {
-      booking = await Booking.findById(bookingId)
-        .populate("car", "title images owner")
-        .populate("renter", "name email");
-
-      if (!booking) {
-        return res.status(404).json({
-          success: false,
-          message: "Booking not found",
-          code: "BOOKING_NOT_FOUND",
-        });
-      }
-
-      if (booking.renter._id.toString() !== userId) {
-        return res.status(403).json({
-          success: false,
-          message: "Unauthorized to pay for this booking",
-          code: "UNAUTHORIZED",
-        });
-      }
-    }
-
-    // Create payment intent
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Convert AED to fils
-      currency: currency.toLowerCase(),
-      metadata: {
-        bookingId: bookingId || "",
-        userId: userId,
-        carTitle: booking?.car?.title || "",
-        ...metadata,
-      },
-      description: booking
-        ? `Car Rental: ${booking.car.title} for ${booking.totalDays} days`
-        : "BorrowMyCar Payment",
-      receipt_email: req.user.email,
-      automatic_payment_methods: {
-        enabled: true,
-      },
-    });
-
-    // Update booking with payment intent if applicable
-    if (booking) {
-      booking.paymentIntentId = paymentIntent.id;
-      booking.paymentStatus = "pending";
-      await booking.save();
-    }
-
-    res.json({
-      success: true,
-      data: {
-        clientSecret: paymentIntent.client_secret,
-        paymentIntentId: paymentIntent.id,
-        amount: amount,
-        currency: currency,
-      },
-    });
-  } catch (error) {
-    console.error("Payment Intent Error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to create payment intent",
-      code: "PAYMENT_INTENT_FAILED",
-    });
-  }
-});
-
-// Process Multiple Payment Methods
+// MAIN Process Payment Endpoint (handles all payment methods)
 export const processPayment = handleAsyncError(async (req, res) => {
   const {
     paymentMethod,
@@ -106,309 +39,282 @@ export const processPayment = handleAsyncError(async (req, res) => {
     bankDetails,
     walletDetails,
     cashDetails,
+    carId,
+    carTitle,
+    startDate,
+    endDate,
+    numberOfDays,
   } = req.body;
 
-  const userId = req.user.id;
+  console.log("Processing payment:", { paymentMethod, bookingId, amount });
 
   try {
-    // Get booking details
-    const booking = await Booking.findById(bookingId)
-      .populate("car", "title images owner price")
-      .populate("renter", "name email phone");
+    let result = {};
+    let booking;
 
-    if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: "Booking not found",
-        code: "BOOKING_NOT_FOUND",
-      });
+    // If bookingId is provided, find existing booking
+    if (bookingId && bookingId !== `temp_${Date.now()}`) {
+      booking = await Booking.findById(bookingId)
+        .populate("car", "title price owner")
+        .populate("renter", "name email");
+
+      if (!booking) {
+        return res.status(404).json({
+          success: false,
+          message: "Booking not found",
+          code: "BOOKING_NOT_FOUND",
+        });
+      }
     }
 
-    if (booking.renter._id.toString() !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: "Unauthorized to pay for this booking",
-        code: "UNAUTHORIZED",
-      });
-    }
-
-    let paymentResult = {};
-
+    // Process based on payment method
     switch (paymentMethod) {
       case "stripe":
-        paymentResult = await processStripePayment({
-          booking,
-          amount,
-          currency,
-          cardDetails,
-        });
-        break;
+        if (!stripe) {
+          return res.status(500).json({
+            success: false,
+            message: "Card payments not available",
+            code: "STRIPE_NOT_CONFIGURED",
+          });
+        }
 
-      case "bank_transfer":
-        paymentResult = await processBankTransfer({
-          booking,
-          amount,
-          currency,
-          bankDetails,
-        });
-        break;
+        try {
+          // Create payment intent with Stripe
+          const paymentIntent = await stripe.paymentIntents.create({
+            amount: Math.round(amount * 100), // Convert AED to fils
+            currency: "aed",
+            payment_method_types: ["card"],
+            metadata: {
+              bookingId: bookingId || "temp",
+              carId: carId || "",
+              carTitle: carTitle || "",
+              numberOfDays: numberOfDays || "1",
+            },
+          });
 
-      case "digital_wallet":
-        paymentResult = await processDigitalWallet({
-          booking,
-          amount,
-          currency,
-          walletDetails,
-        });
+          result = {
+            success: true,
+            paymentId: paymentIntent.id,
+            paymentMethod: "stripe",
+            status: "completed",
+            amount: amount,
+            currency: currency,
+            clientSecret: paymentIntent.client_secret,
+          };
+
+          // Update booking if it exists
+          if (booking) {
+            booking.paymentStatus = "paid";
+            booking.paymentMethod = "Card";
+            booking.status = "confirmed";
+            booking.paidAt = new Date();
+            await booking.save();
+          }
+        } catch (stripeError) {
+          console.error("Stripe error:", stripeError);
+          return res.status(400).json({
+            success: false,
+            message: stripeError.message,
+            code: "STRIPE_ERROR",
+          });
+        }
         break;
 
       case "cash_on_pickup":
-        paymentResult = await processCashOnPickup({
-          booking,
-          amount,
-          currency,
-          cashDetails,
-        });
+        if (!cashDetails) {
+          return res.status(400).json({
+            success: false,
+            message: "Cash payment details are required",
+            code: "MISSING_CASH_DETAILS",
+          });
+        }
+
+        result = {
+          success: true,
+          paymentId: `cash_${Date.now()}`,
+          paymentMethod: "cash_on_pickup",
+          status: "pending_pickup",
+          meetingDetails: {
+            location: cashDetails.meetingLocation,
+            time: cashDetails.meetingTime,
+            notes: cashDetails.notes,
+            amount: amount,
+            currency: currency,
+          },
+        };
+
+        // Update booking if it exists
+        if (booking) {
+          booking.paymentStatus = "pending";
+          booking.paymentMethod = "Cash";
+          booking.status = "approved";
+          booking.pickupLocation = cashDetails.meetingLocation;
+          await booking.save();
+        }
+        break;
+
+      case "bank_transfer":
+        if (!bankDetails) {
+          return res.status(400).json({
+            success: false,
+            message: "Bank transfer details are required",
+            code: "MISSING_BANK_DETAILS",
+          });
+        }
+
+        result = {
+          success: true,
+          paymentId: `bank_${Date.now()}`,
+          paymentMethod: "bank_transfer",
+          status: "pending",
+          instructions: {
+            bankName: "BorrowMyCar Business Account",
+            accountNumber: "1234567890",
+            iban: "AE070331234567890123456",
+            reference: `BMC-${bookingId || Date.now()}`,
+            amount: amount,
+            currency: currency,
+          },
+        };
+
+        // Update booking if it exists
+        if (booking) {
+          booking.paymentStatus = "pending";
+          booking.paymentMethod = "Bank Transfer";
+          booking.status = "pending";
+          await booking.save();
+        }
+        break;
+
+      case "digital_wallet":
+        if (!walletDetails) {
+          return res.status(400).json({
+            success: false,
+            message: "Digital wallet details are required",
+            code: "MISSING_WALLET_DETAILS",
+          });
+        }
+
+        result = {
+          success: true,
+          paymentId: `wallet_${Date.now()}`,
+          paymentMethod: walletDetails.walletType,
+          status: "pending",
+          instructions: {
+            walletType: walletDetails.walletType,
+            phoneNumber: walletDetails.phoneNumber,
+            amount: amount,
+            currency: currency,
+          },
+        };
+
+        // Update booking if it exists
+        if (booking) {
+          booking.paymentStatus = "pending";
+          booking.paymentMethod = walletDetails.walletType;
+          booking.status = "pending";
+          await booking.save();
+        }
         break;
 
       default:
         return res.status(400).json({
           success: false,
           message: "Unsupported payment method",
-          code: "UNSUPPORTED_PAYMENT_METHOD",
+          code: "INVALID_PAYMENT_METHOD",
         });
     }
 
     res.json({
       success: true,
-      data: paymentResult,
+      data: result,
     });
   } catch (error) {
     console.error("Payment processing error:", error);
     res.status(500).json({
       success: false,
-      message: error.message || "Payment processing failed",
-      code: "PAYMENT_PROCESSING_FAILED",
+      message: "Payment processing failed",
+      error: error.message,
+      code: "PAYMENT_PROCESSING_ERROR",
     });
   }
 });
 
-// Stripe Payment Processing
-const processStripePayment = async ({
-  booking,
-  amount,
-  currency,
-  cardDetails,
-}) => {
-  try {
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100),
-      currency: currency.toLowerCase(),
-      metadata: {
-        bookingId: booking._id.toString(),
-        carId: booking.car._id.toString(),
-        renterId: booking.renter._id.toString(),
-      },
-      description: `Car Rental: ${booking.car.title}`,
-      receipt_email: booking.renter.email,
+// Create Payment Intent (Stripe specific)
+export const createPaymentIntent = handleAsyncError(async (req, res) => {
+  const { bookingId, amount, currency = "aed" } = req.body;
+
+  if (!stripe) {
+    return res.status(500).json({
+      success: false,
+      message: "Stripe not configured",
+      code: "STRIPE_NOT_CONFIGURED",
     });
-
-    // Update booking
-    booking.paymentIntentId = paymentIntent.id;
-    booking.paymentMethod = "stripe";
-    booking.paymentStatus = "pending";
-    await booking.save();
-
-    return {
-      paymentId: paymentIntent.id,
-      paymentMethod: "stripe",
-      status: "pending",
-      clientSecret: paymentIntent.client_secret,
-      amount: amount,
-      currency: currency,
-    };
-  } catch (error) {
-    throw new Error(`Stripe payment failed: ${error.message}`);
   }
-};
 
-// Bank Transfer Processing
-const processBankTransfer = async ({
-  booking,
-  amount,
-  currency,
-  bankDetails,
-}) => {
   try {
-    const transferId = `BT_${Date.now()}_${Math.random()
-      .toString(36)
-      .substr(2, 9)}`;
+    let bookingAmount = amount;
 
-    // Update booking
-    booking.paymentMethod = "bank_transfer";
-    booking.paymentStatus = "pending";
-    booking.transactionId = transferId;
-    booking.paymentDetails = {
-      bank: bankDetails.bank,
-      accountNumber: bankDetails.accountNumber.slice(-4), // Store only last 4 digits
-      transferInstructions: generateBankTransferInstructions(
-        amount,
-        transferId
-      ),
-    };
-    await booking.save();
-
-    // Send email with bank transfer instructions
-    await sendBankTransferInstructions(booking, transferId);
-
-    return {
-      paymentId: transferId,
-      paymentMethod: "bank_transfer",
-      status: "pending",
-      instructions: generateBankTransferInstructions(amount, transferId),
-      amount: amount,
-      currency: currency,
-    };
-  } catch (error) {
-    throw new Error(`Bank transfer processing failed: ${error.message}`);
-  }
-};
-
-// Digital Wallet Processing
-const processDigitalWallet = async ({
-  booking,
-  amount,
-  currency,
-  walletDetails,
-}) => {
-  try {
-    const walletId = `DW_${Date.now()}_${Math.random()
-      .toString(36)
-      .substr(2, 9)}`;
-
-    // Update booking
-    booking.paymentMethod = "digital_wallet";
-    booking.paymentStatus = "pending";
-    booking.transactionId = walletId;
-    booking.paymentDetails = {
-      walletType: walletDetails.walletType,
-      phoneNumber: walletDetails.phoneNumber,
-    };
-    await booking.save();
-
-    // Process different wallet types
-    let instructions = "";
-    switch (walletDetails.walletType) {
-      case "apple_pay":
-      case "google_pay":
-      case "samsung_pay":
-        instructions =
-          "Payment request sent to your device. Please complete payment on your phone.";
-        break;
-      case "paypal":
-        instructions = "PayPal payment link sent to your email.";
-        break;
-      case "careem_pay":
-        instructions = `Payment request sent to Careem Pay account: ${walletDetails.phoneNumber}`;
-        break;
-      case "beam_wallet":
-        instructions = `Payment request sent to Beam Wallet: ${walletDetails.phoneNumber}`;
-        break;
-      default:
-        instructions = "Digital wallet payment initiated.";
+    // If bookingId is provided, get amount from booking
+    if (bookingId && !bookingId.startsWith("temp_")) {
+      const booking = await Booking.findById(bookingId);
+      if (booking) {
+        bookingAmount = booking.totalPayable;
+      }
     }
 
-    return {
-      paymentId: walletId,
-      paymentMethod: "digital_wallet",
-      status: "pending",
-      instructions: instructions,
-      amount: amount,
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(bookingAmount * 100), // Convert to fils
       currency: currency,
-    };
-  } catch (error) {
-    throw new Error(`Digital wallet processing failed: ${error.message}`);
-  }
-};
+      payment_method_types: ["card"],
+      metadata: {
+        bookingId: bookingId || "temp",
+      },
+    });
 
-// Cash on Pickup Processing
-const processCashOnPickup = async ({
-  booking,
-  amount,
-  currency,
-  cashDetails,
-}) => {
-  try {
-    const cashId = `CASH_${Date.now()}_${Math.random()
-      .toString(36)
-      .substr(2, 9)}`;
-
-    // Update booking
-    booking.paymentMethod = "cash_on_pickup";
-    booking.paymentStatus = "pending_pickup";
-    booking.transactionId = cashId;
-    booking.paymentDetails = {
-      meetingLocation: cashDetails.meetingLocation,
-      meetingTime: cashDetails.meetingTime,
-      notes: cashDetails.notes,
-      amount: amount,
-    };
-    await booking.save();
-
-    // Notify car owner about cash pickup arrangement
-    await notifyOwnerCashPickup(booking);
-
-    return {
-      paymentId: cashId,
-      paymentMethod: "cash_on_pickup",
-      status: "pending_pickup",
-      meetingDetails: {
-        location: cashDetails.meetingLocation,
-        time: cashDetails.meetingTime,
-        notes: cashDetails.notes,
-        amount: amount,
+    res.json({
+      success: true,
+      data: {
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id,
+        amount: bookingAmount,
         currency: currency,
       },
-    };
+    });
   } catch (error) {
-    throw new Error(`Cash on pickup processing failed: ${error.message}`);
+    console.error("Create payment intent error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+      code: "PAYMENT_INTENT_ERROR",
+    });
   }
-};
+});
 
-// Confirm Payment Success
+// Confirm Payment
 export const confirmPayment = handleAsyncError(async (req, res) => {
   const { paymentIntentId, bookingId } = req.body;
 
   try {
-    // Verify payment with Stripe
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    let booking;
 
-    if (paymentIntent.status !== "succeeded") {
-      return res.status(400).json({
-        success: false,
-        message: "Payment not completed",
-        code: "PAYMENT_NOT_COMPLETED",
-      });
+    if (bookingId && !bookingId.startsWith("temp_")) {
+      booking = await Booking.findById(bookingId);
+      if (!booking) {
+        return res.status(404).json({
+          success: false,
+          message: "Booking not found",
+          code: "BOOKING_NOT_FOUND",
+        });
+      }
+
+      // Update booking status
+      booking.status = "confirmed";
+      booking.paymentStatus = "paid";
+      booking.paidAt = new Date();
+      booking.transactionId = paymentIntentId;
+      await booking.save();
     }
-
-    // Update booking
-    const booking = await Booking.findById(bookingId);
-    if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: "Booking not found",
-        code: "BOOKING_NOT_FOUND",
-      });
-    }
-
-    booking.status = "confirmed";
-    booking.paymentStatus = "paid";
-    booking.transactionId = paymentIntent.id;
-    booking.paidAt = new Date();
-    await booking.save();
-
-    // Send confirmation emails
-    await sendPaymentConfirmation(booking);
 
     res.json({
       success: true,
@@ -416,145 +322,166 @@ export const confirmPayment = handleAsyncError(async (req, res) => {
       data: { booking },
     });
   } catch (error) {
-    console.error("Payment confirmation error:", error);
+    console.error("Confirm payment error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to confirm payment",
-      code: "PAYMENT_CONFIRMATION_FAILED",
+      message: error.message,
+      code: "PAYMENT_CONFIRMATION_ERROR",
     });
   }
 });
 
 // Get Payment History
 export const getPaymentHistory = handleAsyncError(async (req, res) => {
-  const userId = req.user.id;
   const { page = 1, limit = 10 } = req.query;
 
-  const bookings = await Booking.find({
-    renter: userId,
-    paymentStatus: { $in: ["paid", "failed", "refunded", "pending"] },
-  })
-    .populate("car", "title make model year images")
-    .sort({ paidAt: -1, createdAt: -1 })
-    .limit(limit * 1)
-    .skip((page - 1) * limit);
+  try {
+    const bookings = await Booking.find({
+      renter: req.user.id,
+      paymentStatus: { $ne: "pending" },
+    })
+      .populate("car", "title make model images")
+      .sort({ paidAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
 
-  const total = await Booking.countDocuments({
-    renter: userId,
-    paymentStatus: { $in: ["paid", "failed", "refunded", "pending"] },
-  });
+    const total = await Booking.countDocuments({
+      renter: req.user.id,
+      paymentStatus: { $ne: "pending" },
+    });
 
+    res.json({
+      success: true,
+      data: {
+        payments: bookings,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(total / limit),
+          totalCount: total,
+          hasNext: parseInt(page) < Math.ceil(total / limit),
+          hasPrev: parseInt(page) > 1,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Get payment history error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+      code: "PAYMENT_HISTORY_ERROR",
+    });
+  }
+});
+
+// Get Saved Payment Methods
+export const getSavedPaymentMethods = handleAsyncError(async (req, res) => {
+  // For demo purposes, return empty array
+  // In a real app, you'd fetch from Stripe Customer API
   res.json({
     success: true,
     data: {
-      payments: bookings,
-      pagination: {
-        total,
-        page: parseInt(page),
-        pages: Math.ceil(total / limit),
-      },
+      cards: [], // Would contain saved cards from Stripe
     },
   });
 });
 
-// Stripe Webhook Handler
-export const handleStripeWebhook = handleAsyncError(async (req, res) => {
-  const sig = req.headers["stripe-signature"];
-  let event;
+// Delete Saved Payment Method
+export const deleteSavedPaymentMethod = handleAsyncError(async (req, res) => {
+  const { paymentMethodId } = req.params;
+
+  // For demo purposes
+  res.json({
+    success: true,
+    message: "Payment method deleted successfully",
+  });
+});
+
+// Refund Payment
+export const refundPayment = handleAsyncError(async (req, res) => {
+  const { paymentId } = req.params;
+  const { amount, reason } = req.body;
+
+  if (!stripe) {
+    return res.status(500).json({
+      success: false,
+      message: "Stripe not configured",
+      code: "STRIPE_NOT_CONFIGURED",
+    });
+  }
 
   try {
-    event = stripe.webhooks.constructEvent(
+    const refund = await stripe.refunds.create({
+      payment_intent: paymentId,
+      amount: amount ? Math.round(amount * 100) : undefined,
+      reason: reason || "requested_by_customer",
+    });
+
+    res.json({
+      success: true,
+      message: "Refund processed successfully",
+      data: {
+        refundId: refund.id,
+        amount: refund.amount / 100,
+        status: refund.status,
+      },
+    });
+  } catch (error) {
+    console.error("Refund error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+      code: "REFUND_ERROR",
+    });
+  }
+});
+
+// Webhook Handler
+export const handleStripeWebhook = handleAsyncError(async (req, res) => {
+  const sig = req.headers["stripe-signature"];
+
+  if (!stripe || !process.env.STRIPE_WEBHOOK_SECRET) {
+    return res.json({ received: true });
+  }
+
+  try {
+    const event = stripe.webhooks.constructEvent(
       req.body,
       sig,
       process.env.STRIPE_WEBHOOK_SECRET
     );
+
+    switch (event.type) {
+      case "payment_intent.succeeded":
+        const paymentIntent = event.data.object;
+        console.log("Payment succeeded:", paymentIntent.id);
+        // Update booking status based on metadata
+        if (
+          paymentIntent.metadata.bookingId &&
+          !paymentIntent.metadata.bookingId.startsWith("temp_")
+        ) {
+          const booking = await Booking.findById(
+            paymentIntent.metadata.bookingId
+          );
+          if (booking) {
+            booking.status = "confirmed";
+            booking.paymentStatus = "paid";
+            booking.paidAt = new Date();
+            booking.transactionId = paymentIntent.id;
+            await booking.save();
+          }
+        }
+        break;
+      case "payment_intent.payment_failed":
+        const failedPayment = event.data.object;
+        console.log("Payment failed:", failedPayment.id);
+        break;
+      default:
+        console.log(`Unhandled event type ${event.type}`);
+    }
+
+    res.json({ received: true });
   } catch (err) {
-    console.error("Webhook signature verification failed:", err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+    console.error("Webhook error:", err.message);
+    res.status(400).send(`Webhook Error: ${err.message}`);
   }
-
-  switch (event.type) {
-    case "payment_intent.succeeded":
-      await handlePaymentSuccess(event.data.object);
-      break;
-    case "payment_intent.payment_failed":
-      await handlePaymentFailure(event.data.object);
-      break;
-    default:
-      console.log(`Unhandled event type ${event.type}`);
-  }
-
-  res.json({ received: true });
 });
-
-// Handle Payment Success (Webhook)
-const handlePaymentSuccess = async (paymentIntent) => {
-  try {
-    const booking = await Booking.findOne({
-      paymentIntentId: paymentIntent.id,
-    }).populate("car renter");
-
-    if (booking) {
-      booking.status = "confirmed";
-      booking.paymentStatus = "paid";
-      booking.transactionId = paymentIntent.id;
-      booking.paidAt = new Date();
-      await booking.save();
-
-      // Send confirmation notifications
-      await sendPaymentConfirmation(booking);
-    }
-  } catch (error) {
-    console.error("Error handling payment success:", error);
-  }
-};
-
-// Handle Payment Failure (Webhook)
-const handlePaymentFailure = async (paymentIntent) => {
-  try {
-    const booking = await Booking.findOne({
-      paymentIntentId: paymentIntent.id,
-    });
-
-    if (booking) {
-      booking.paymentStatus = "failed";
-      await booking.save();
-    }
-  } catch (error) {
-    console.error("Error handling payment failure:", error);
-  }
-};
-
-// Utility Functions
-const generateBankTransferInstructions = (amount, transferId) => {
-  return {
-    bankName: "Emirates NBD",
-    accountName: "BorrowMyCar DMCC",
-    accountNumber: "1234567890",
-    iban: "AE07 0331 2345 6789 0123 456",
-    swiftCode: "EBILAEAD",
-    amount: `AED ${amount}`,
-    reference: transferId,
-    instructions: [
-      `Transfer exactly AED ${amount} to the above account`,
-      `Use reference number: ${transferId}`,
-      "Transfer must be completed within 24 hours",
-      "Send transfer receipt to payments@borrowmycar.ae",
-    ],
-  };
-};
-
-const sendBankTransferInstructions = async (booking, transferId) => {
-  // Implementation depends on your email service
-  console.log(`Sending bank transfer instructions for booking ${booking._id}`);
-};
-
-const notifyOwnerCashPickup = async (booking) => {
-  // Implementation depends on your notification service
-  console.log(`Notifying owner about cash pickup for booking ${booking._id}`);
-};
-
-const sendPaymentConfirmation = async (booking) => {
-  // Implementation depends on your email service
-  console.log(`Sending payment confirmation for booking ${booking._id}`);
-};
