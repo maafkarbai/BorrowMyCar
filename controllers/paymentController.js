@@ -10,7 +10,9 @@ const stripe = process.env.STRIPE_SECRET_KEY
 
 // Get Stripe Configuration
 export const getStripeConfig = handleAsyncError(async (req, res) => {
-  if (!process.env.STRIPE_PUBLISHABLE_KEY) {
+  const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY || process.env.VITE_STRIPE_PUBLISHABLE_KEY;
+  
+  if (!publishableKey) {
     return res.status(500).json({
       success: false,
       message: "Payment system not configured",
@@ -21,7 +23,7 @@ export const getStripeConfig = handleAsyncError(async (req, res) => {
   res.json({
     success: true,
     data: {
-      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
+      publishableKey: publishableKey,
       currency: "aed",
       country: "AE",
     },

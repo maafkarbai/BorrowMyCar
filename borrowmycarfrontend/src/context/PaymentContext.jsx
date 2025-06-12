@@ -3,7 +3,11 @@ import { createContext, useContext, useState } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import API from "../api";
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+// Initialize Stripe with fallback configuration
+const stripePromise = loadStripe(
+  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 
+  "pk_test_51RX3UfE1ftluFYZTA31DraMngf6flFQNPIcw4ghE2aklYPFCKGvssRQxVGXw3ppcIqXHYm4Yyjj7Zl4WGSvJCeCQ00aKf3hncv"
+);
 
 const PaymentContext = createContext();
 
@@ -11,12 +15,17 @@ export const PaymentProvider = ({ children }) => {
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentError, setPaymentError] = useState(null);
 
-  const createPaymentIntent = async (bookingId) => {
+  const createPaymentIntent = async (bookingId, amount) => {
     setPaymentLoading(true);
     setPaymentError(null);
 
     try {
-      const response = await API.post("/payments/create-intent", { bookingId });
+      const payload = { bookingId };
+      if (amount && !bookingId) {
+        payload.amount = amount;
+      }
+      
+      const response = await API.post("/payments/create-intent", payload);
       return response.data;
     } catch (error) {
       const errorMessage = error.response?.data?.message || "Payment failed";

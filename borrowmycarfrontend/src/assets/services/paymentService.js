@@ -30,7 +30,7 @@ class PaymentService {
 
       // Get publishable key from your backend
       const response = await API.get("/payments/stripe-config");
-      const { publishableKey } = response.data;
+      const { publishableKey } = response.data.data;
 
       this.stripe = window.Stripe(publishableKey);
       this.isStripeLoaded = true;

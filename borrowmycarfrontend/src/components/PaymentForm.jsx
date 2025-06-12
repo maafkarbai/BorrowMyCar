@@ -56,18 +56,23 @@ const CheckoutForm = ({ booking, onSuccess, onError }) => {
     const initPayment = async () => {
       try {
         clearError();
-        const result = await createPaymentIntent(booking._id);
+        // Use booking ID or fallback amount for payment intent
+        const result = await createPaymentIntent(
+          booking._id, 
+          booking.totalPayable || 100
+        );
         setClientSecret(result.data.clientSecret);
         setPaymentIntentId(result.data.paymentIntentId);
       } catch (error) {
-        onError(error.message);
+        console.error("Payment initialization error:", error);
+        onError(error.message || "Failed to initialize payment");
       }
     };
 
-    if (booking._id) {
+    if (booking && (booking._id || booking.totalPayable)) {
       initPayment();
     }
-  }, [booking._id]);
+  }, [booking._id, booking.totalPayable]);
 
   const handleCardChange = (event) => {
     setCardComplete(event.complete);
