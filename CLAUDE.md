@@ -78,4 +78,38 @@ Both backend and frontend require `.env` files with API keys for:
 UAE-specific phone validation and formatting utilities in `utils/phoneUtils.js` handle local and international formats.
 
 ### Testing
-Tests are not yet implemented - when adding tests, check existing patterns in the codebase first.
+- **Backend**: Jest with `npm run test` or `npm run test:watch` for watch mode
+- **Frontend**: Vitest with `npm run test` or `npm run test:watch` for watch mode  
+- Test files follow `*.test.js` or `*.test.jsx` pattern
+- Backend tests in `/tests/` directory with setup in `tests/setup.js`
+- Frontend tests in `src/tests/` directory with setup in `src/tests/setup.js`
+
+## Important File Locations
+
+### Key Backend Files
+- `utils/phoneUtils.js` - UAE phone number validation and formatting
+- `utils/validators.js` - Input validation and sanitization utilities  
+- `controllers/` - Business logic handlers for API endpoints
+- `middlewares/authMiddleware.js` - JWT authentication and route protection
+- `config/` - Database, Stripe, and Mapbox configuration
+
+### Key Frontend Files
+- `src/context/AuthContext.jsx` - Global authentication state management
+- `src/components/ProtectedRoute.jsx` - Route protection component
+- `src/api.js` - Axios configuration and API client setup
+- `src/components/Mapbox/` - Mapbox integration components
+- `src/components/PaymentModal.jsx` - Stripe payment processing
+
+## Development Guidelines
+
+### Code Quality
+- Always run `npm run lint` in the frontend directory before committing
+- Use existing patterns and conventions found in the codebase
+- Follow the established MVC pattern in the backend
+- Maintain UAE-specific validation patterns for phone numbers and locations
+
+### Security Considerations
+- Never commit API keys or sensitive data to the repository
+- Always validate and sanitize user input using existing validator utilities
+- Use the established JWT authentication patterns for protected routes
+- Follow existing file upload patterns with Cloudinary integration
