@@ -12,7 +12,7 @@ import {
   refundPayment,
 } from "../controllers/paymentController.js";
 import { protect, restrictTo } from "../middlewares/authMiddleware.js";
-import { body } from "express-validator";
+import { body, param } from "express-validator";
 import { handleValidationErrors } from "../utils/validators.js";
 
 const router = express.Router();

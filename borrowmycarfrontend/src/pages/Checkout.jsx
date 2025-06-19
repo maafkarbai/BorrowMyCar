@@ -51,10 +51,12 @@ const Checkout = () => {
           carId: carId,
           startDate: bookingData.startDate,
           endDate: bookingData.endDate,
-          totalDays: bookingData.numberOfDays,
-          totalAmount: bookingData.subtotal,
-          serviceFee: bookingData.serviceFee,
-          totalPayable: bookingData.totalCost,
+          paymentMethod: bookingData.paymentMethod || "Cash",
+          pickupLocation: bookingData.pickupLocation || "",
+          returnLocation: bookingData.returnLocation || "",
+          deliveryRequested: bookingData.deliveryRequested || false,
+          deliveryAddress: bookingData.deliveryAddress || "",
+          renterNotes: bookingData.renterNotes || "",
         });
 
         setBooking(bookingResponse.data.data.booking);

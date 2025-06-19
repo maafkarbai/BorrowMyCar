@@ -150,13 +150,13 @@ export const validateCreateBooking = [
   body("pickupLocation")
     .optional()
     .trim()
-    .isLength({ min: 5, max: 200 })
-    .withMessage("Pickup location must be between 5 and 200 characters"),
+    .isLength({ max: 200 })
+    .withMessage("Pickup location must not exceed 200 characters"),
   body("returnLocation")
     .optional()
     .trim()
-    .isLength({ min: 5, max: 200 })
-    .withMessage("Return location must be between 5 and 200 characters"),
+    .isLength({ max: 200 })
+    .withMessage("Return location must not exceed 200 characters"),
   body("deliveryRequested")
     .optional()
     .isBoolean()
@@ -164,8 +164,8 @@ export const validateCreateBooking = [
   body("deliveryAddress")
     .optional()
     .trim()
-    .isLength({ min: 10, max: 300 })
-    .withMessage("Delivery address must be between 10 and 300 characters"),
+    .isLength({ max: 300 })
+    .withMessage("Delivery address must not exceed 300 characters"),
   body("renterNotes")
     .optional()
     .trim()
