@@ -1,9 +1,9 @@
 // utils/phoneUtils.js - COMPREHENSIVE FIXED VERSION
 
 /**
- * Format UAE phone number to international format with country code
+ * Format UAE phone number to local format (0XXXXXXXXX)
  * @param {string} phone - Input phone number
- * @returns {string} - Formatted phone number with +971 prefix
+ * @returns {string} - Formatted phone number in local format
  */
 export const formatUAEPhone = (phone) => {
   if (!phone) return phone;
@@ -13,17 +13,17 @@ export const formatUAEPhone = (phone) => {
 
   // Handle different input formats
   if (cleanPhone.startsWith("971") && cleanPhone.length === 12) {
-    // Already has country code: 971501234567
-    return `+${cleanPhone}`;
+    // Already has country code: 971501234567 -> 0501234567
+    return `0${cleanPhone.substring(3)}`;
   } else if (cleanPhone.startsWith("00971") && cleanPhone.length === 14) {
-    // International format: 00971501234567
-    return `+${cleanPhone.substring(2)}`;
+    // International format: 00971501234567 -> 0501234567
+    return `0${cleanPhone.substring(5)}`;
   } else if (cleanPhone.startsWith("0") && cleanPhone.length === 10) {
-    // Local format: 0501234567 (most common from frontend)
-    return `+971${cleanPhone.substring(1)}`;
+    // Local format: 0501234567 (already correct)
+    return cleanPhone;
   } else if (cleanPhone.length === 9) {
-    // Without leading zero: 501234567
-    return `+971${cleanPhone}`;
+    // Without leading zero: 501234567 -> 0501234567
+    return `0${cleanPhone}`;
   }
 
   // Return as is if format is unclear
@@ -190,6 +190,36 @@ export const debugPhoneValidation = (phone) => {
 };
 
 /**
+ * Format UAE phone number to international format with country code
+ * @param {string} phone - Input phone number
+ * @returns {string} - Formatted phone number with +971 prefix
+ */
+export const formatUAEPhoneInternational = (phone) => {
+  if (!phone) return phone;
+
+  // Remove all non-digit characters
+  const cleanPhone = phone.replace(/\D/g, "");
+
+  // Handle different input formats
+  if (cleanPhone.startsWith("971") && cleanPhone.length === 12) {
+    // Already has country code: 971501234567
+    return `+${cleanPhone}`;
+  } else if (cleanPhone.startsWith("00971") && cleanPhone.length === 14) {
+    // International format: 00971501234567
+    return `+${cleanPhone.substring(2)}`;
+  } else if (cleanPhone.startsWith("0") && cleanPhone.length === 10) {
+    // Local format: 0501234567 (most common from frontend)
+    return `+971${cleanPhone.substring(1)}`;
+  } else if (cleanPhone.length === 9) {
+    // Without leading zero: 501234567
+    return `+971${cleanPhone}`;
+  }
+
+  // Return as is if format is unclear
+  return phone;
+};
+
+/**
  * Normalize phone number for database storage
  * Always stores in +971XXXXXXXXX format
  */
@@ -197,7 +227,7 @@ export const normalizePhoneForStorage = (phone) => {
   if (!phone || !validateUAEPhone(phone)) {
     throw new Error("Invalid UAE phone number");
   }
-  return formatUAEPhone(phone);
+  return formatUAEPhoneInternational(phone);
 };
 
 /**
