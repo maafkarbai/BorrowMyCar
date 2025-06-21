@@ -95,6 +95,16 @@ export const createBooking = handleAsyncError(async (req, res) => {
       });
     }
 
+    // Check for booking conflicts
+    const conflict = await checkBookingConflicts(carId, startDate, endDate);
+    if (conflict) {
+      return res.status(409).json({
+        success: false,
+        message: "Car is not available for the selected dates",
+        conflictingBooking: conflict._id,
+      });
+    }
+
     // Calculate pricing
     const pricing = calculateBookingPricing(
       car,

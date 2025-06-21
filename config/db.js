@@ -47,9 +47,10 @@ export const connectDB = async () => {
     });
   } catch (error) {
     console.error("❌ MongoDB connection error:", error.message);
-
-    // Exit process with failure
-    process.exit(1);
+    console.log("⚠️ Database will not be available");
+    
+    // Don't exit process, just continue without database
+    throw error;
   }
 };
 
