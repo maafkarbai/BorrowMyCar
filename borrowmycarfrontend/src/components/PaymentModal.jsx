@@ -14,7 +14,7 @@ import {
   Banknote,
 } from "lucide-react";
 import API from "../api";
-import API from "../api";
+
 
 const PaymentModal = ({
   isOpen,
@@ -135,8 +135,7 @@ const PaymentModal = ({
 
   const fetchSavedCards = async () => {
     try {
-      const response = await API.get("/payments/saved-cards");
-      setSavedCards(response.data.data?.cards || []);
+    
       const response = await API.get("/payments/saved-cards");
       setSavedCards(response.data.data?.cards || []);
     } catch (error) {
