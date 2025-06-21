@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   testEnvironment: 'node',
   collectCoverageFrom: [
     'controllers/**/*.js',
@@ -9,8 +9,12 @@ export default {
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
   testMatch: [
-    '**/__tests__/**/*.js',
+    '**/tests/**/*.js',
     '**/?(*.)+(spec|test).js'
+  ],
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/borrowmycarfrontend/'
   ],
   verbose: true,
   setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],

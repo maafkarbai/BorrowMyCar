@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import API from "./api";
 import Logo from "./assets/BorrowMyCar.png";
-import { Helmet } from "react-helmet";
+import { Helmet } from "react-helmet-async";
 
 const Login = () => {
   const [form, setForm] = useState({ email: "", password: "" });

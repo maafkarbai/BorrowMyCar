@@ -1,7 +1,7 @@
 // src/pages/BookingSuccess.jsx - Complete booking success page
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Helmet } from "react-helmet";
+import { Helmet } from "react-helmet-async";
 import {
   CheckCircle,
   Calendar,

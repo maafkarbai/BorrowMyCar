@@ -1,7 +1,7 @@
 // src/Profile.jsx - User Profile Page
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Helmet } from "react-helmet";
+import { Helmet } from "react-helmet-async";
 import {
   User,
   Mail,

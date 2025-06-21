@@ -1,6 +1,6 @@
 // utils/cloudinary.js (Enhanced)
 import { v2 as cloudinary } from "cloudinary";
-import { CloudinaryStorage } from "multer-storage-cloudinary";
+import multer from "multer";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -12,54 +12,57 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Enhanced storage configuration with organized folders and transformations
-export const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: async (req, file) => {
-    // Determine folder based on file field and user role
-    let folder = "borrowmycar/misc";
+// Use memory storage instead of CloudinaryStorage for better compatibility
+export const storage = multer.memoryStorage();
 
-    if (file.fieldname === "images") {
+// Helper function to upload buffer to Cloudinary
+export const uploadToCloudinary = async (buffer, options = {}) => {
+  return new Promise((resolve, reject) => {
+    const { fieldname, originalname } = options;
+    
+    // Determine folder based on file field
+    let folder = "borrowmycar/misc";
+    let transformation = [{ quality: "auto:good", fetch_format: "auto" }];
+
+    if (fieldname === "images") {
       folder = "borrowmycar/cars";
+      transformation = [
+        { width: 1200, height: 800, crop: "limit" },
+        { quality: "auto:good", fetch_format: "auto" },
+      ];
     } else if (
-      ["drivingLicense", "emiratesId", "visa", "passport"].includes(
-        file.fieldname
-      )
+      ["drivingLicense", "emiratesId", "visa", "passport"].includes(fieldname)
     ) {
       folder = "borrowmycar/documents";
-    } else if (file.fieldname === "profileImage") {
+    } else if (fieldname === "profileImage") {
       folder = "borrowmycar/profiles";
+      transformation = [
+        { width: 300, height: 300, crop: "fill", gravity: "face" },
+        { quality: "auto:good", fetch_format: "auto" },
+      ];
     }
 
     // Generate unique filename
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const publicId = `${fieldname}-${uniqueSuffix}`;
 
-    return {
-      folder: folder,
-      public_id: `${file.fieldname}-${uniqueSuffix}`,
-      allowed_formats: ["jpg", "jpeg", "png", "webp"],
-      transformation: [
-        {
-          quality: "auto:good",
-          fetch_format: "auto",
-        },
-      ],
-      // Add different transformations based on file type
-      ...(file.fieldname === "profileImage" && {
-        transformation: [
-          { width: 300, height: 300, crop: "fill", gravity: "face" },
-          { quality: "auto:good", fetch_format: "auto" },
-        ],
-      }),
-      ...(file.fieldname === "images" && {
-        transformation: [
-          { width: 1200, height: 800, crop: "limit" },
-          { quality: "auto:good", fetch_format: "auto" },
-        ],
-      }),
-    };
-  },
-});
+    cloudinary.uploader.upload_stream(
+      {
+        folder: folder,
+        public_id: publicId,
+        allowed_formats: ["jpg", "jpeg", "png", "webp"],
+        transformation: transformation,
+      },
+      (error, result) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(result);
+        }
+      }
+    ).end(buffer);
+  });
+};
 
 // Health check for Cloudinary
 export const checkCloudinaryHealth = async () => {

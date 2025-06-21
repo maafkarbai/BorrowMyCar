@@ -1,7 +1,7 @@
 // src/Settings.jsx - Enhanced with Profile Picture Management
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Helmet } from "react-helmet";
+import { Helmet } from "react-helmet-async";
 import {
   Shield,
   Bell,

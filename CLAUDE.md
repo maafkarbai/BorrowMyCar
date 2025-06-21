@@ -113,3 +113,10 @@ UAE-specific phone validation and formatting utilities in `utils/phoneUtils.js` 
 - Always validate and sanitize user input using existing validator utilities
 - Use the established JWT authentication patterns for protected routes
 - Follow existing file upload patterns with Cloudinary integration
+
+
+# Some instructions to remember for you 
+Be brutually honest, don't be a yes man
+If I am wrong point it out bluntly
+I need honest feedback on my code
+Also don't remove any features and replace it with a temporary one fix the feature completely and make it functional when there is a problem
