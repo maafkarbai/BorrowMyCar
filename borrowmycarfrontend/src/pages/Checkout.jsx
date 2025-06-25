@@ -1,7 +1,7 @@
 // src/pages/Checkout.jsx - Fixed to work with your backend
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { Helmet } from "react-helmet";
+import { Helmet } from "react-helmet-async";
 import {
   ArrowLeft,
   Calendar,
@@ -46,14 +46,36 @@ const Checkout = () => {
         const carResponse = await API.get(`/cars/${carId}`);
         setCar(carResponse.data.data.car);
 
+        // Validate booking dates
+        const startDate = new Date(bookingData.startDate);
+        const endDate = new Date(bookingData.endDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (startDate < today) {
+          setError("Start date cannot be in the past");
+          return;
+        }
+
+        if (startDate >= endDate) {
+          setError("End date must be after start date");
+          return;
+        }
+
+        // Normalize payment method
+        let paymentMethod = bookingData.paymentMethod || "cash";
+        if (paymentMethod === "cash_on_delivery") paymentMethod = "Cash";
+        if (paymentMethod === "credit_card" || paymentMethod === "debit_card") paymentMethod = "Card";
+        if (paymentMethod === "bank_transfer") paymentMethod = "BankTransfer";
+
         // Create booking on backend
         const bookingResponse = await API.post("/bookings", {
           carId: carId,
           startDate: bookingData.startDate,
           endDate: bookingData.endDate,
-          paymentMethod: bookingData.paymentMethod || "Cash",
-          pickupLocation: bookingData.pickupLocation || "",
-          returnLocation: bookingData.returnLocation || "",
+          paymentMethod: paymentMethod,
+          pickupLocation: bookingData.pickupLocation || "To be determined",
+          returnLocation: bookingData.returnLocation || "To be determined",
           deliveryRequested: bookingData.deliveryRequested || false,
           deliveryAddress: bookingData.deliveryAddress || "",
           renterNotes: bookingData.renterNotes || "",

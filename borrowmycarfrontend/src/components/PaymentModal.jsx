@@ -1630,6 +1630,88 @@ const PaymentModal = ({
               </div>
             </div>
           )}
+          {/* Action Buttons */}
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              disabled={processing}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={processPayment}
+              disabled={processing}
+              className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            >
+              {processing ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Lock className="h-4 w-4 mr-2" />
+                  Pay AED {totalWithFees}
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Payment Method Specific Instructions */}
+          {paymentMethod === "bank_transfer" && (
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <h4 className="font-medium text-blue-900 mb-2">
+                Bank Transfer Instructions
+              </h4>
+              <div className="text-sm text-blue-800 space-y-1">
+                <p>
+                  1. You will receive detailed bank transfer instructions via
+                  email
+                </p>
+                <p>
+                  2. Transfer must be completed within 24 hours to hold your
+                  booking
+                </p>
+                <p>
+                  3. Include your booking reference in the transfer description
+                </p>
+                <p>4. Upload transfer receipt in your booking dashboard</p>
+              </div>
+            </div>
+          )}
+
+          {paymentMethod === "cash_on_pickup" && (
+            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <h4 className="font-medium text-yellow-900 mb-2">
+                Cash Payment Guidelines
+              </h4>
+              <div className="text-sm text-yellow-800 space-y-1">
+                <p>• Bring exact amount: AED {totalWithFees}</p>
+                <p>• Meeting location and time are confirmed upon booking</p>
+                <p>• Bring valid ID for verification</p>
+                <p>• Late arrival may result in booking cancellation</p>
+              </div>
+            </div>
+          )}
+
+          {paymentMethod === "digital_wallet" && (
+            <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+              <h4 className="font-medium text-purple-900 mb-2">
+                Digital Wallet Payment
+              </h4>
+              <div className="text-sm text-purple-800 space-y-1">
+                <p>
+                  • You will be redirected to complete payment with your
+                  selected wallet
+                </p>
+                <p>
+                  • Ensure you have sufficient balance or linked payment method
+                </p>
+                <p>• Payment confirmation will be sent via email</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

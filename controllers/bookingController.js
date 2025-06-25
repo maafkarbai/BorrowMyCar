@@ -16,15 +16,16 @@ const checkBookingConflicts = async (
   endDate,
   excludeBookingId = null
 ) => {
+  const requestStart = new Date(startDate);
+  const requestEnd = new Date(endDate);
+  
   const filter = {
     car: carId,
     status: { $in: ["pending", "approved", "confirmed", "active"] },
-    $or: [
-      {
-        startDate: { $lte: new Date(endDate) },
-        endDate: { $gte: new Date(startDate) },
-      },
-    ],
+    $and: [
+      { startDate: { $lt: requestEnd } },
+      { endDate: { $gt: requestStart } }
+    ]
   };
 
   if (excludeBookingId) {
@@ -85,6 +86,15 @@ export const createBooking = handleAsyncError(async (req, res) => {
     });
   }
 
+  // Check if user is approved
+  if (!user.isApproved) {
+    return res.status(403).json({
+      success: false,
+      message: "Your account must be approved before making bookings",
+      code: "ACCOUNT_NOT_APPROVED",
+    });
+  }
+
   try {
     // Get car details
     const car = await Car.findById(carId);
@@ -92,6 +102,35 @@ export const createBooking = handleAsyncError(async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "Car not found",
+      });
+    }
+
+    // Check if car is available
+    if (car.status !== "available") {
+      return res.status(400).json({
+        success: false,
+        message: "Car is not available for booking",
+      });
+    }
+
+    // Check if dates are within car availability range
+    const requestStart = new Date(startDate);
+    const requestEnd = new Date(endDate);
+    const carAvailableFrom = new Date(car.availabilityFrom);
+    const carAvailableTo = new Date(car.availabilityTo);
+
+    if (requestStart < carAvailableFrom || requestEnd > carAvailableTo) {
+      return res.status(400).json({
+        success: false,
+        message: `Selected dates must be between ${carAvailableFrom.toDateString()} and ${carAvailableTo.toDateString()}`,
+      });
+    }
+
+    // Ensure user is not booking their own car
+    if (car.owner.toString() === user.id) {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot book your own car",
       });
     }
 
@@ -153,9 +192,30 @@ export const createBooking = handleAsyncError(async (req, res) => {
 // GET MY BOOKINGS
 export const getMyBookings = handleAsyncError(async (req, res) => {
   try {
-    const bookings = await Booking.find({ renter: req.user.id })
-      .populate("car", "title make model year price images")
-      .sort({ createdAt: -1 });
+    // Get bookings based on user role
+    let bookings;
+    if (req.user.role === "owner") {
+      // For owners, show bookings for their cars
+      const ownedCars = await Car.find({ owner: req.user.id }).select("_id");
+      const carIds = ownedCars.map((car) => car._id);
+      
+      bookings = await Booking.find({ car: { $in: carIds } })
+        .populate("car", "title make model year price images city")
+        .populate("renter", "name email phone")
+        .sort({ createdAt: -1 });
+    } else {
+      // For renters, show their bookings
+      bookings = await Booking.find({ renter: req.user.id })
+        .populate("car", "title make model year price images city")
+        .populate({
+          path: "car",
+          populate: {
+            path: "owner",
+            select: "name email phone"
+          }
+        })
+        .sort({ createdAt: -1 });
+    }
 
     res.json({
       success: true,
@@ -173,12 +233,21 @@ export const getMyBookings = handleAsyncError(async (req, res) => {
 // GET BOOKINGS FOR OWNER
 export const getBookingsForOwner = handleAsyncError(async (req, res) => {
   try {
+    // Check if user is an owner
+    if (req.user.role !== "owner") {
+      return res.status(403).json({
+        success: false,
+        message: "Only car owners can access this endpoint",
+        code: "INSUFFICIENT_PERMISSIONS",
+      });
+    }
+
     // Get all cars owned by the user
     const ownedCars = await Car.find({ owner: req.user.id }).select("_id");
     const carIds = ownedCars.map((car) => car._id);
 
     const bookings = await Booking.find({ car: { $in: carIds } })
-      .populate("car", "title make model year price images")
+      .populate("car", "title make model year price images city")
       .populate("renter", "name email phone")
       .sort({ createdAt: -1 });
 
@@ -210,14 +279,33 @@ export const updateBookingStatus = handleAsyncError(async (req, res) => {
       });
     }
 
-    // Simple authorization check
+    // Enhanced authorization check
     const isOwner = booking.car.owner.toString() === req.user.id;
     const isRenter = booking.renter.toString() === req.user.id;
+    const isAdmin = req.user.role === "admin";
 
-    if (!isOwner && !isRenter) {
+    if (!isOwner && !isRenter && !isAdmin) {
       return res.status(403).json({
         success: false,
         message: "Not authorized to update this booking",
+        code: "INSUFFICIENT_PERMISSIONS",
+      });
+    }
+
+    // Additional business logic checks
+    if (isRenter && !["cancelled"].includes(status)) {
+      return res.status(403).json({
+        success: false,
+        message: "Renters can only cancel bookings",
+        code: "INVALID_STATUS_CHANGE",
+      });
+    }
+
+    if (isOwner && status === "cancelled" && booking.status !== "pending") {
+      return res.status(400).json({
+        success: false,
+        message: "Owners cannot cancel bookings that are already approved",
+        code: "INVALID_STATUS_CHANGE",
       });
     }
 

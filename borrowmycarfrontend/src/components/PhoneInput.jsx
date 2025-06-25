@@ -8,6 +8,8 @@ const PhoneInput = ({
   placeholder = "0501234567",
   required = false,
   className = "",
+  label,
+  disabled = false,
 }) => {
   const [focused, setFocused] = useState(false);
 
@@ -33,15 +35,22 @@ const PhoneInput = ({
     const input = e.target.value;
 
     // Remove all non-digit characters
-    const digits = input.replace(/\D/g, "");
+    let digits = input.replace(/\D/g, "");
+
+    // Handle different input formats
+    if (digits.startsWith("971") && digits.length >= 12) {
+      // International format: 971501234567 -> 0501234567
+      digits = "0" + digits.substring(3, 12);
+    } else if (digits.startsWith("00971") && digits.length >= 14) {
+      // International format: 00971501234567 -> 0501234567
+      digits = "0" + digits.substring(5, 14);
+    } else if (digits.length > 0 && !digits.startsWith("0")) {
+      // Local without leading zero: 501234567 -> 0501234567
+      digits = "0" + digits.slice(0, 9);
+    }
 
     // Limit to 10 digits (including leading 0)
-    let formattedValue = digits.slice(0, 10);
-
-    // Ensure it starts with 0 for UAE local format
-    if (formattedValue.length > 0 && !formattedValue.startsWith("0")) {
-      formattedValue = "0" + formattedValue.slice(0, 9);
-    }
+    const formattedValue = digits.slice(0, 10);
 
     onChange(formattedValue);
   };
@@ -75,11 +84,47 @@ const PhoneInput = ({
     return validPatterns.some((pattern) => pattern.test(digits));
   };
 
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData('text');
+    
+    // Remove all non-digit characters
+    let digits = pastedText.replace(/\D/g, "");
+
+    // Handle different input formats
+    if (digits.startsWith("971") && digits.length >= 12) {
+      // International format: 971501234567 -> 0501234567
+      digits = "0" + digits.substring(3, 12);
+    } else if (digits.startsWith("00971") && digits.length >= 14) {
+      // International format: 00971501234567 -> 0501234567
+      digits = "0" + digits.substring(5, 14);
+    } else if (digits.length > 0 && !digits.startsWith("0")) {
+      // Local without leading zero: 501234567 -> 0501234567
+      digits = "0" + digits.slice(0, 9);
+    }
+
+    // Limit to 10 digits (including leading 0)
+    const formattedValue = digits.slice(0, 10);
+
+    onChange(formattedValue);
+  };
+
   const isValid = value ? validatePhone(value) : true;
 
   return (
     <div className="space-y-1">
-      <div className="relative">
+      {label && (
+        <label className="block text-sm font-medium text-gray-700">
+          {label}
+          {required && <span className="text-red-500 ml-1">*</span>}
+        </label>
+      )}
+      <div className="relative" onClick={(e) => {
+        if (!disabled) {
+          const input = e.currentTarget.querySelector('input');
+          if (input) input.focus();
+        }
+      }}>
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <span className="text-gray-500 text-sm">🇦🇪 +971</span>
         </div>
@@ -87,16 +132,19 @@ const PhoneInput = ({
           type="text"
           value={getDisplayValue()}
           onChange={handleInputChange}
+          onPaste={handlePaste}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           placeholder={placeholder}
           required={required}
+          disabled={disabled}
           className={`
             w-full pl-20 pr-4 py-3 border rounded-lg text-sm
             focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none
             transition-colors
             ${error ? "border-red-500 bg-red-50" : "border-gray-300"}
             ${!isValid && value ? "border-orange-400 bg-orange-50" : ""}
+            ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}
             ${className}
           `}
         />

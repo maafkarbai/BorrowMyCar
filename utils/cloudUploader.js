@@ -1,5 +1,6 @@
 // utils/cloudUploader.js (Enhanced)
 import { v2 as cloudinary } from "cloudinary";
+import { uploadToCloudinary } from "./cloudinary.js";
 
 // Upload multiple images to Cloudinary
 export const uploadImagesToCloud = async (files) => {
@@ -12,13 +13,21 @@ export const uploadImagesToCloud = async (files) => {
     const fileArray = Array.isArray(files) ? files : [files];
 
     const uploadPromises = fileArray.map(async (file) => {
-      // Each file should already be uploaded by multer-storage-cloudinary
-      // Just return the secure_url
-      if (file.path) {
-        return file.path; // This is the Cloudinary URL
+      // For memory storage, files have buffer instead of path
+      if (file.buffer) {
+        const result = await uploadToCloudinary(file.buffer, {
+          fieldname: file.fieldname,
+          originalname: file.originalname,
+        });
+        return result.secure_url;
       }
 
-      // Fallback: manual upload if needed
+      // Fallback for file path if needed
+      if (file.path) {
+        return file.path;
+      }
+
+      // Manual upload if file has different structure
       const result = await cloudinary.uploader.upload(
         file.path || file.buffer,
         {
@@ -134,6 +143,22 @@ export const uploadSingleImage = async (file, options = {}) => {
       throw new Error("No file provided for upload");
     }
 
+    // For memory storage, use buffer
+    if (file.buffer) {
+      const result = await uploadToCloudinary(file.buffer, {
+        fieldname: file.fieldname,
+        originalname: file.originalname,
+        ...options,
+      });
+      return result.secure_url;
+    }
+
+    // Fallback for file path
+    if (file.path) {
+      return file.path;
+    }
+
+    // Manual upload with options
     const uploadOptions = {
       folder: options.folder || "borrowmycar/uploads",
       quality: options.quality || "auto:good",
@@ -141,12 +166,6 @@ export const uploadSingleImage = async (file, options = {}) => {
       ...options,
     };
 
-    // If file is already uploaded by multer-storage-cloudinary
-    if (file.path) {
-      return file.path;
-    }
-
-    // Manual upload
     const result = await cloudinary.uploader.upload(
       file.path || file.buffer,
       uploadOptions

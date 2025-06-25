@@ -12,7 +12,8 @@
     "seed": "node scripts/seedData.js",
     "setup": "npm install && cd borrowmycarfrontend && npm install",
     "build": "cd borrowmycarfrontend && npm run build",
-    "test": "echo \"Tests not implemented yet\" && exit 0",
+    "test": "jest",
+    "test:watch": "jest --watch",
     "cleanup:indexes": "node scripts/cleanupIndexes.js",
     "fresh:start": "npm run cleanup:indexes && npm run seed && npm run dev:both"
   },
@@ -28,13 +29,12 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.0.4",
     "multer": "^1.4.5-lts.1",
-    "multer-storage-cloudinary": "^4.0.0",
     "nodemailer": "^7.0.3",
     "stripe": "^14.14.0",
     "twilio": "^5.7.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2",
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.0.2"
   }
 }

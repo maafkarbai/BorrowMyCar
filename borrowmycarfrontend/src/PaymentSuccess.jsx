@@ -11,7 +11,7 @@ import {
   Mail,
   MessageCircle,
 } from "lucide-react";
-import { Helmet } from "react-helmet";
+import { Helmet } from "react-helmet-async";
 import API from "./api";
 
 const PaymentSuccess = () => {

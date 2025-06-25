@@ -22,20 +22,19 @@ const router = express.Router();
 // All routes require authentication
 router.use(protect);
 
-// POST /api/bookings - Create new booking (renters only)
+// POST /api/bookings - Create new booking (authenticated users only, role checked in controller)
 router.post(
   "/",
-  restrictTo("renter"),
   validateCreateBooking,
   handleValidationErrors,
   createBooking
 );
 
-// GET /api/bookings/me - Get my bookings (renter's bookings)
-router.get("/me", restrictTo("renter"), getMyBookings);
+// GET /api/bookings/me - Get my bookings (any authenticated user)
+router.get("/me", getMyBookings);
 
-// GET /api/bookings/owner - Get bookings for my cars (owner's received bookings)
-router.get("/owner", restrictTo("owner"), getBookingsForOwner);
+// GET /api/bookings/owner - Get bookings for my cars (any authenticated user, role checked in controller)
+router.get("/owner", getBookingsForOwner);
 
 // GET /api/bookings/:id - Get single booking details
 router.get("/:id", getBookingById);
