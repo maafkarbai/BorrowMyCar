@@ -33,6 +33,8 @@ export const createTestUser = async (userData = {}) => {
     password: 'password123',
     role: 'renter',
     isApproved: true,
+    drivingLicenseUrl: 'http://example.com/license.jpg',
+    emiratesIdUrl: 'http://example.com/emirates_id.jpg',
   };
 
   const user = await User.create({ ...defaultUserData, ...userData });

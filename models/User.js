@@ -17,7 +17,7 @@ const userSchema = new mongoose.Schema(
     email: {
       type: String,
       required: true,
-      unique: true, // REMOVED: index: true (this was causing duplicate)
+      unique: true,
       lowercase: true,
       trim: true,
     },
@@ -107,8 +107,7 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// FIXED: Consolidated index definitions (no duplicates)
-userSchema.index({ email: 1 }); // Single email index
+// Index definitions (unique: true already creates email index)
 userSchema.index({ phone: 1 }); // Phone index
 userSchema.index({ isApproved: 1, role: 1 }); // Compound index for queries
 userSchema.index({ role: 1 }); // Role index

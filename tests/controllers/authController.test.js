@@ -28,6 +28,8 @@ describe('Auth Controller', () => {
         phone: '0501234567',
         password: 'password123',
         role: 'renter',
+        drivingLicenseUrl: 'http://example.com/license.jpg',
+        emiratesIdUrl: 'http://example.com/emirates_id.jpg',
       };
 
       const response = await request(app)
@@ -84,6 +86,8 @@ describe('Auth Controller', () => {
         email: 'john@example.com',
         phone: '0501234567',
         password: 'password123',
+        drivingLicenseUrl: 'http://example.com/license.jpg',
+        emiratesIdUrl: 'http://example.com/emirates_id.jpg',
       };
 
       // Create first user
