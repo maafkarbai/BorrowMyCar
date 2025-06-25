@@ -11,6 +11,9 @@ export const formatUAEPhone = (phone) => {
   // Remove all non-digit characters
   const cleanPhone = phone.replace(/\D/g, "");
 
+  // If no digits remain, return empty string
+  if (cleanPhone.length === 0) return '';
+
   // Handle different input formats
   if (cleanPhone.startsWith("971") && cleanPhone.length === 12) {
     // Already has country code: 971501234567 -> 0501234567

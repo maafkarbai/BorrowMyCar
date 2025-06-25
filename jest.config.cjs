@@ -17,6 +17,5 @@ module.exports = {
     '/borrowmycarfrontend/'
   ],
   verbose: true,
-  setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
-  transform: {}
+  setupFilesAfterEnv: ['<rootDir>/tests/setup.js']
 };

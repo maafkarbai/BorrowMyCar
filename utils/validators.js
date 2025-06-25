@@ -264,3 +264,111 @@ export const generalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+// Car data validation function
+export const validateCarData = (carData) => {
+  const errors = [];
+  const currentYear = new Date().getFullYear();
+
+  // Required fields
+  if (!carData.title || carData.title.trim().length === 0) {
+    errors.push('Title is required');
+  }
+  if (!carData.make || carData.make.trim().length === 0) {
+    errors.push('Make is required');
+  }
+  if (!carData.model || carData.model.trim().length === 0) {
+    errors.push('Model is required');
+  }
+  if (!carData.year) {
+    errors.push('Year is required');
+  }
+  if (!carData.price) {
+    errors.push('Price is required');
+  }
+
+  // Validate year range
+  if (carData.year && (carData.year < 1990 || carData.year > currentYear + 1)) {
+    errors.push('Year must be between 1990 and current year + 1');
+  }
+
+  // Validate price
+  if (carData.price && carData.price <= 0) {
+    errors.push('Price must be greater than 0');
+  }
+
+  // Validate seating capacity
+  if (carData.seatingCapacity && (carData.seatingCapacity < 2 || carData.seatingCapacity > 12)) {
+    errors.push('Seating capacity must be between 2 and 12');
+  }
+
+  // Validate transmission
+  const validTransmissions = ['Manual', 'Automatic', 'CVT'];
+  if (carData.transmission && !validTransmissions.includes(carData.transmission)) {
+    errors.push('Transmission must be one of: Manual, Automatic, CVT');
+  }
+
+  // Validate fuel type
+  const validFuelTypes = ['Petrol', 'Diesel', 'Hybrid', 'Electric'];
+  if (carData.fuelType && !validFuelTypes.includes(carData.fuelType)) {
+    errors.push('Fuel type must be one of: Petrol, Diesel, Hybrid, Electric');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+};
+
+// Car data sanitization function
+export const sanitizeCarData = (carData) => {
+  const sanitized = {};
+
+  // String fields - trim whitespace
+  const stringFields = ['title', 'description', 'make', 'model', 'color', 'transmission', 'fuelType', 'city'];
+  stringFields.forEach(field => {
+    if (carData[field] !== undefined) {
+      if (field === 'plateNumber') {
+        // Special handling for plate number - uppercase
+        sanitized[field] = carData[field].toString().trim().toUpperCase();
+      } else {
+        sanitized[field] = carData[field].toString().trim();
+      }
+    }
+  });
+
+  // Numeric fields - convert to numbers
+  const numericFields = ['year', 'price', 'seatingCapacity', 'mileage'];
+  numericFields.forEach(field => {
+    if (carData[field] !== undefined) {
+      const num = parseFloat(carData[field]);
+      if (!isNaN(num)) {
+        sanitized[field] = field === 'year' || field === 'seatingCapacity' || field === 'mileage' ? 
+          parseInt(carData[field]) : num;
+      }
+    }
+  });
+
+  // Handle plate number separately
+  if (carData.plateNumber !== undefined) {
+    sanitized.plateNumber = carData.plateNumber.toString().trim().toUpperCase();
+  }
+
+  // Handle array fields (features)
+  if (carData.features !== undefined) {
+    if (Array.isArray(carData.features)) {
+      sanitized.features = carData.features;
+    } else {
+      sanitized.features = [carData.features];
+    }
+  }
+
+  // Copy other fields as-is
+  Object.keys(carData).forEach(key => {
+    if (sanitized[key] === undefined) {
+      sanitized[key] = carData[key];
+    }
+  });
+
+  return sanitized;
+};
