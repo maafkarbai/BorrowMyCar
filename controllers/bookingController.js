@@ -2,12 +2,7 @@
 import Booking from "../models/Booking.js"; // Default import
 import Car from "../models/Car.js"; // Default import
 
-// Simple async error handler (if you don't have it in utils)
-const handleAsyncError = (fn) => {
-  return (req, res, next) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
-};
+import { handleAsyncError } from "../utils/errorHandler.js";
 
 // Check for booking conflicts
 const checkBookingConflicts = async (
@@ -106,7 +101,7 @@ export const createBooking = handleAsyncError(async (req, res) => {
     }
 
     // Check if car is available
-    if (car.status !== "available") {
+    if (car.status !== "active") {
       return res.status(400).json({
         success: false,
         message: "Car is not available for booking",

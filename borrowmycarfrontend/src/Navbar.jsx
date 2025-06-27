@@ -20,6 +20,8 @@ import {
   HelpCircle,
 } from "lucide-react";
 import API from "./api";
+import LanguageToggle from "./components/LanguageToggle";
+import { useLanguage } from "./context/LanguageContext";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -37,6 +39,7 @@ const Navbar = () => {
   const location = useLocation();
   const profileRef = useRef(null);
   const searchRef = useRef(null);
+  const { t } = useLanguage();
 
   // Get current user on component mount
   useEffect(() => {
@@ -440,18 +443,19 @@ const Navbar = () => {
             ))}
           </div>
 
-          {/* Auth Buttons / Profile */}
+          {/* Language Toggle & Auth Buttons / Profile */}
           <div className="flex items-center space-x-4">
+            <LanguageToggle />
             {!user ? (
               <>
                 <Link
-                  to="/login"
+                  to="/auth/login"
                   className="text-gray-700 hover:text-green-600 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
                 >
                   Sign In
                 </Link>
                 <Link
-                  to="/signup"
+                  to="/auth/signup"
                   className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg"
                 >
                   Get Started
@@ -656,13 +660,13 @@ const Navbar = () => {
             {!user && (
               <>
                 <Link
-                  to="/login"
+                  to="/auth/login"
                   className="flex items-center w-full text-gray-700 hover:text-green-600 hover:bg-green-50 px-3 py-3 rounded-lg text-base font-medium transition-colors"
                 >
                   Sign In
                 </Link>
                 <Link
-                  to="/signup"
+                  to="/auth/signup"
                   className="flex items-center w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-3 rounded-lg text-base font-medium transition-colors"
                 >
                   Get Started
