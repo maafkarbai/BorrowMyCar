@@ -1,12 +1,17 @@
 // src/components/LanguageToggle.jsx - Language switcher component
 import { useState, useRef, useEffect } from "react";
 import { Globe, ChevronDown } from "lucide-react";
-import { useLanguage } from "../context/LanguageContext";
+import { useTranslation } from "react-i18next";
 
 const LanguageToggle = ({ className = "" }) => {
-  const { language, changeLanguage, availableLanguages } = useLanguage();
+  const { i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  
+  const availableLanguages = [
+    { code: "en", name: "English", nativeName: "English" },
+    { code: "ar", name: "Arabic", nativeName: "العربية" },
+  ];
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -20,10 +25,10 @@ const LanguageToggle = ({ className = "" }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const currentLanguage = availableLanguages.find(lang => lang.code === language);
+  const currentLanguage = availableLanguages.find(lang => lang.code === i18n.language);
 
   const handleLanguageChange = (langCode) => {
-    changeLanguage(langCode);
+    i18n.changeLanguage(langCode);
     setIsOpen(false);
   };
 
@@ -53,13 +58,13 @@ const LanguageToggle = ({ className = "" }) => {
                 key={lang.code}
                 onClick={() => handleLanguageChange(lang.code)}
                 className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${
-                  language === lang.code
+                  i18n.language === lang.code
                     ? "bg-green-50 text-green-700 font-medium"
                     : "text-gray-700 hover:bg-gray-50"
                 }`}
               >
                 <span>{lang.nativeName}</span>
-                {language === lang.code && (
+                {i18n.language === lang.code && (
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 )}
               </button>

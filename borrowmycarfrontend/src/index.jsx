@@ -25,9 +25,9 @@ import Footer from "./Footer.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import { AuthProvider } from "./context/AuthProvider.jsx";
 import { PaymentProvider } from "./context/PaymentContext.jsx";
-import { LanguageProvider } from "./context/LanguageContext.jsx";
 import { HelmetProvider } from "react-helmet-async";
 import "./global.css";
+import "./i18n";
 
 // Main Layout Component
 const Layout = () => (
@@ -152,13 +152,11 @@ const router = createBrowserRouter([
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <HelmetProvider>
-      <LanguageProvider>
-        <AuthProvider>
-          <PaymentProvider>
-            <RouterProvider router={router} />
-          </PaymentProvider>
-        </AuthProvider>
-      </LanguageProvider>
+      <AuthProvider>
+        <PaymentProvider>
+          <RouterProvider router={router} />
+        </PaymentProvider>
+      </AuthProvider>
     </HelmetProvider>
   </StrictMode>
 );

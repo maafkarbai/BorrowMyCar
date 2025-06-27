@@ -1,29 +1,31 @@
+import { useTranslation } from "react-i18next";
 import Logo from "./assets/BorrowMyCar.png";
 
 const Footer = () => {
+  const { t } = useTranslation();
   const currentYear = new Date().getFullYear();
 
   const footerLinks = {
     company: [
-      { name: "About Us", href: "/about" },
-      { name: "How It Works", href: "/how-it-works" },
-      { name: "Our Story", href: "/story" },
-      { name: "Careers", href: "/careers" },
-      { name: "Contact Us", href: "/contact" },
+      { name: t("footer.aboutUs"), href: "/about" },
+      { name: t("navigation.howItWorks"), href: "/how-it-works" },
+      { name: t("footer.ourStory"), href: "/story" },
+      { name: t("footer.careers"), href: "/careers" },
+      { name: t("footer.contactUs"), href: "/contact" },
     ],
     services: [
-      { name: "Browse Cars", href: "/browse" },
-      { name: "List Your Car", href: "/list-car" },
-      { name: "My Bookings", href: "/my-bookings" },
-      { name: "My Listings", href: "/my-listings" },
-      { name: "Help Center", href: "/help" },
+      { name: t("footer.browseCars"), href: "/browse" },
+      { name: t("footer.listYourCar"), href: "/list-car" },
+      { name: t("navigation.myBookings"), href: "/my-bookings" },
+      { name: t("footer.myListings"), href: "/my-listings" },
+      { name: t("footer.helpCenter"), href: "/help" },
     ],
     legal: [
-      { name: "Terms of Service", href: "/terms" },
-      { name: "Privacy Policy", href: "/privacy" },
-      { name: "Rental Agreement", href: "/rental-agreement" },
-      { name: "Insurance Policy", href: "/insurance" },
-      { name: "Refund Policy", href: "/refunds" },
+      { name: t("footer.termsOfService"), href: "/terms" },
+      { name: t("footer.privacyPolicy"), href: "/privacy" },
+      { name: t("footer.rentalAgreement"), href: "/rental-agreement" },
+      { name: t("footer.insurancePolicy"), href: "/insurance" },
+      { name: t("footer.refundPolicy"), href: "/refunds" },
     ],
     social: [
       {
@@ -88,13 +90,11 @@ const Footer = () => {
             </a>
 
             <h3 className="text-lg font-semibold text-gray-900">
-              Your Trusted Car Rental Platform
+              {t("footer.tagline")}
             </h3>
 
             <p className="text-sm text-gray-600 leading-relaxed max-w-md">
-              BorrowMyCar connects car owners and renters across the UAE,
-              providing a secure, convenient, and affordable car sharing
-              experience. Join thousands of satisfied users today.
+              {t("footer.description")}
             </p>
 
             {/* Social Media Links */}
@@ -117,7 +117,7 @@ const Footer = () => {
           {/* Company Links */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">
-              Company
+              {t("footer.company")}
             </h3>
             <ul className="space-y-3">
               {footerLinks.company.map((link) => (
@@ -136,7 +136,7 @@ const Footer = () => {
           {/* Services Links */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">
-              Services
+              {t("footer.services")}
             </h3>
             <ul className="space-y-3">
               {footerLinks.services.map((link) => (
@@ -155,7 +155,7 @@ const Footer = () => {
           {/* Legal Links */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">
-              Legal
+              {t("footer.legal")}
             </h3>
             <ul className="space-y-3">
               {footerLinks.legal.map((link) => (
@@ -177,22 +177,21 @@ const Footer = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
             <div className="max-w-md">
               <h4 className="text-sm font-semibold text-gray-900 mb-2">
-                Stay Updated
+                {t("footer.stayUpdated")}
               </h4>
               <p className="text-sm text-gray-600">
-                Get the latest updates on new features, promotions, and car
-                listings.
+                {t("footer.newsletterDescription")}
               </p>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 max-w-md w-full md:w-auto">
               <input
                 type="email"
-                placeholder="Enter your email"
+                placeholder={t("footer.emailPlaceholder")}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-colors text-sm"
               />
               <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors text-sm whitespace-nowrap">
-                Subscribe
+                {t("footer.subscribe")}
               </button>
             </div>
           </div>
@@ -205,7 +204,7 @@ const Footer = () => {
             className="flex items-center cursor-pointer gap-2 bg-gray-100 hover:bg-green-600 hover:text-white text-gray-700 px-6 py-3 rounded-lg font-medium transition-colors duration-200 group"
             aria-label="Scroll to top"
           >
-            <span>Back to Top</span>
+            <span>{t("footer.backToTop")}</span>
             <svg
               className="w-4 h-4 transform group-hover:-translate-y-1 transition-transform duration-200"
               fill="none"
@@ -229,36 +228,34 @@ const Footer = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
             <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-6">
               <p className="text-sm text-gray-600">
-                &copy; {currentYear} BorrowMyCar. All rights reserved.
+                &copy; {currentYear} BorrowMyCar. {t("footer.allRightsReserved")}
               </p>
               <div className="flex items-center space-x-4 text-xs text-gray-500">
                 <a
                   href="/terms"
                   className="hover:text-green-600 transition-colors"
                 >
-                  Terms
+                  {t("footer.terms")}
                 </a>
                 <span>•</span>
                 <a
                   href="/privacy"
                   className="hover:text-green-600 transition-colors"
                 >
-                  Privacy
+                  {t("footer.privacy")}
                 </a>
                 <span>•</span>
                 <a
                   href="/cookies"
                   className="hover:text-green-600 transition-colors"
                 >
-                  Cookies
+                  {t("footer.cookies")}
                 </a>
               </div>
             </div>
 
             <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <span>Made with</span>
-              <span className="text-red-500 animate-pulse">❤️</span>
-              <span>in UAE</span>
+              <span>{t("footer.madeWithLove")}</span>
             </div>
           </div>
         </div>

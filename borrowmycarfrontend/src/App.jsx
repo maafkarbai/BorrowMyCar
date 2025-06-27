@@ -1,21 +1,23 @@
 import { Helmet } from "react-helmet-async";
+import { useTranslation } from "react-i18next";
 import CarListingSection from "./CarListingSection";
 
 const App = () => {
+  const { t } = useTranslation();
+
   return (
     <>
       <Helmet>
-        <title>BorrowMyCar | Home</title>
+        <title>BorrowMyCar | {t("navigation.home")}</title>
       </Helmet>
       <div className="min-h-screen">
         <div className="min-h-fit">
           <div className="max-w-7xl mx-auto px-4 py-6">
             <h1 className="text-3xl font-bold text-gray-900">
-              Welcome to <span className="text-green-600">BorrowMyCar</span>
+              {t("home.welcomeTitle")}
             </h1>
             <p className="mt-2 text-gray-600">
-              Your one-stop solution for car rentals. Explore our services and
-              find the perfect car for your needs.
+              {t("home.welcomeSubtitle")}
             </p>
           </div>
           <CarListingSection />

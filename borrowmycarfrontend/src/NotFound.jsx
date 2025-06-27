@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const NotFound = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [secondsLeft, setSecondsLeft] = useState(3); // Initial countdown value
 
@@ -27,14 +29,14 @@ const NotFound = () => {
     <div className="m-auto flex justify-center items-center h-screen">
       <div className="flex flex-col items-center justify-center h-full">
         <h1 className="text-4xl font-bold mb-4">
-          <span className="text-green-600">404 </span>Page Not Found
+          <span className="text-green-600">404 </span>{t("notFound.title")}
         </h1>
-        <p className="text-lg mb-4">The page you are looking for does not exist.</p>
+        <p className="text-lg mb-4">{t("notFound.description")}</p>
         <p className="text-sm text-gray-500 mb-8">
-          Redirecting to home in {secondsLeft} second{secondsLeft !== 1 ? 's' : ''}...
+          {t("notFound.redirecting")} {secondsLeft} {secondsLeft !== 1 ? t("notFound.seconds") : t("notFound.second")}...
         </p>
         <Link to="/" className="bg-green-600 text-white p-4 hover:bg-green-700">
-          Go back to Home
+          {t("notFound.goHome")}
         </Link>
       </div>
     </div>

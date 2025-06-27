@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import API from "./api";
 import LanguageToggle from "./components/LanguageToggle";
-import { useLanguage } from "./context/LanguageContext";
+import { useTranslation } from "react-i18next";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -39,7 +39,7 @@ const Navbar = () => {
   const location = useLocation();
   const profileRef = useRef(null);
   const searchRef = useRef(null);
-  const { t } = useLanguage();
+  const { t } = useTranslation();
 
   // Get current user on component mount
   useEffect(() => {
@@ -156,14 +156,14 @@ const Navbar = () => {
   const getNavItems = () => {
     if (!user) {
       return [
-        { label: "Browse Cars", path: "/", icon: Car },
-        { label: "How It Works", path: "/how-it-works", icon: HelpCircle },
+        { label: t("navigation.browseCars"), path: "/", icon: Car },
+        { label: t("navigation.howItWorks"), path: "/how-it-works", icon: HelpCircle },
       ];
     }
 
     const baseItems = [
-      { label: "Home", path: "/", icon: Home },
-      { label: "Browse Cars", path: "/browse", icon: Car },
+      { label: t("navigation.home"), path: "/", icon: Home },
+      { label: t("navigation.browseCars"), path: "/browse", icon: Car },
     ];
 
     if (user.role === "admin") {
@@ -179,7 +179,7 @@ const Navbar = () => {
       return [
         ...baseItems,
         { label: "My Cars", path: "/my-cars", icon: Car },
-        { label: "My Bookings", path: "/my-bookings", icon: Calendar },
+        { label: t("navigation.myBookings"), path: "/my-bookings", icon: Calendar },
         {
           label: "Messages",
           path: "/messages",
@@ -192,7 +192,7 @@ const Navbar = () => {
     // Default renter
     return [
       ...baseItems,
-      { label: "My Bookings", path: "/my-bookings", icon: Calendar },
+      { label: t("navigation.myBookings"), path: "/my-bookings", icon: Calendar },
       {
         label: "Messages",
         path: "/messages",
@@ -213,8 +213,8 @@ const Navbar = () => {
   const navItems = getNavItems();
 
   const profileMenuItems = [
-    { label: "View Profile", path: "/profile", icon: User },
-    { label: "Account Settings", path: "/settings", icon: Settings },
+    { label: t("profile.myProfile"), path: "/profile", icon: User },
+    { label: t("navigation.settings"), path: "/settings", icon: Settings },
     ...(user?.role === "owner"
       ? [{ label: "Earnings", path: "/earnings", icon: BarChart3 }]
       : []),
@@ -452,13 +452,13 @@ const Navbar = () => {
                   to="/auth/login"
                   className="text-gray-700 hover:text-green-600 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
                 >
-                  Sign In
+                  {t("navigation.signIn")}
                 </Link>
                 <Link
                   to="/auth/signup"
                   className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg"
                 >
-                  Get Started
+                  {t("navigation.getStarted")}
                 </Link>
               </>
             ) : (
@@ -470,7 +470,7 @@ const Navbar = () => {
                     className="hidden md:flex items-center bg-green-50 hover:bg-green-100 text-green-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors border border-green-200"
                   >
                     <Plus className="h-4 w-4 mr-1" />
-                    List Car
+                    {t("navigation.listCar")}
                   </Link>
                 )}
                 {/* Notifications */}
@@ -563,7 +563,7 @@ const Navbar = () => {
                                     : "bg-yellow-100 text-yellow-800"
                                 }`}
                               >
-                                {user.isApproved ? "Verified" : "Pending"}
+                                {user.isApproved ? t("common.verified") : t("common.pending")}
                               </span>
                               <span className="text-xs text-gray-500 capitalize">
                                 {user.role}
@@ -592,7 +592,7 @@ const Navbar = () => {
                           className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"
                         >
                           <LogOut className="h-4 w-4 mr-3" />
-                          Logout
+                          {t("navigation.logout")}
                         </button>
                       </div>
                     </div>
@@ -629,7 +629,7 @@ const Navbar = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search cars..."
+                placeholder={t("common.search")}
                 className="block w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
               />
             </form>
@@ -663,13 +663,13 @@ const Navbar = () => {
                   to="/auth/login"
                   className="flex items-center w-full text-gray-700 hover:text-green-600 hover:bg-green-50 px-3 py-3 rounded-lg text-base font-medium transition-colors"
                 >
-                  Sign In
+                  {t("navigation.signIn")}
                 </Link>
                 <Link
                   to="/auth/signup"
                   className="flex items-center w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-3 rounded-lg text-base font-medium transition-colors"
                 >
-                  Get Started
+                  {t("navigation.getStarted")}
                 </Link>
               </>
             )}
@@ -680,7 +680,7 @@ const Navbar = () => {
                 className="flex items-center w-full bg-green-50 text-green-700 hover:bg-green-100 px-3 py-3 rounded-lg text-base font-medium transition-colors border border-green-200"
               >
                 <Plus className="h-5 w-5 mr-3" />
-                List New Car
+                {t("navigation.listCar")}
               </Link>
             )}
           </div>
