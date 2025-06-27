@@ -14,7 +14,7 @@ const seedDatabase = async () => {
 
     // Connect to MongoDB
     await mongoose.connect(process.env.MONGO_URI, {
-      dbName: "borrowmycar",
+      dbName: "BorrowMyCar",
     });
     console.log("✅ Connected to MongoDB");
 
