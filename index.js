@@ -34,7 +34,7 @@ const corsOptions = {
     "http://localhost:5173", // Vite default
     "http://127.0.0.1:5173",
     process.env.FRONTEND_URL,
-    "https://your-production-domain.com", // Add your production domain
+    "https://my-production-domain.com", //  production domain
   ].filter(Boolean),
   credentials: true,
   optionsSuccessStatus: 200,
