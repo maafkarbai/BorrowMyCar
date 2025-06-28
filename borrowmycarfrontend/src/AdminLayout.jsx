@@ -28,7 +28,7 @@ const AdminLayout = () => {
       <Helmet>
         <title>Admin Panel | BorrowMyCar</title>
       </Helmet>
-      <div className="min-h-screen bg-gray-50">
+      <div className="flex h-screen bg-gray-50">
         {/* Mobile sidebar overlay */}
         {sidebarOpen && (
           <div 
@@ -40,10 +40,10 @@ const AdminLayout = () => {
         )}
 
         {/* Sidebar */}
-        <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
+        <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:flex lg:flex-col ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}>
-          <div className="flex items-center justify-between h-16 px-6 bg-red-600">
+          <div className="flex items-center justify-between h-16 px-6 bg-red-600 flex-shrink-0">
             <div className="flex items-center">
               <div className="text-white text-xl font-bold">
                 🚗 Admin Panel
@@ -59,7 +59,7 @@ const AdminLayout = () => {
             </button>
           </div>
 
-          <nav className="mt-8 px-4">
+          <nav className="flex-1 mt-8 px-4 overflow-y-auto">
             <div className="space-y-2">
               {navigation.map((item) => (
                 <button
@@ -108,7 +108,7 @@ const AdminLayout = () => {
         </div>
 
         {/* Main content */}
-        <div className="lg:pl-64">
+        <div className="flex-1 flex flex-col lg:pl-0">
           {/* Top navigation */}
           <div className="sticky top-0 z-10 bg-white shadow-sm border-b border-gray-200">
             <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
@@ -161,7 +161,7 @@ const AdminLayout = () => {
           </div>
 
           {/* Page content */}
-          <main className="py-6">
+          <main className="flex-1 py-6 overflow-y-auto">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <Outlet />
             </div>

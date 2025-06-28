@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from './context/AuthProvider';
-import API from './api';
 
 const AdminLogin = () => {
   const [formData, setFormData] = useState({
@@ -30,31 +29,25 @@ const AdminLogin = () => {
     setError('');
 
     try {
-      const response = await API.post('/auth/login', formData);
+      // Use AuthProvider's login function
+      const result = await login(formData);
       
-      if (response.data.success) {
-        const { user: userData, token } = response.data.data;
-        
+      if (result.success) {
         // Check if user is admin
-        if (userData.role !== 'admin') {
+        if (result.user.role !== 'admin') {
           setError('Access denied. Admin credentials required.');
           setLoading(false);
           return;
         }
 
-        // Store token and login user
-        localStorage.setItem('token', token);
-        login(userData);
-        
         // Navigate to admin dashboard
-        navigate('/admin/dashboard');
+        navigate('/admin/dashboard', { replace: true });
+      } else {
+        setError(result.error || 'Admin login failed. Please check your credentials.');
       }
     } catch (err) {
       console.error('Admin login error:', err);
-      setError(
-        err.response?.data?.message || 
-        'Admin login failed. Please check your credentials.'
-      );
+      setError('Admin login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
