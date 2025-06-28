@@ -1,9 +1,25 @@
 import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "./context/AuthProvider";
 import CarListingSection from "./CarListingSection";
 
 const App = () => {
   const { t } = useTranslation();
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated && user?.role === 'admin') {
+      navigate('/admin');
+    }
+  }, [isAuthenticated, user, navigate]);
+
+  // Don't render car listings for admin users
+  if (isAuthenticated && user?.role === 'admin') {
+    return null;
+  }
 
   return (
     <>

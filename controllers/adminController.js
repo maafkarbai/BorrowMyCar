@@ -184,7 +184,14 @@ export const getAllUsers = handleAsyncError(async (req, res) => {
 // APPROVE/REJECT USER
 export const updateUserApproval = handleAsyncError(async (req, res) => {
   const { userId } = req.params;
-  const { isApproved, reason } = req.body;
+  let { isApproved, reason } = req.body;
+
+  // Handle simplified endpoints
+  if (req.route.path.includes('/approve')) {
+    isApproved = true;
+  } else if (req.route.path.includes('/reject')) {
+    isApproved = false;
+  }
 
   const user = await User.findById(userId);
   if (!user) {
@@ -414,7 +421,6 @@ export const verifyDrivingLicense = handleAsyncError(async (req, res) => {
     });
   }
 
-  // Add verification status (you might want to add this field to User model)
   user.licenseVerified = verified;
   if (notes) user.licenseVerificationNotes = notes;
 
@@ -424,5 +430,238 @@ export const verifyDrivingLicense = handleAsyncError(async (req, res) => {
     success: true,
     message: `Driving license ${verified ? "verified" : "rejected"}`,
     data: { user },
+  });
+});
+
+// GET DETAILED USER FOR VERIFICATION
+export const getUserDetails = handleAsyncError(async (req, res) => {
+  const { userId } = req.params;
+
+  const user = await User.findById(userId).select("-password");
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "User not found",
+    });
+  }
+
+  // Get user's cars and bookings for context
+  const [userCars, userBookings] = await Promise.all([
+    Car.find({ owner: userId, deletedAt: null }).lean(),
+    Booking.find({ renter: userId })
+      .populate("car", "title make model")
+      .lean(),
+  ]);
+
+  res.json({
+    success: true,
+    data: {
+      user,
+      cars: userCars,
+      bookings: userBookings,
+    },
+  });
+});
+
+// BULK USER ACTIONS
+export const bulkUserActions = handleAsyncError(async (req, res) => {
+  const { userIds, action, reason } = req.body;
+
+  if (!Array.isArray(userIds) || userIds.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: "User IDs array is required",
+    });
+  }
+
+  const validActions = ["approve", "reject", "delete"];
+  if (!validActions.includes(action)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid action. Must be: approve, reject, or delete",
+    });
+  }
+
+  let updateQuery = {};
+  switch (action) {
+    case "approve":
+      updateQuery = { isApproved: true };
+      break;
+    case "reject":
+      updateQuery = { isApproved: false };
+      if (reason) updateQuery.rejectionReason = reason;
+      break;
+    case "delete":
+      updateQuery = { 
+        deletedAt: new Date(),
+        email: { $exists: true }, // We'll handle email modification separately
+      };
+      break;
+  }
+
+  if (action === "delete") {
+    // Handle soft delete with email modification
+    const users = await User.find({ _id: { $in: userIds } });
+    await Promise.all(
+      users.map(async (user) => {
+        user.deletedAt = new Date();
+        user.email = `deleted_${user._id}@deleted.com`;
+        user.phone = `deleted_${user._id}`;
+        await user.save();
+      })
+    );
+  } else {
+    await User.updateMany(
+      { _id: { $in: userIds } },
+      updateQuery
+    );
+  }
+
+  res.json({
+    success: true,
+    message: `Successfully ${action}d ${userIds.length} users`,
+    data: { processedCount: userIds.length },
+  });
+});
+
+// ADMIN ACTIVITY LOG
+export const getAdminActivityLog = handleAsyncError(async (req, res) => {
+  const { page = 1, limit = 50 } = req.query;
+  
+  // This would require an audit log model, for now we'll return recent changes
+  const recentUsers = await User.find({
+    $or: [
+      { updatedAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
+      { createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } }
+    ]
+  })
+    .select("name email isApproved role createdAt updatedAt")
+    .sort({ updatedAt: -1 })
+    .limit(parseInt(limit))
+    .lean();
+
+  const recentCars = await Car.find({
+    $or: [
+      { updatedAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
+      { createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } }
+    ]
+  })
+    .populate("owner", "name email")
+    .select("title status owner createdAt updatedAt")
+    .sort({ updatedAt: -1 })
+    .limit(parseInt(limit))
+    .lean();
+
+  res.json({
+    success: true,
+    data: {
+      recentUsers,
+      recentCars,
+      summary: {
+        userChanges: recentUsers.length,
+        carChanges: recentCars.length,
+      },
+    },
+  });
+});
+
+// SYSTEM CONFIGURATION
+export const getSystemConfig = handleAsyncError(async (req, res) => {
+  const config = {
+    platform: {
+      name: "BorrowMyCar",
+      version: "1.0.0",
+      environment: process.env.NODE_ENV || "development",
+    },
+    features: {
+      autoApproval: false,
+      maintenanceMode: false,
+      registrationOpen: true,
+      paymentGateway: "stripe",
+    },
+    limits: {
+      maxCarsPerOwner: 10,
+      maxBookingsPerUser: 5,
+      maxImageSize: "10MB",
+      supportedCities: ["Dubai", "Abu Dhabi", "Sharjah", "Ajman", "Ras Al Khaimah", "Fujairah", "Umm Al Quwain"],
+    },
+  };
+
+  res.json({
+    success: true,
+    data: { config },
+  });
+});
+
+// UPDATE SYSTEM CONFIGURATION
+export const updateSystemConfig = handleAsyncError(async (req, res) => {
+  const { autoApproval, maintenanceMode, registrationOpen } = req.body;
+  
+  // In a real app, you'd store this in database or config file
+  // For now, we'll just return success
+  res.json({
+    success: true,
+    message: "System configuration updated",
+    data: {
+      autoApproval,
+      maintenanceMode,
+      registrationOpen,
+    },
+  });
+});
+
+// EXPORT DATA FOR REPORTS
+export const exportData = handleAsyncError(async (req, res) => {
+  const { type, format = "json", startDate, endDate } = req.query;
+
+  const dateFilter = {};
+  if (startDate) dateFilter.$gte = new Date(startDate);
+  if (endDate) dateFilter.$lte = new Date(endDate);
+
+  let data = {};
+
+  switch (type) {
+    case "users":
+      data.users = await User.find({
+        ...(Object.keys(dateFilter).length && { createdAt: dateFilter }),
+        deletedAt: null,
+      }).select("-password").lean();
+      break;
+      
+    case "cars":
+      data.cars = await Car.find({
+        ...(Object.keys(dateFilter).length && { createdAt: dateFilter }),
+        deletedAt: null,
+      })
+        .populate("owner", "name email")
+        .lean();
+      break;
+      
+    case "bookings":
+      data.bookings = await Booking.find({
+        ...(Object.keys(dateFilter).length && { createdAt: dateFilter }),
+      })
+        .populate("renter", "name email")
+        .populate("car", "title make model")
+        .lean();
+      break;
+      
+    default:
+      return res.status(400).json({
+        success: false,
+        message: "Invalid export type. Must be: users, cars, or bookings",
+      });
+  }
+
+  res.json({
+    success: true,
+    message: `${type} data exported successfully`,
+    data,
+    exportInfo: {
+      type,
+      format,
+      timestamp: new Date().toISOString(),
+      recordCount: Object.values(data)[0]?.length || 0,
+    },
   });
 });

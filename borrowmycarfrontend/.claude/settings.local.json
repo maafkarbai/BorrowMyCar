@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "Bash(npm run lint)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(rg:*)",
+      "Bash(node:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npx babel:*)",
+      "Bash(timeout 10s npm run dev)"
     ],
     "deny": []
   }

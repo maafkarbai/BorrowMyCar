@@ -49,10 +49,21 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    rejectionReason: {
+      type: String,
+    },
     // Document URLs
     drivingLicenseUrl: {
       type: String,
       required: true,
+    },
+    // Document verification status
+    licenseVerified: {
+      type: Boolean,
+      default: false,
+    },
+    licenseVerificationNotes: {
+      type: String,
     },
     emiratesIdUrl: {
       type: String,

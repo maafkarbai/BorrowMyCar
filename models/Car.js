@@ -179,10 +179,10 @@ const carSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: {
-        values: ["active", "inactive", "deleted", "pending", "maintenance"],
+        values: ["active", "inactive", "deleted", "pending", "rejected", "maintenance"],
         message: "Invalid status",
       },
-      default: "active", // Changed from pending to active for demo
+      default: "pending", // Cars should be pending by default for admin approval
     },
     totalBookings: { type: Number, default: 0 },
     averageRating: { type: Number, default: 0, min: 0, max: 5 },

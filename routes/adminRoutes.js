@@ -10,6 +10,12 @@ import {
   deleteUser,
   deleteCar,
   verifyDrivingLicense,
+  getUserDetails,
+  bulkUserActions,
+  getAdminActivityLog,
+  getSystemConfig,
+  updateSystemConfig,
+  exportData,
 } from "../controllers/adminController.js";
 import { protect, restrictTo } from "../middlewares/authMiddleware.js";
 import { body } from "express-validator";
@@ -38,6 +44,9 @@ router.patch(
   handleValidationErrors,
   updateUserApproval
 );
+// Simplified approve/reject endpoints for frontend
+router.patch("/users/:userId/approve", updateUserApproval);
+router.patch("/users/:userId/reject", updateUserApproval);
 router.delete("/users/:userId", deleteUser);
 
 // Car management
@@ -77,6 +86,41 @@ router.patch(
   ],
   handleValidationErrors,
   verifyDrivingLicense
+);
+
+// Enhanced user management
+router.get("/users/:userId/details", getUserDetails);
+router.post(
+  "/users/bulk-actions",
+  [
+    body("userIds").isArray({ min: 1 }).withMessage("User IDs array is required"),
+    body("action")
+      .isIn(["approve", "reject", "delete"])
+      .withMessage("Action must be approve, reject, or delete"),
+    body("reason")
+      .optional()
+      .isLength({ max: 500 })
+      .withMessage("Reason must be less than 500 characters"),
+  ],
+  handleValidationErrors,
+  bulkUserActions
+);
+
+// Admin activity and reporting
+router.get("/activity-log", getAdminActivityLog);
+router.get("/export", exportData);
+
+// System configuration
+router.get("/config", getSystemConfig);
+router.patch(
+  "/config",
+  [
+    body("autoApproval").optional().isBoolean(),
+    body("maintenanceMode").optional().isBoolean(),
+    body("registrationOpen").optional().isBoolean(),
+  ],
+  handleValidationErrors,
+  updateSystemConfig
 );
 
 export default router;

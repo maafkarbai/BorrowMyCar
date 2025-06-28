@@ -169,9 +169,10 @@ const Navbar = () => {
     if (user.role === "admin") {
       return [
         ...baseItems,
-        { label: "Dashboard", path: "/admin", icon: BarChart3 },
-        { label: "Users", path: "/admin/users", icon: User },
-        { label: "Car Approvals", path: "/admin/cars", icon: Shield },
+        { label: "Admin Dashboard", path: "/admin", icon: BarChart3 },
+        { label: "User Management", path: "/admin?tab=users", icon: User },
+        { label: "Car Management", path: "/admin?tab=cars", icon: Shield },
+        { label: "Bookings", path: "/admin?tab=bookings", icon: Calendar },
       ];
     }
 

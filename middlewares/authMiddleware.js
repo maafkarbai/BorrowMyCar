@@ -1,6 +1,6 @@
 // middlewares/authMiddleware.js (Fixed Imports)
 import jwt from "jsonwebtoken";
-import { User } from "../models/User.js"; // Fixed import
+import User from "../models/User.js";
 import rateLimit from "express-rate-limit";
 
 // Enhanced async error handler

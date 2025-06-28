@@ -19,6 +19,9 @@ import HowItWorks from "./HowItWorks.jsx";
 import MyBookings from "./MyBookings.jsx";
 import Settings from "./Settings.jsx";
 import Profile from "./Profile.jsx";
+import AdminDashboard from "./AdminDashboard.jsx";
+import AdminLogin from "./AdminLogin.jsx";
+import AdminLayout from "./AdminLayout.jsx";
 import NotFound from "./NotFound.jsx";
 import Navbar from "./Navbar.jsx";
 import Footer from "./Footer.jsx";
@@ -117,6 +120,49 @@ const router = createBrowserRouter([
             <Settings />
           </ProtectedRoute>
         ),
+      },
+    ],
+  },
+  {
+    path: "/admin",
+    children: [
+      {
+        index: true,
+        element: <AdminLogin />,
+      },
+      {
+        path: "dashboard",
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <AdminLayout />
+          </ProtectedRoute>
+        ),
+        children: [
+          {
+            index: true,
+            element: <AdminDashboard />,
+          },
+          {
+            path: "users",
+            element: <AdminDashboard />,
+          },
+          {
+            path: "cars", 
+            element: <AdminDashboard />,
+          },
+          {
+            path: "bookings",
+            element: <AdminDashboard />,
+          },
+          {
+            path: "reports",
+            element: <AdminDashboard />,
+          },
+          {
+            path: "settings",
+            element: <AdminDashboard />,
+          },
+        ],
       },
     ],
   },

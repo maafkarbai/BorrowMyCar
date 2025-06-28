@@ -10,6 +10,7 @@
     "dev:frontend": "cd borrowmycarfrontend && npm run dev",
     "dev:both": "concurrently \"npm run dev\" \"npm run dev:frontend\"",
     "seed": "node scripts/seedData.js",
+    "seed:admin": "node scripts/seedAdmin.js",
     "setup": "npm install && cd borrowmycarfrontend && npm install",
     "build": "cd borrowmycarfrontend && npm run build",
     "test": "jest",
