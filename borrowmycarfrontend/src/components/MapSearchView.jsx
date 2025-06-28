@@ -8,8 +8,8 @@ import {
   Car,
   DollarSign,
 } from "lucide-react";
-import { MAPBOX_CONFIG } from "../../../config/mapbox";
-import { mapboxService } from "../../../utils/mapboxUtils";
+import { MAPBOX_CONFIG } from "../config/mapbox";
+import { mapboxService } from "../utils/mapboxUtils";
 import API from "../api";
 
 const MapSearchView = () => {

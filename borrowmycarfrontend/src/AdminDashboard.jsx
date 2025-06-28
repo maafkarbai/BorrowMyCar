@@ -1155,528 +1155,528 @@ const AdminDashboard = () => {
         </div>
 
         <div>
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
-                {error}
-              </div>
-            )}
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
+              {error}
+            </div>
+          )}
 
-            <div className="space-y-6">
-              {activeTab === "dashboard" && (
-                <>
-                  <DashboardStats stats={stats} />
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-white rounded-lg shadow-md p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                        Recent Activity
-                      </h3>
-                      <div className="space-y-3">
-                        <div className="flex items-center text-sm">
-                          <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                          <span className="text-gray-600">
-                            {stats?.users.pending || 0} users pending approval
-                          </span>
-                        </div>
-                        <div className="flex items-center text-sm">
-                          <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
-                          <span className="text-gray-600">
-                            {stats?.cars.pending || 0} cars pending approval
-                          </span>
-                        </div>
-                        <div className="flex items-center text-sm">
-                          <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                          <span className="text-gray-600">
-                            {stats?.bookings.active || 0} active bookings
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="bg-white rounded-lg shadow-md p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                        Quick Actions
-                      </h3>
-                      <div className="space-y-2">
-                        <button
-                          onClick={() => handleTabChange("users")}
-                          className="w-full text-left px-4 py-2 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors"
-                        >
-                          Review Pending Users
-                        </button>
-                        <button
-                          onClick={() => handleTabChange("cars")}
-                          className="w-full text-left px-4 py-2 bg-green-50 text-green-700 rounded hover:bg-green-100 transition-colors"
-                        >
-                          Manage Cars
-                        </button>
-                        <button
-                          onClick={() => handleTabChange("bookings")}
-                          className="w-full text-left px-4 py-2 bg-purple-50 text-purple-700 rounded hover:bg-purple-100 transition-colors"
-                        >
-                          View Bookings
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {activeTab === "users" && (
-                <>
-                  {/* Quick stats for users */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                    <div className="bg-white rounded-lg shadow-sm p-6">
-                      <div className="flex items-center">
-                        <div className="p-2 bg-yellow-100 rounded-lg">
-                          <span className="text-2xl">⏳</span>
-                        </div>
-                        <div className="ml-4">
-                          <p className="text-sm font-medium text-gray-600">
-                            Pending Approval
-                          </p>
-                          <p className="text-2xl font-bold text-gray-900">
-                            {pendingUsers.length}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="bg-white rounded-lg shadow-sm p-6">
-                      <div className="flex items-center">
-                        <div className="p-2 bg-green-100 rounded-lg">
-                          <span className="text-2xl">✅</span>
-                        </div>
-                        <div className="ml-4">
-                          <p className="text-sm font-medium text-gray-600">
-                            Approved Users
-                          </p>
-                          <p className="text-2xl font-bold text-gray-900">
-                            {allUsers.filter((u) => u.isApproved).length}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="bg-white rounded-lg shadow-sm p-6">
-                      <div className="flex items-center">
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                          <span className="text-2xl">👥</span>
-                        </div>
-                        <div className="ml-4">
-                          <p className="text-sm font-medium text-gray-600">
-                            Total Users
-                          </p>
-                          <p className="text-2xl font-bold text-gray-900">
-                            {allUsers.length}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <SearchAndFilter
-                    type="users"
-                    searchTerm={searchTerm}
-                    handleSearch={handleSearch}
-                    filterRole={filterRole}
-                    filterStatus={filterStatus}
-                    handleFilter={handleFilter}
-                  />
-
-                  {pendingUsers.length > 0 && filterStatus !== "true" && (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                      <div className="flex items-center">
-                        <span className="text-yellow-500 mr-2">⚠️</span>
-                        <h3 className="text-lg font-medium text-yellow-800">
-                          Pending Approvals
-                        </h3>
-                      </div>
-                      <p className="text-yellow-700 mt-1">
-                        {pendingUsers.length} users are waiting for approval.
-                        Review and approve them to give access.
-                      </p>
-                    </div>
-                  )}
-
-                  {allUsers.length > 0 && (
-                    <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-                      <div className="flex justify-between items-center">
-                        <label className="flex items-center">
-                          <input
-                            type="checkbox"
-                            checked={
-                              selectedUsers.length === allUsers.length &&
-                              allUsers.length > 0
-                            }
-                            onChange={selectAllUsers}
-                            className="mr-2"
-                          />
-                          Select All ({allUsers.length} users)
-                        </label>
-                        {selectedUsers.length > 0 && (
-                          <span className="text-sm text-blue-600 font-medium">
-                            {selectedUsers.length} selected
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  <BulkActionsBar
-                    selectedUsers={selectedUsers}
-                    bulkUserAction={bulkUserAction}
-                    setSelectedUsers={setSelectedUsers}
-                  />
-                  {allUsers.length === 0 ? (
-                    <div className="text-center py-12">
-                      <div className="text-gray-400 text-6xl mb-4">👥</div>
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        No users found
-                      </h3>
-                      <p className="text-gray-600">No registered users yet</p>
-                    </div>
-                  ) : (
-                    <>
-                      {allUsers.map((user) => (
-                        <UserCard
-                          key={user._id}
-                          user={user}
-                          showActions={!user.isApproved}
-                          activeTab={activeTab}
-                          selectedUsers={selectedUsers}
-                          toggleUserSelection={toggleUserSelection}
-                          fetchUserDetails={fetchUserDetails}
-                          approveUser={approveUser}
-                          rejectUser={rejectUser}
-                          deleteUser={deleteUser}
-                        />
-                      ))}
-                      <Pagination
-                        currentPagination={pagination.users}
-                        onPageChange={(page) =>
-                          fetchUsers(page, {
-                            search: searchTerm,
-                            role: filterRole,
-                            isApproved: filterStatus,
-                          })
-                        }
-                      />
-                    </>
-                  )}
-                </>
-              )}
-
-              {activeTab === "cars" && (
-                <>
-                  <SearchAndFilter
-                    type="cars"
-                    searchTerm={searchTerm}
-                    handleSearch={handleSearch}
-                    filterRole={filterRole}
-                    filterStatus={filterStatus}
-                    handleFilter={handleFilter}
-                  />
-                  {allCars.length === 0 ? (
-                    <div className="text-center py-12">
-                      <div className="text-gray-400 text-6xl mb-4">🚗</div>
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        No cars found
-                      </h3>
-                      <p className="text-gray-600">No cars listed yet</p>
-                    </div>
-                  ) : (
-                    <>
-                      {allCars.map((car) => (
-                        <CarCard
-                          key={car._id}
-                          car={car}
-                          updateCarStatus={updateCarStatus}
-                          deleteCar={deleteCar}
-                        />
-                      ))}
-                      <Pagination
-                        currentPagination={pagination.cars}
-                        onPageChange={(page) =>
-                          fetchCars(page, {
-                            search: searchTerm,
-                            status: filterStatus,
-                          })
-                        }
-                      />
-                    </>
-                  )}
-                </>
-              )}
-
-              {activeTab === "bookings" && (
-                <>
-                  {allBookings.length === 0 ? (
-                    <div className="text-center py-12">
-                      <div className="text-gray-400 text-6xl mb-4">📅</div>
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        No bookings found
-                      </h3>
-                      <p className="text-gray-600">No bookings made yet</p>
-                    </div>
-                  ) : (
-                    <>
-                      {allBookings.map((booking) => (
-                        <BookingCard key={booking._id} booking={booking} />
-                      ))}
-                      <Pagination
-                        currentPagination={pagination.bookings}
-                        onPageChange={(page) => fetchBookings(page)}
-                      />
-                    </>
-                  )}
-                </>
-              )}
-
-              {activeTab === "reports" && (
-                <>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-white rounded-lg shadow-md p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                        Export Data
-                      </h3>
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <h4 className="font-medium">Users Data</h4>
-                            <p className="text-sm text-gray-600">
-                              Export all user information
-                            </p>
-                          </div>
-                          <button
-                            onClick={() => exportData("users")}
-                            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                          >
-                            Export Users
-                          </button>
-                        </div>
-
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <h4 className="font-medium">Cars Data</h4>
-                            <p className="text-sm text-gray-600">
-                              Export all car listings
-                            </p>
-                          </div>
-                          <button
-                            onClick={() => exportData("cars")}
-                            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-                          >
-                            Export Cars
-                          </button>
-                        </div>
-
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <h4 className="font-medium">Bookings Data</h4>
-                            <p className="text-sm text-gray-600">
-                              Export all booking records
-                            </p>
-                          </div>
-                          <button
-                            onClick={() => exportData("bookings")}
-                            className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
-                          >
-                            Export Bookings
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-white rounded-lg shadow-md p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                        Recent Activity
-                      </h3>
-                      <div className="space-y-3 max-h-96 overflow-y-auto">
-                        {activityLog.recentUsers?.map((user, index) => (
-                          <div
-                            key={`user-${index}`}
-                            className="flex items-center justify-between py-2 border-b border-gray-100"
-                          >
-                            <div>
-                              <p className="text-sm font-medium">{user.name}</p>
-                              <p className="text-xs text-gray-500">
-                                {user.isApproved ? "Approved" : "Pending"} •{" "}
-                                {new Date(user.updatedAt).toLocaleDateString()}
-                              </p>
-                            </div>
-                            <span
-                              className={`px-2 py-1 rounded text-xs ${
-                                user.isApproved
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-yellow-100 text-yellow-800"
-                              }`}
-                            >
-                              {user.role}
-                            </span>
-                          </div>
-                        ))}
-
-                        {activityLog.recentCars?.map((car, index) => (
-                          <div
-                            key={`car-${index}`}
-                            className="flex items-center justify-between py-2 border-b border-gray-100"
-                          >
-                            <div>
-                              <p className="text-sm font-medium">{car.title}</p>
-                              <p className="text-xs text-gray-500">
-                                by {car.owner?.name} •{" "}
-                                {new Date(car.updatedAt).toLocaleDateString()}
-                              </p>
-                            </div>
-                            <span
-                              className={`px-2 py-1 rounded text-xs ${
-                                car.status === "active"
-                                  ? "bg-green-100 text-green-800"
-                                  : car.status === "pending"
-                                  ? "bg-yellow-100 text-yellow-800"
-                                  : "bg-red-100 text-red-800"
-                              }`}
-                            >
-                              {car.status}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {activeTab === "settings" && (
-                <>
+          <div className="space-y-6">
+            {activeTab === "dashboard" && (
+              <>
+                <DashboardStats stats={stats} />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="bg-white rounded-lg shadow-md p-6">
-                    <div className="flex justify-between items-center mb-6">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        System Settings
-                      </h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      Recent Activity
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center text-sm">
+                        <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                        <span className="text-gray-600">
+                          {stats?.users.pending || 0} users pending approval
+                        </span>
+                      </div>
+                      <div className="flex items-center text-sm">
+                        <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
+                        <span className="text-gray-600">
+                          {stats?.cars.pending || 0} cars pending approval
+                        </span>
+                      </div>
+                      <div className="flex items-center text-sm">
+                        <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                        <span className="text-gray-600">
+                          {stats?.bookings.active || 0} active bookings
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg shadow-md p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      Quick Actions
+                    </h3>
+                    <div className="space-y-2">
                       <button
-                        onClick={() => setShowSystemConfig(true)}
-                        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                        onClick={() => handleTabChange("users")}
+                        className="w-full text-left px-4 py-2 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors"
                       >
-                        Configure System
+                        Review Pending Users
+                      </button>
+                      <button
+                        onClick={() => handleTabChange("cars")}
+                        className="w-full text-left px-4 py-2 bg-green-50 text-green-700 rounded hover:bg-green-100 transition-colors"
+                      >
+                        Manage Cars
+                      </button>
+                      <button
+                        onClick={() => handleTabChange("bookings")}
+                        className="w-full text-left px-4 py-2 bg-purple-50 text-purple-700 rounded hover:bg-purple-100 transition-colors"
+                      >
+                        View Bookings
                       </button>
                     </div>
+                  </div>
+                </div>
+              </>
+            )}
 
-                    {systemConfig && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <div className="border border-gray-200 rounded-lg p-4">
-                          <h4 className="font-medium text-gray-900 mb-2">
-                            Platform Status
-                          </h4>
-                          <div className="space-y-2">
-                            <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">
-                                Environment:
-                              </span>
-                              <span className="text-sm font-medium">
-                                {systemConfig.platform.environment}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">
-                                Version:
-                              </span>
-                              <span className="text-sm font-medium">
-                                {systemConfig.platform.version}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">
-                                Maintenance Mode:
-                              </span>
-                              <span
-                                className={`text-sm font-medium ${
-                                  systemConfig.features.maintenanceMode
-                                    ? "text-red-600"
-                                    : "text-green-600"
-                                }`}
-                              >
-                                {systemConfig.features.maintenanceMode
-                                  ? "ON"
-                                  : "OFF"}
-                              </span>
-                            </div>
-                          </div>
+            {activeTab === "users" && (
+              <>
+                {/* Quick stats for users */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                  <div className="bg-white rounded-lg shadow-sm p-6">
+                    <div className="flex items-center">
+                      <div className="p-2 bg-yellow-100 rounded-lg">
+                        <span className="text-2xl">⏳</span>
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">
+                          Pending Approval
+                        </p>
+                        <p className="text-2xl font-bold text-gray-900">
+                          {pendingUsers.length}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg shadow-sm p-6">
+                    <div className="flex items-center">
+                      <div className="p-2 bg-green-100 rounded-lg">
+                        <span className="text-2xl">✅</span>
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">
+                          Approved Users
+                        </p>
+                        <p className="text-2xl font-bold text-gray-900">
+                          {allUsers.filter((u) => u.isApproved).length}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg shadow-sm p-6">
+                    <div className="flex items-center">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <span className="text-2xl">👥</span>
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600">
+                          Total Users
+                        </p>
+                        <p className="text-2xl font-bold text-gray-900">
+                          {allUsers.length}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <SearchAndFilter
+                  type="users"
+                  searchTerm={searchTerm}
+                  handleSearch={handleSearch}
+                  filterRole={filterRole}
+                  filterStatus={filterStatus}
+                  handleFilter={handleFilter}
+                />
+
+                {pendingUsers.length > 0 && filterStatus !== "true" && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                    <div className="flex items-center">
+                      <span className="text-yellow-500 mr-2">⚠️</span>
+                      <h3 className="text-lg font-medium text-yellow-800">
+                        Pending Approvals
+                      </h3>
+                    </div>
+                    <p className="text-yellow-700 mt-1">
+                      {pendingUsers.length} users are waiting for approval.
+                      Review and approve them to give access.
+                    </p>
+                  </div>
+                )}
+
+                {allUsers.length > 0 && (
+                  <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+                    <div className="flex justify-between items-center">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={
+                            selectedUsers.length === allUsers.length &&
+                            allUsers.length > 0
+                          }
+                          onChange={selectAllUsers}
+                          className="mr-2"
+                        />
+                        Select All ({allUsers.length} users)
+                      </label>
+                      {selectedUsers.length > 0 && (
+                        <span className="text-sm text-blue-600 font-medium">
+                          {selectedUsers.length} selected
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+                <BulkActionsBar
+                  selectedUsers={selectedUsers}
+                  bulkUserAction={bulkUserAction}
+                  setSelectedUsers={setSelectedUsers}
+                />
+                {allUsers.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="text-gray-400 text-6xl mb-4">👥</div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      No users found
+                    </h3>
+                    <p className="text-gray-600">No registered users yet</p>
+                  </div>
+                ) : (
+                  <>
+                    {allUsers.map((user) => (
+                      <UserCard
+                        key={user._id}
+                        user={user}
+                        showActions={!user.isApproved}
+                        activeTab={activeTab}
+                        selectedUsers={selectedUsers}
+                        toggleUserSelection={toggleUserSelection}
+                        fetchUserDetails={fetchUserDetails}
+                        approveUser={approveUser}
+                        rejectUser={rejectUser}
+                        deleteUser={deleteUser}
+                      />
+                    ))}
+                    <Pagination
+                      currentPagination={pagination.users}
+                      onPageChange={(page) =>
+                        fetchUsers(page, {
+                          search: searchTerm,
+                          role: filterRole,
+                          isApproved: filterStatus,
+                        })
+                      }
+                    />
+                  </>
+                )}
+              </>
+            )}
+
+            {activeTab === "cars" && (
+              <>
+                <SearchAndFilter
+                  type="cars"
+                  searchTerm={searchTerm}
+                  handleSearch={handleSearch}
+                  filterRole={filterRole}
+                  filterStatus={filterStatus}
+                  handleFilter={handleFilter}
+                />
+                {allCars.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="text-gray-400 text-6xl mb-4">🚗</div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      No cars found
+                    </h3>
+                    <p className="text-gray-600">No cars listed yet</p>
+                  </div>
+                ) : (
+                  <>
+                    {allCars.map((car) => (
+                      <CarCard
+                        key={car._id}
+                        car={car}
+                        updateCarStatus={updateCarStatus}
+                        deleteCar={deleteCar}
+                      />
+                    ))}
+                    <Pagination
+                      currentPagination={pagination.cars}
+                      onPageChange={(page) =>
+                        fetchCars(page, {
+                          search: searchTerm,
+                          status: filterStatus,
+                        })
+                      }
+                    />
+                  </>
+                )}
+              </>
+            )}
+
+            {activeTab === "bookings" && (
+              <>
+                {allBookings.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="text-gray-400 text-6xl mb-4">📅</div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      No bookings found
+                    </h3>
+                    <p className="text-gray-600">No bookings made yet</p>
+                  </div>
+                ) : (
+                  <>
+                    {allBookings.map((booking) => (
+                      <BookingCard key={booking._id} booking={booking} />
+                    ))}
+                    <Pagination
+                      currentPagination={pagination.bookings}
+                      onPageChange={(page) => fetchBookings(page)}
+                    />
+                  </>
+                )}
+              </>
+            )}
+
+            {activeTab === "reports" && (
+              <>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="bg-white rounded-lg shadow-md p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      Export Data
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h4 className="font-medium">Users Data</h4>
+                          <p className="text-sm text-gray-600">
+                            Export all user information
+                          </p>
                         </div>
+                        <button
+                          onClick={() => exportData("users")}
+                          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                        >
+                          Export Users
+                        </button>
+                      </div>
 
-                        <div className="border border-gray-200 rounded-lg p-4">
-                          <h4 className="font-medium text-gray-900 mb-2">
-                            Registration Settings
-                          </h4>
-                          <div className="space-y-2">
-                            <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">
-                                Registration Open:
-                              </span>
-                              <span
-                                className={`text-sm font-medium ${
-                                  systemConfig.features.registrationOpen
-                                    ? "text-green-600"
-                                    : "text-red-600"
-                                }`}
-                              >
-                                {systemConfig.features.registrationOpen
-                                  ? "YES"
-                                  : "NO"}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">
-                                Auto Approval:
-                              </span>
-                              <span
-                                className={`text-sm font-medium ${
-                                  systemConfig.features.autoApproval
-                                    ? "text-green-600"
-                                    : "text-orange-600"
-                                }`}
-                              >
-                                {systemConfig.features.autoApproval
-                                  ? "ENABLED"
-                                  : "MANUAL"}
-                              </span>
-                            </div>
-                          </div>
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h4 className="font-medium">Cars Data</h4>
+                          <p className="text-sm text-gray-600">
+                            Export all car listings
+                          </p>
                         </div>
+                        <button
+                          onClick={() => exportData("cars")}
+                          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                        >
+                          Export Cars
+                        </button>
+                      </div>
 
-                        <div className="border border-gray-200 rounded-lg p-4">
-                          <h4 className="font-medium text-gray-900 mb-2">
-                            System Limits
-                          </h4>
-                          <div className="space-y-2">
-                            <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">
-                                Max Cars/Owner:
-                              </span>
-                              <span className="text-sm font-medium">
-                                {systemConfig.limits.maxCarsPerOwner}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">
-                                Max Bookings/User:
-                              </span>
-                              <span className="text-sm font-medium">
-                                {systemConfig.limits.maxBookingsPerUser}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">
-                                Max Image Size:
-                              </span>
-                              <span className="text-sm font-medium">
-                                {systemConfig.limits.maxImageSize}
-                              </span>
-                            </div>
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h4 className="font-medium">Bookings Data</h4>
+                          <p className="text-sm text-gray-600">
+                            Export all booking records
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => exportData("bookings")}
+                          className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+                        >
+                          Export Bookings
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-lg shadow-md p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      Recent Activity
+                    </h3>
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                      {activityLog.recentUsers?.map((user, index) => (
+                        <div
+                          key={`user-${index}`}
+                          className="flex items-center justify-between py-2 border-b border-gray-100"
+                        >
+                          <div>
+                            <p className="text-sm font-medium">{user.name}</p>
+                            <p className="text-xs text-gray-500">
+                              {user.isApproved ? "Approved" : "Pending"} •{" "}
+                              {new Date(user.updatedAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <span
+                            className={`px-2 py-1 rounded text-xs ${
+                              user.isApproved
+                                ? "bg-green-100 text-green-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {user.role}
+                          </span>
+                        </div>
+                      ))}
+
+                      {activityLog.recentCars?.map((car, index) => (
+                        <div
+                          key={`car-${index}`}
+                          className="flex items-center justify-between py-2 border-b border-gray-100"
+                        >
+                          <div>
+                            <p className="text-sm font-medium">{car.title}</p>
+                            <p className="text-xs text-gray-500">
+                              by {car.owner?.name} •{" "}
+                              {new Date(car.updatedAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <span
+                            className={`px-2 py-1 rounded text-xs ${
+                              car.status === "active"
+                                ? "bg-green-100 text-green-800"
+                                : car.status === "pending"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {car.status}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {activeTab === "settings" && (
+              <>
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      System Settings
+                    </h3>
+                    <button
+                      onClick={() => setShowSystemConfig(true)}
+                      className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                    >
+                      Configure System
+                    </button>
+                  </div>
+
+                  {systemConfig && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <div className="border border-gray-200 rounded-lg p-4">
+                        <h4 className="font-medium text-gray-900 mb-2">
+                          Platform Status
+                        </h4>
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">
+                              Environment:
+                            </span>
+                            <span className="text-sm font-medium">
+                              {systemConfig.platform.environment}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">
+                              Version:
+                            </span>
+                            <span className="text-sm font-medium">
+                              {systemConfig.platform.version}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">
+                              Maintenance Mode:
+                            </span>
+                            <span
+                              className={`text-sm font-medium ${
+                                systemConfig.features.maintenanceMode
+                                  ? "text-red-600"
+                                  : "text-green-600"
+                              }`}
+                            >
+                              {systemConfig.features.maintenanceMode
+                                ? "ON"
+                                : "OFF"}
+                            </span>
                           </div>
                         </div>
                       </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
+
+                      <div className="border border-gray-200 rounded-lg p-4">
+                        <h4 className="font-medium text-gray-900 mb-2">
+                          Registration Settings
+                        </h4>
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">
+                              Registration Open:
+                            </span>
+                            <span
+                              className={`text-sm font-medium ${
+                                systemConfig.features.registrationOpen
+                                  ? "text-green-600"
+                                  : "text-red-600"
+                              }`}
+                            >
+                              {systemConfig.features.registrationOpen
+                                ? "YES"
+                                : "NO"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">
+                              Auto Approval:
+                            </span>
+                            <span
+                              className={`text-sm font-medium ${
+                                systemConfig.features.autoApproval
+                                  ? "text-green-600"
+                                  : "text-orange-600"
+                              }`}
+                            >
+                              {systemConfig.features.autoApproval
+                                ? "ENABLED"
+                                : "MANUAL"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="border border-gray-200 rounded-lg p-4">
+                        <h4 className="font-medium text-gray-900 mb-2">
+                          System Limits
+                        </h4>
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">
+                              Max Cars/Owner:
+                            </span>
+                            <span className="text-sm font-medium">
+                              {systemConfig.limits.maxCarsPerOwner}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">
+                              Max Bookings/User:
+                            </span>
+                            <span className="text-sm font-medium">
+                              {systemConfig.limits.maxBookingsPerUser}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-600">
+                              Max Image Size:
+                            </span>
+                            <span className="text-sm font-medium">
+                              {systemConfig.limits.maxImageSize}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
       <UserDetailsModal

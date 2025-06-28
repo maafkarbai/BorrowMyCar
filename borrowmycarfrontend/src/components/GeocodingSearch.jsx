@@ -36,8 +36,17 @@ const GeocodingSearch = ({
     try {
       const geocodeResult = await mapboxService.geocodeAddress(searchQuery);
       if (geocodeResult.success) {
-        setResults(geocodeResult.results);
+        // Convert single result to array format expected by the component
+        const formattedResult = {
+          id: `${geocodeResult.coordinates[0]}-${geocodeResult.coordinates[1]}`,
+          name: geocodeResult.place_name,
+          city: geocodeResult.city,
+          coordinates: geocodeResult.coordinates,
+        };
+        setResults([formattedResult]);
         setShowResults(true);
+      } else {
+        setResults([]);
       }
     } catch (error) {
       console.error("Geocoding error:", error);

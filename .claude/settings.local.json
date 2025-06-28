@@ -9,7 +9,8 @@
       "Bash(NODE_OPTIONS=\"--experimental-vm-modules\" npx jest)",
       "Bash(node:*)",
       "Bash(rg:*)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Bash(ls:*)"
     ],
     "deny": []
   }
