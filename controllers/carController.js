@@ -125,7 +125,7 @@ export const createCar = handleAsyncError(async (req, res) => {
     ...carData,
     images: imageUrls,
     owner: user.id,
-    status: "active", // Set to active instead of pending for demo
+    status: "pending", // Requires admin approval
   });
 
   const savedCar = await newCar.save();

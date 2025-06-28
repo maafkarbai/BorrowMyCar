@@ -28,13 +28,15 @@ const createAdminUser = async () => {
     const existingAdmin = await User.findOne({ email: adminData.email });
     if (existingAdmin) {
       console.log(`⚠️ Admin user with email ${adminData.email} already exists`);
-      
+
       // Ask if they want to update the existing user to admin
       if (existingAdmin.role !== "admin") {
         existingAdmin.role = "admin";
         existingAdmin.isApproved = true;
         await existingAdmin.save();
-        console.log(`✅ Updated existing user to admin role: ${adminData.email}`);
+        console.log(
+          `✅ Updated existing user to admin role: ${adminData.email}`
+        );
       } else {
         console.log(`✅ User is already an admin: ${adminData.email}`);
       }
@@ -48,7 +50,8 @@ const createAdminUser = async () => {
         role: "admin",
         isApproved: true,
         preferredCity: "Dubai",
-        drivingLicenseUrl: "https://via.placeholder.com/400x300?text=Admin+License",
+        drivingLicenseUrl:
+          "https://via.placeholder.com/400x300?text=Admin+License",
         profileImage: "https://via.placeholder.com/150?text=Admin",
       });
 
@@ -63,14 +66,13 @@ const createAdminUser = async () => {
     console.log(`Email: ${adminData.email}`);
     console.log(`Password: ${adminData.password}`);
     console.log("\n🚀 You can now access admin endpoints at /api/admin/*");
-    
   } catch (error) {
     console.error("❌ Error creating admin user:", error.message);
-    
+
     if (error.code === 11000) {
       console.log("📝 Duplicate key error - user might already exist");
     }
-    
+
     process.exit(1);
   } finally {
     await mongoose.connection.close();

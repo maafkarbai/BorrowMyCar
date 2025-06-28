@@ -9,6 +9,7 @@ const CarFilterBar = ({ onFiltersChange, onReset }) => {
     year: "",
     kilometers: "",
     transmission: "",
+    fuelType: "",
   });
 
   const [showMakeModelSuggestions, setShowMakeModelSuggestions] =
@@ -42,6 +43,7 @@ const CarFilterBar = ({ onFiltersChange, onReset }) => {
   const years = ["2024", "2023", "2022", "2021", "2020"];
   const kilometers = ["0-30k", "30k-60k", "60k-100k", "100k+"];
   const transmissions = ["Automatic", "Manual"];
+  const fuelTypes = ["Petrol", "Diesel", "Electric", "Hybrid", "Plug-in Hybrid"];
 
   // Handle filter changes
   const handleFilterChange = (key, value) => {
@@ -235,6 +237,22 @@ const CarFilterBar = ({ onFiltersChange, onReset }) => {
             {transmissions.map((trans, idx) => (
               <option key={idx} value={trans}>
                 {trans}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Fuel Type */}
+        <div>
+          <select
+            value={filters.fuelType}
+            onChange={(e) => handleFilterChange("fuelType", e.target.value)}
+            className="w-full text-xs border border-gray-300 rounded-lg px-2 py-2 focus:ring-1 focus:ring-green-500 outline-none"
+          >
+            <option value="">Fuel Type</option>
+            {fuelTypes.map((fuel, idx) => (
+              <option key={idx} value={fuel}>
+                {fuel}
               </option>
             ))}
           </select>

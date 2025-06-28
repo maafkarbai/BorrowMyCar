@@ -142,24 +142,74 @@ const router = createBrowserRouter([
             index: true,
             element: <AdminDashboard />,
           },
+        ],
+      },
+      {
+        path: "users",
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <AdminLayout />
+          </ProtectedRoute>
+        ),
+        children: [
           {
-            path: "users",
+            index: true,
             element: <AdminDashboard />,
           },
+        ],
+      },
+      {
+        path: "cars",
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <AdminLayout />
+          </ProtectedRoute>
+        ),
+        children: [
           {
-            path: "cars", 
+            index: true,
             element: <AdminDashboard />,
           },
+        ],
+      },
+      {
+        path: "bookings",
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <AdminLayout />
+          </ProtectedRoute>
+        ),
+        children: [
           {
-            path: "bookings",
+            index: true,
             element: <AdminDashboard />,
           },
+        ],
+      },
+      {
+        path: "reports",
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <AdminLayout />
+          </ProtectedRoute>
+        ),
+        children: [
           {
-            path: "reports",
+            index: true,
             element: <AdminDashboard />,
           },
+        ],
+      },
+      {
+        path: "settings",
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <AdminLayout />
+          </ProtectedRoute>
+        ),
+        children: [
           {
-            path: "settings",
+            index: true,
             element: <AdminDashboard />,
           },
         ],

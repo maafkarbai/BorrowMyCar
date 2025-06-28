@@ -10,6 +10,18 @@ const ListCar = () => {
     pricePerDay: "",
     availabilityFrom: "",
     availabilityTo: "",
+    // Car specifications
+    make: "",
+    model: "",
+    year: "",
+    color: "",
+    transmission: "",
+    fuelType: "",
+    mileage: "",
+    seatingCapacity: "",
+    plateNumber: "",
+    specifications: "GCC",
+    features: [],
   });
   const [images, setImages] = useState([]);
   const [error, setError] = useState("");
@@ -20,6 +32,39 @@ const ListCar = () => {
   const [showCitySuggestions, setShowCitySuggestions] = useState(false);
   const [filteredCities, setFilteredCities] = useState([]);
   const navigate = useNavigate();
+
+  // Car makes and models
+  const carMakes = [
+    "Toyota", "Honda", "BMW", "Mercedes-Benz", "Audi", "Lexus", "Infiniti",
+    "Ford", "Chevrolet", "Nissan", "Hyundai", "Kia", "Mazda", "Volkswagen",
+    "Porsche", "Jaguar", "Land Rover", "Range Rover", "Jeep", "Volvo",
+    "Mitsubishi", "Subaru", "Tesla", "Genesis", "Acura", "Cadillac"
+  ];
+
+  const carYears = [];
+  for (let year = new Date().getFullYear(); year >= 2015; year--) {
+    carYears.push(year.toString());
+  }
+
+  const carColors = [
+    "White", "Black", "Silver", "Gray", "Red", "Blue", "Brown", "Gold",
+    "Green", "Orange", "Purple", "Yellow", "Beige", "Maroon"
+  ];
+
+  const transmissionTypes = ["Automatic", "Manual", "CVT"];
+  
+  const fuelTypes = ["Petrol", "Diesel", "Electric", "Hybrid", "Plug-in Hybrid"];
+  
+  const seatingOptions = ["2", "4", "5", "7", "8"];
+  
+  const specificationTypes = ["GCC", "US", "European", "Japanese"];
+  
+  const availableFeatures = [
+    "Air Conditioning", "Bluetooth", "GPS Navigation", "Backup Camera",
+    "Sunroof", "Leather Seats", "Heated Seats", "Cruise Control",
+    "Keyless Entry", "Push Start", "USB Charging", "Android Auto",
+    "Apple CarPlay", "Parking Sensors", "Lane Assist", "Blind Spot Monitor"
+  ];
 
   // UAE Cities database
   const uaeCities = [
@@ -279,6 +324,23 @@ const ListCar = () => {
     setFilteredCities([]);
   };
 
+  const handleFeatureChange = (feature) => {
+    const currentFeatures = form.features || [];
+    const isSelected = currentFeatures.includes(feature);
+    
+    if (isSelected) {
+      setForm({
+        ...form,
+        features: currentFeatures.filter(f => f !== feature)
+      });
+    } else {
+      setForm({
+        ...form,
+        features: [...currentFeatures, feature]
+      });
+    }
+  };
+
   // Close suggestions when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -317,10 +379,23 @@ const ListCar = () => {
       pricePerDay,
       availabilityFrom,
       availabilityTo,
+      make,
+      model,
+      year,
+      color,
+      transmission,
+      fuelType,
+      seatingCapacity,
+      plateNumber,
     } = form;
 
     if (!title.trim() || !description.trim() || !city.trim()) {
-      setError("All text fields are required");
+      setError("All required fields must be filled");
+      return false;
+    }
+
+    if (!make || !model || !year || !color || !transmission || !fuelType || !seatingCapacity || !plateNumber.trim()) {
+      setError("Please fill in all car specification fields");
       return false;
     }
 
@@ -344,18 +419,18 @@ const ListCar = () => {
       return false;
     }
 
-    if (images.length === 0) {
-      setError("Please upload at least one image");
+    if (images.length < 3) {
+      setError("Please upload at least 3 images");
       return false;
     }
 
     // Validate image files
-    const validTypes = ["image/jpeg", "image/png", "image/jpg"];
+    const validTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
     const maxSize = 5 * 1024 * 1024; // 5MB
 
     for (let file of images) {
       if (!validTypes.includes(file.type)) {
-        setError("Only JPEG, PNG images are allowed");
+        setError("Only JPEG, PNG, WebP images are allowed");
         return false;
       }
       if (file.size > maxSize) {
@@ -612,16 +687,225 @@ const ListCar = () => {
           </div>
         </div>
 
+        {/* Car Specifications Section */}
+        <div className="bg-gray-50 p-6 rounded-lg">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Car Specifications</h3>
+          
+          {/* Make and Model */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Make *
+              </label>
+              <select
+                name="make"
+                value={form.make}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+              >
+                <option value="">Select Make</option>
+                {carMakes.map((make, index) => (
+                  <option key={index} value={make}>{make}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Model *
+              </label>
+              <input
+                type="text"
+                name="model"
+                value={form.model}
+                placeholder="e.g., Camry, Accord, X5"
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+              />
+            </div>
+          </div>
+
+          {/* Year and Color */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Year *
+              </label>
+              <select
+                name="year"
+                value={form.year}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+              >
+                <option value="">Select Year</option>
+                {carYears.map((year, index) => (
+                  <option key={index} value={year}>{year}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Color *
+              </label>
+              <select
+                name="color"
+                value={form.color}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+              >
+                <option value="">Select Color</option>
+                {carColors.map((color, index) => (
+                  <option key={index} value={color}>{color}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Transmission and Fuel Type */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Transmission *
+              </label>
+              <select
+                name="transmission"
+                value={form.transmission}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+              >
+                <option value="">Select Transmission</option>
+                {transmissionTypes.map((type, index) => (
+                  <option key={index} value={type}>{type}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Fuel Type *
+              </label>
+              <select
+                name="fuelType"
+                value={form.fuelType}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+              >
+                <option value="">Select Fuel Type</option>
+                {fuelTypes.map((fuel, index) => (
+                  <option key={index} value={fuel}>{fuel}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Mileage and Seating */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Mileage (km)
+              </label>
+              <input
+                type="number"
+                name="mileage"
+                value={form.mileage}
+                placeholder="e.g., 50000"
+                onChange={handleChange}
+                min="0"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Seating Capacity *
+              </label>
+              <select
+                name="seatingCapacity"
+                value={form.seatingCapacity}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+              >
+                <option value="">Select Seats</option>
+                {seatingOptions.map((seats, index) => (
+                  <option key={index} value={seats}>{seats} seats</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Plate Number and Specifications */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Plate Number *
+              </label>
+              <input
+                type="text"
+                name="plateNumber"
+                value={form.plateNumber}
+                placeholder="e.g., A12345 or 12345"
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Specifications
+              </label>
+              <select
+                name="specifications"
+                value={form.specifications}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+              >
+                {specificationTypes.map((spec, index) => (
+                  <option key={index} value={spec}>{spec}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Features */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Features (Optional)
+            </label>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {availableFeatures.map((feature, index) => (
+                <label key={index} className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.features.includes(feature)}
+                    onChange={() => handleFeatureChange(feature)}
+                    className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                  />
+                  <span className="text-sm text-gray-700">{feature}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* Image Upload */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Car Images * (Max 5MB each, JPEG/PNG only)
+            Car Images * (Min 3 required, Max 5MB each, JPEG/PNG/WebP)
           </label>
           <input
             key={fileInputKey} // Add key prop to force re-render and reset
             type="file"
             name="images"
-            accept="image/jpeg,image/png,image/jpg"
+            accept="image/jpeg,image/png,image/jpg,image/webp"
             multiple
             onChange={handleFileChange}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
