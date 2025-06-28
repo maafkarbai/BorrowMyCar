@@ -1130,8 +1130,8 @@ const AdminDashboard = () => {
       <Helmet>
         <title>Admin Dashboard | BorrowMyCar</title>
       </Helmet>
-      <div className="bg-gray-50 min-h-screen">
-        <div className="bg-white shadow-sm">
+      <div>
+        <div className="bg-white shadow-sm mb-6">
           <div className="px-4 py-4">
             <h1 className="text-2xl font-bold text-gray-900">
               {activeTab === "dashboard" && "Dashboard Overview"}
@@ -1154,8 +1154,7 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        <div className="py-6">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div>
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
                 {error}
@@ -1678,7 +1677,6 @@ const AdminDashboard = () => {
                 </>
               )}
             </div>
-          </div>
         </div>
       </div>
       <UserDetailsModal
