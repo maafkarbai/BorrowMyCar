@@ -189,6 +189,21 @@ export const getClosestCity = (coordinates, cities) => {
   return closestCity;
 };
 
+// Extract city from Mapbox context array
+export const extractCity = (context) => {
+  if (!context || !Array.isArray(context)) return null;
+  
+  // Look for place context (city)
+  const place = context.find(item => item.id && item.id.includes('place'));
+  if (place) return place.text;
+  
+  // Fallback to region
+  const region = context.find(item => item.id && item.id.includes('region'));
+  if (region) return region.text;
+  
+  return null;
+};
+
 // Create mapbox service object for compatibility
 const mapboxService = {
   geocodeAddress,
@@ -199,6 +214,7 @@ const mapboxService = {
   formatCoordinates,
   isWithinUAE,
   getClosestCity,
+  extractCity,
 };
 
 export default mapboxService;

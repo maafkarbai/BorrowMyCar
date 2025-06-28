@@ -128,6 +128,11 @@ const LocationPicker = ({
   };
 
   const getCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by this browser.");
+      return;
+    }
+
     setIsLoading(true);
 
     navigator.geolocation.getCurrentPosition(
@@ -141,8 +146,16 @@ const LocationPicker = ({
         );
 
         if (reverseResult.success) {
-          setSelectedLocation(reverseResult.result);
-          onLocationSelect(reverseResult.result);
+          const locationData = {
+            name: reverseResult.address,
+            coordinates: [longitude, latitude],
+            address: reverseResult.address,
+            city: reverseResult.city,
+            type: "current_location"
+          };
+
+          setSelectedLocation(locationData);
+          onLocationSelect(locationData);
 
           if (map.current) {
             map.current.flyTo({
@@ -151,6 +164,9 @@ const LocationPicker = ({
             });
             addMarker([longitude, latitude]);
           }
+
+          // Auto-fill any visible text inputs with the location
+          autoFillLocationInputs(locationData);
         }
 
         setIsLoading(false);
@@ -158,14 +174,35 @@ const LocationPicker = ({
       (error) => {
         console.error("Geolocation error:", error);
         setIsLoading(false);
-        alert("Unable to get your current location. Please select manually.");
+        
+        let message = "Unable to get your current location.";
+        if (error.code === 1) {
+          message = "Location access denied. Please enable location services and try again.";
+        } else if (error.code === 2) {
+          message = "Location unavailable. Please check your internet connection and try again.";
+        } else if (error.code === 3) {
+          message = "Location request timeout. Please try again.";
+        }
+        
+        alert(message);
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 300000,
+        timeout: 15000,
+        maximumAge: 300000, // 5 minutes cache
       }
     );
+  };
+
+  const autoFillLocationInputs = (locationData) => {
+    // Trigger a custom event that other components can listen to
+    const event = new CustomEvent('locationAutofill', {
+      detail: {
+        location: locationData,
+        timestamp: Date.now()
+      }
+    });
+    window.dispatchEvent(event);
   };
 
   const clearSelection = () => {
@@ -210,9 +247,13 @@ const LocationPicker = ({
                 onClick={getCurrentLocation}
                 disabled={isLoading}
                 className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
-                title="Use current location"
+                title="Auto-fill current location"
               >
-                <Navigation className="w-4 h-4" />
+                {isLoading ? (
+                  <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full" />
+                ) : (
+                  <Navigation className="w-4 h-4" />
+                )}
               </button>
             )}
 
