@@ -1,12 +1,12 @@
 // borrowmycarfrontend/src/components/MapBox/BaseMap.jsx
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useState } from "react";
 import Map, {
   Marker,
   Popup,
   NavigationControl,
   GeolocateControl,
 } from "react-map-gl";
-import { DEFAULT_MAP_CONFIG, UAE_CITIES } from "../../config/mapbox";
+import { DEFAULT_MAP_CONFIG, MAPBOX_CONFIG } from "../../config/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 const BaseMap = ({
@@ -23,7 +23,7 @@ const BaseMap = ({
 }) => {
   const mapRef = useRef();
   const [viewState, setViewState] = useState({
-    ...DEFAULT_MAP_CONFIG.initialViewState,
+    ...DEFAULT_MAP_CONFIG,
     ...initialViewState,
   });
   const [showPopup, setShowPopup] = useState(null);
@@ -49,9 +49,9 @@ const BaseMap = ({
         {...viewState}
         onMove={(evt) => setViewState(evt.viewState)}
         onClick={handleMapClick}
-        mapStyle={DEFAULT_MAP_CONFIG.mapStyle}
-        mapboxAccessToken={DEFAULT_MAP_CONFIG.mapboxAccessToken}
-        maxBounds={DEFAULT_MAP_CONFIG.maxBounds}
+        mapStyle={MAPBOX_CONFIG.style}
+        mapboxAccessToken={MAPBOX_CONFIG.accessToken}
+        maxBounds={MAPBOX_CONFIG.uae.bounds}
         attributionControl={false}
         {...props}
       >

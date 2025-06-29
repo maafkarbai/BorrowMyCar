@@ -8,7 +8,9 @@
       "Bash(npm run lint:*)",
       "Bash(npx babel:*)",
       "Bash(timeout 10s npm run dev)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(ls:*)",
+      "Bash(bun run:*)"
     ],
     "deny": []
   }

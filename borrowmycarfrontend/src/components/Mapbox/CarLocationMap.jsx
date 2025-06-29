@@ -35,7 +35,11 @@ const CarLocationMap = ({
 
   // Convert cars to map markers
   const carMarkers = filteredCars.map((car) => {
-    const cityCoords = UAE_CITIES[car.city] || {
+    const cityInfo = UAE_CITIES.find(city => city.name === car.city);
+    const cityCoords = cityInfo ? {
+      latitude: cityInfo.coordinates[1],
+      longitude: cityInfo.coordinates[0]
+    } : {
       latitude: 25.2048,
       longitude: 55.2708,
     };
@@ -76,22 +80,29 @@ const CarLocationMap = ({
   };
 
   // Calculate center based on filtered cars
+  const dubaiCity = UAE_CITIES.find(city => city.name === "Dubai");
   const mapCenter =
     filteredCars.length > 0
       ? {
           latitude:
             filteredCars.reduce((sum, car) => {
-              const cityCoords = UAE_CITIES[car.city] || UAE_CITIES["Dubai"];
-              return sum + cityCoords.latitude;
+              const cityInfo = UAE_CITIES.find(city => city.name === car.city);
+              const cityCoords = cityInfo ? cityInfo.coordinates : dubaiCity.coordinates;
+              return sum + cityCoords[1];
             }, 0) / filteredCars.length,
           longitude:
             filteredCars.reduce((sum, car) => {
-              const cityCoords = UAE_CITIES[car.city] || UAE_CITIES["Dubai"];
-              return sum + cityCoords.longitude;
+              const cityInfo = UAE_CITIES.find(city => city.name === car.city);
+              const cityCoords = cityInfo ? cityInfo.coordinates : dubaiCity.coordinates;
+              return sum + cityCoords[0];
             }, 0) / filteredCars.length,
           zoom: selectedCity !== "all" ? 11 : 8,
         }
-      : UAE_CITIES["Dubai"];
+      : {
+          latitude: dubaiCity.coordinates[1],
+          longitude: dubaiCity.coordinates[0],
+          zoom: 10
+        };
 
   return (
     <div className="space-y-4">
@@ -106,9 +117,9 @@ const CarLocationMap = ({
               className="border border-gray-300 rounded px-3 py-1 text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent"
             >
               <option value="all">All Cities</option>
-              {Object.keys(UAE_CITIES).map((city) => (
-                <option key={city} value={city}>
-                  {city}
+              {UAE_CITIES.map((city) => (
+                <option key={city.name} value={city.name}>
+                  {city.name}
                 </option>
               ))}
             </select>

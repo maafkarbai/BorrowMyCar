@@ -6,6 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 BorrowMyCar is a full-stack car rental platform for the UAE with a Node.js/Express backend and React frontend:
 
+- **Package Management**: Uses Bun for both backend and frontend
 - **Backend (root)**: Express.js API with MongoDB/Mongoose, authentication, payments, and file uploads
 - **Frontend (`borrowmycarfrontend/`)**: React + Vite application with Tailwind CSS, Mapbox integration, and Stripe payments
 

@@ -131,7 +131,7 @@ export const getDirections = async (startCoords, endCoords, profile = "driving")
 };
 
 // Search for places near a location
-export const searchNearby = async (coordinates, query, radius = 10000) => {
+export const searchNearby = async (coordinates, query) => {
   if (!MAPBOX_TOKEN) {
     return {
       success: true,

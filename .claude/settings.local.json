@@ -10,7 +10,9 @@
       "Bash(node:*)",
       "Bash(rg:*)",
       "Bash(npm run lint)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(npm install:*)"
     ],
     "deny": []
   }
