@@ -1,17 +1,21 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import API from "./api";
+import { useAuth } from "./context/AuthProvider";
 import Logo from "./assets/BorrowMyCar.png";
 import { Helmet } from "react-helmet-async";
 
 const Login = () => {
-  const [form, setForm] = useState({ email: "", password: "" });
-  const [isLoading, setIsLoading] = useState(false);
+  const [form, setForm] = useState({ email: "", password: "", rememberMe: false });
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { login, loading } = useAuth();
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value, type, checked } = e.target;
+    setForm({ 
+      ...form, 
+      [name]: type === "checkbox" ? checked : value 
+    });
     if (error) setError(""); // Clear error when user starts typing
   };
 
@@ -24,71 +28,24 @@ const Login = () => {
       return;
     }
 
-    setIsLoading(true);
     setError("");
 
     try {
-      console.log("Attempting login with:", { email: form.email });
-
-      const response = await API.post("/auth/login", {
+      const result = await login({
         email: form.email.trim(),
         password: form.password,
+        rememberMe: form.rememberMe
       });
 
-      console.log("Login response:", response.data);
-
-      // FIXED: Handle both response structures
-      let token = null;
-      let userData = null;
-
-      // Try to get token from multiple possible locations
-      if (response.data.token) {
-        token = response.data.token;
-        userData = response.data.user;
-      } else if (response.data.data && response.data.data.token) {
-        token = response.data.data.token;
-        userData = response.data.data.user;
-      }
-
-      if (token) {
-        // Store token and user data
-        localStorage.setItem("token", token);
-
-        if (userData) {
-          localStorage.setItem("user", JSON.stringify(userData));
-          console.log("User data stored:", userData);
-        }
-
-        console.log("Login successful, token stored");
-
+      if (result.success) {
         // Redirect to homepage or dashboard
         navigate("/", { replace: true });
       } else {
-        console.error("No token in response:", response.data);
-        setError(
-          "Login successful but no authentication token received. Please try again."
-        );
+        setError(result.error || "Login failed. Please try again.");
       }
     } catch (err) {
       console.error("Login error:", err);
-
-      // Handle different error types
-      if (err.response) {
-        // Server responded with error status
-        const message =
-          err.response.data?.message ||
-          err.response.data?.error ||
-          `Login failed (${err.response.status})`;
-        setError(message);
-      } else if (err.request) {
-        // Network error
-        setError("Network error. Please check your connection and try again.");
-      } else {
-        // Other error
-        setError("An unexpected error occurred. Please try again.");
-      }
-    } finally {
-      setIsLoading(false);
+      setError("An unexpected error occurred. Please try again.");
     }
   };
 
@@ -176,6 +133,9 @@ const Login = () => {
                 <label className="flex items-center cursor-pointer">
                   <input
                     type="checkbox"
+                    name="rememberMe"
+                    checked={form.rememberMe}
+                    onChange={handleChange}
                     className="w-4 h-4 text-green-500 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
                   />
                   <span className="ml-2 text-gray-700">Remember me</span>
@@ -191,10 +151,10 @@ const Login = () => {
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={loading}
                 className="w-full bg-green-500 hover:bg-green-600 disabled:bg-green-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 text-sm sm:text-base focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
               >
-                {isLoading ? (
+                {loading ? (
                   <div className="flex items-center justify-center">
                     <svg
                       className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"

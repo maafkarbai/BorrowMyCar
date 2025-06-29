@@ -46,10 +46,42 @@ const authReducer = (state, action) => {
   }
 };
 
+// Helper functions for token storage
+const getStoredToken = () => {
+  return localStorage.getItem("token") || sessionStorage.getItem("token");
+};
+
+const getStoredUser = () => {
+  try {
+    const userData = localStorage.getItem("user") || sessionStorage.getItem("user");
+    return userData ? JSON.parse(userData) : null;
+  } catch {
+    return null;
+  }
+};
+
+const storeAuthData = (token, user, rememberMe = false) => {
+  const storage = rememberMe ? localStorage : sessionStorage;
+  storage.setItem("token", token);
+  storage.setItem("user", JSON.stringify(user));
+  
+  // Clear from other storage to avoid conflicts
+  const otherStorage = rememberMe ? sessionStorage : localStorage;
+  otherStorage.removeItem("token");
+  otherStorage.removeItem("user");
+};
+
+const clearAuthData = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  sessionStorage.removeItem("token");
+  sessionStorage.removeItem("user");
+};
+
 const initialState = {
   isAuthenticated: false,
-  user: null,
-  token: localStorage.getItem("token"),
+  user: getStoredUser(),
+  token: getStoredToken(),
   loading: true,
   error: null,
 };
@@ -59,7 +91,7 @@ export const AuthProvider = ({ children }) => {
 
   // Check if user is logged in on app start
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = getStoredToken();
     if (token) {
       getCurrentUser();
     } else {
@@ -88,7 +120,7 @@ export const AuthProvider = ({ children }) => {
           type: "LOGIN_SUCCESS",
           payload: {
             user,
-            token: localStorage.getItem("token"),
+            token: getStoredToken(),
           },
         });
       } else {
@@ -97,8 +129,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error("Get current user error:", error);
       // Clear invalid tokens
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
+      clearAuthData();
       dispatch({ type: "LOGOUT" });
     } finally {
       dispatch({ type: "SET_LOADING", payload: false });
@@ -141,9 +172,8 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (token && user) {
-        // Store authentication data
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(user));
+        // Store authentication data with rememberMe preference
+        storeAuthData(token, user, credentials.rememberMe);
 
         dispatch({
           type: "LOGIN_SUCCESS",
@@ -219,8 +249,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (token && user) {
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(user));
+        storeAuthData(token, user, false); // Signup doesn't need rememberMe
 
         dispatch({
           type: "LOGIN_SUCCESS",
@@ -253,9 +282,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    // Clear local storage
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    // Clear auth data from both storages
+    clearAuthData();
 
     // Clear state
     dispatch({ type: "LOGOUT" });
@@ -278,8 +306,9 @@ export const AuthProvider = ({ children }) => {
     // Update user in state
     dispatch({ type: "UPDATE_USER", payload: userData });
 
-    // Update localStorage
-    localStorage.setItem("user", JSON.stringify(userData));
+    // Update in current storage location
+    const currentStorage = localStorage.getItem("user") ? localStorage : sessionStorage;
+    currentStorage.setItem("user", JSON.stringify(userData));
   };
 
   const value = {

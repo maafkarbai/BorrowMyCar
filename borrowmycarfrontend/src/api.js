@@ -10,11 +10,16 @@ const API = axios.create({
   },
 });
 
+// Helper function to get token from storage
+const getStoredToken = () => {
+  return localStorage.getItem("token") || sessionStorage.getItem("token");
+};
+
 // Request interceptor to automatically include token and handle requests
 API.interceptors.request.use(
   (req) => {
-    // Get token from localStorage
-    const token = localStorage.getItem("token");
+    // Get token from either storage
+    const token = getStoredToken();
     if (token) {
       req.headers.Authorization = `Bearer ${token}`;
     }
@@ -63,6 +68,8 @@ API.interceptors.response.use(
           console.log("🔐 Authentication failed - clearing session");
           localStorage.removeItem("token");
           localStorage.removeItem("user");
+          sessionStorage.removeItem("token");
+          sessionStorage.removeItem("user");
 
           // Only redirect if not already on auth pages
           const currentPath = window.location.pathname;
@@ -185,7 +192,7 @@ export const uploadFile = async (url, formData, onProgress = null) => {
 
 // Check if user is authenticated
 export const isAuthenticated = () => {
-  const token = localStorage.getItem("token");
+  const token = getStoredToken();
   if (!token) return false;
 
   try {
@@ -200,7 +207,7 @@ export const isAuthenticated = () => {
 
 // Get current user from token
 export const getCurrentUser = () => {
-  const token = localStorage.getItem("token");
+  const token = getStoredToken();
   if (!token) return null;
 
   try {
@@ -221,6 +228,8 @@ export const getCurrentUser = () => {
 export const clearAuth = () => {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
+  sessionStorage.removeItem("token");
+  sessionStorage.removeItem("user");
 };
 
 // API Health check
