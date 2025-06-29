@@ -145,7 +145,7 @@ export const validateCreateBooking = [
   body("endDate").isISO8601().withMessage("Please provide a valid end date"),
   body("paymentMethod")
     .optional()
-    .isIn(["Cash", "Card", "BankTransfer", "DigitalWallet", "credit_card", "debit_card", "cash_on_delivery", "cash_on_pickup", "cash", "bank_transfer", "paypal", "stripe", "digital_wallet"])
+    .isIn(["Cash", "Card", "cash_on_pickup", "stripe"])
     .withMessage("Please select a valid payment method"),
   body("pickupLocation")
     .optional()

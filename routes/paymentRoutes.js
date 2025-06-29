@@ -33,7 +33,7 @@ router.post(
   "/process",
   [
     body("paymentMethod")
-      .isIn(["stripe", "cash_on_pickup", "bank_transfer", "digital_wallet"])
+      .isIn(["stripe", "cash_on_pickup"])
       .withMessage("Invalid payment method"),
     body("amount")
       .isFloat({ min: 50, max: 50000 })
@@ -46,12 +46,6 @@ router.post(
     body("cardDetails").if(body("paymentMethod").equals("stripe")).notEmpty(),
     body("cashDetails")
       .if(body("paymentMethod").equals("cash_on_pickup"))
-      .notEmpty(),
-    body("bankDetails")
-      .if(body("paymentMethod").equals("bank_transfer"))
-      .notEmpty(),
-    body("walletDetails")
-      .if(body("paymentMethod").equals("digital_wallet"))
       .notEmpty(),
   ],
   handleValidationErrors,

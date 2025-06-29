@@ -57,7 +57,7 @@ const HowItWorks = () => {
       title: "Secure Payment",
       description: "Pay safely with our encrypted payment system",
       details: [
-        "Multiple payment options: Credit card, debit card, digital wallets",
+        "Two convenient payment options: Credit/debit card or cash on pickup",
         "Bank-level security with SSL encryption",
         "Hold deposit released after safe return",
         "Transparent pricing with detailed breakdown",

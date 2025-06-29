@@ -27,16 +27,13 @@ export const getStripeConfig = handleAsyncError(async (req, res) => {
   });
 });
 
-// Process Payment Endpoint (handles all payment methods)
+// Process Payment Endpoint (handles cash and card payments only)
 export const processPayment = handleAsyncError(async (req, res) => {
   const {
     paymentMethod,
     bookingId,
     amount,
     currency = "aed",
-    cardDetails,
-    bankDetails,
-    walletDetails,
     cashDetails,
     carId,
     carTitle,
@@ -152,74 +149,10 @@ export const processPayment = handleAsyncError(async (req, res) => {
         }
         break;
 
-      case "bank_transfer":
-        if (!bankDetails) {
-          return res.status(400).json({
-            success: false,
-            message: "Bank transfer details are required",
-            code: "MISSING_BANK_DETAILS",
-          });
-        }
-
-        result = {
-          success: true,
-          paymentId: `bank_${Date.now()}`,
-          paymentMethod: "bank_transfer",
-          status: "pending",
-          instructions: {
-            bankName: "BorrowMyCar Business Account",
-            accountNumber: "1234567890",
-            iban: "AE070331234567890123456",
-            reference: `BMC-${bookingId || Date.now()}`,
-            amount: amount,
-            currency: currency,
-          },
-        };
-
-        // Update booking if it exists
-        if (booking) {
-          booking.paymentStatus = "pending";
-          booking.paymentMethod = "Bank Transfer";
-          booking.status = "pending";
-          await booking.save();
-        }
-        break;
-
-      case "digital_wallet":
-        if (!walletDetails) {
-          return res.status(400).json({
-            success: false,
-            message: "Digital wallet details are required",
-            code: "MISSING_WALLET_DETAILS",
-          });
-        }
-
-        result = {
-          success: true,
-          paymentId: `wallet_${Date.now()}`,
-          paymentMethod: walletDetails.walletType,
-          status: "pending",
-          instructions: {
-            walletType: walletDetails.walletType,
-            phoneNumber: walletDetails.phoneNumber,
-            amount: amount,
-            currency: currency,
-          },
-        };
-
-        // Update booking if it exists
-        if (booking) {
-          booking.paymentStatus = "pending";
-          booking.paymentMethod = walletDetails.walletType;
-          booking.status = "pending";
-          await booking.save();
-        }
-        break;
-
       default:
         return res.status(400).json({
           success: false,
-          message: "Unsupported payment method",
+          message: "Unsupported payment method. Only cash and card payments are accepted.",
           code: "INVALID_PAYMENT_METHOD",
         });
     }

@@ -63,10 +63,9 @@ const Checkout = () => {
         }
 
         // Normalize payment method
-        let paymentMethod = bookingData.paymentMethod || "cash";
-        if (paymentMethod === "cash_on_delivery") paymentMethod = "Cash";
-        if (paymentMethod === "credit_card" || paymentMethod === "debit_card") paymentMethod = "Card";
-        if (paymentMethod === "bank_transfer") paymentMethod = "BankTransfer";
+        let paymentMethod = bookingData.paymentMethod || "Cash";
+        if (paymentMethod === "cash_on_pickup") paymentMethod = "Cash";
+        if (paymentMethod === "stripe") paymentMethod = "Card";
 
         // Create booking on backend
         const bookingResponse = await API.post("/bookings", {

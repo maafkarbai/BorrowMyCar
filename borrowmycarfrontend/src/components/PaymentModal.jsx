@@ -3,8 +3,6 @@ import { useState, useEffect } from "react";
 import {
   X,
   CreditCard,
-  Building,
-  Smartphone,
   Lock,
   CheckCircle,
   AlertCircle,
@@ -33,15 +31,6 @@ const PaymentModal = ({
     saveCard: false,
   });
 
-  const [bankForm, setBankForm] = useState({
-    bank: "",
-    accountNumber: "",
-  });
-
-  const [digitalWalletForm, setDigitalWalletForm] = useState({
-    walletType: "apple_pay",
-    phoneNumber: "",
-  });
 
   const [cashOnPickupForm, setCashOnPickupForm] = useState({
     meetingLocation: "",
@@ -54,29 +43,6 @@ const PaymentModal = ({
   const [savedCards, setSavedCards] = useState([]);
   const [selectedSavedCard, setSelectedSavedCard] = useState("");
 
-  // UAE Banks
-  const uaeBanks = [
-    "Emirates NBD",
-    "First Abu Dhabi Bank (FAB)",
-    "Abu Dhabi Commercial Bank (ADCB)",
-    "Dubai Islamic Bank (DIB)",
-    "Mashreq Bank",
-    "Commercial Bank of Dubai (CBD)",
-    "Union National Bank (UNB)",
-    "Ajman Bank",
-    "Bank of Sharjah",
-    "Invest Bank",
-  ];
-
-  // Digital Wallets
-  const digitalWallets = [
-    { id: "apple_pay", name: "Apple Pay", icon: "🍎" },
-    { id: "google_pay", name: "Google Pay", icon: "🔵" },
-    { id: "samsung_pay", name: "Samsung Pay", icon: "📱" },
-    { id: "paypal", name: "PayPal", icon: "💙" },
-    { id: "careem_pay", name: "Careem Pay", icon: "🚗" },
-    { id: "beam_wallet", name: "Beam Wallet", icon: "💫" },
-  ];
 
   // Payment Methods
   const paymentMethods = [
@@ -87,22 +53,6 @@ const PaymentModal = ({
       description: "Pay securely with Visa, Mastercard, or American Express",
       processing: "Instant",
       fees: "3.5% + AED 1.50",
-    },
-    {
-      id: "bank_transfer",
-      name: "Bank Transfer",
-      icon: Building,
-      description: "Direct bank transfer from UAE banks",
-      processing: "1-2 business days",
-      fees: "Free",
-    },
-    {
-      id: "digital_wallet",
-      name: "Digital Wallet",
-      icon: Smartphone,
-      description: "Apple Pay, Google Pay, PayPal and more",
-      processing: "Instant",
-      fees: "2.9% + AED 1.00",
     },
     {
       id: "cash_on_pickup",
@@ -179,31 +129,6 @@ const PaymentModal = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const validateBankForm = () => {
-    const newErrors = {};
-    if (!bankForm.bank) {
-      newErrors.bank = "Please select a bank";
-    }
-    if (!bankForm.accountNumber) {
-      newErrors.accountNumber = "Account number is required";
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const validateDigitalWallet = () => {
-    const newErrors = {};
-    if (
-      digitalWalletForm.walletType === "careem_pay" ||
-      digitalWalletForm.walletType === "beam_wallet"
-    ) {
-      if (!digitalWalletForm.phoneNumber) {
-        newErrors.phoneNumber = "Phone number is required";
-      }
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
 
   const validateCashOnPickup = () => {
     const newErrors = {};
@@ -244,10 +169,6 @@ const PaymentModal = ({
       case "stripe":
         fee = Math.round(baseAmount * 0.035 + 1.5);
         break;
-      case "digital_wallet":
-        fee = Math.round(baseAmount * 0.029 + 1.0);
-        break;
-      case "bank_transfer":
       case "cash_on_pickup":
         fee = 0;
         break;
@@ -285,20 +206,6 @@ const PaymentModal = ({
             paymentData.cardDetails = selectedSavedCard
               ? { savedCardId: selectedSavedCard, cvv: cardForm.cvv }
               : cardForm;
-          }
-          break;
-
-        case "bank_transfer":
-          isValid = validateBankForm();
-          if (isValid) {
-            paymentData.bankDetails = bankForm;
-          }
-          break;
-
-        case "digital_wallet":
-          isValid = validateDigitalWallet();
-          if (isValid) {
-            paymentData.walletDetails = digitalWalletForm;
           }
           break;
 
@@ -532,130 +439,6 @@ const PaymentModal = ({
           </div>
         );
 
-      case "bank_transfer":
-        return (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Select Bank
-              </label>
-              <select
-                value={bankForm.bank}
-                onChange={(e) =>
-                  setBankForm((prev) => ({ ...prev, bank: e.target.value }))
-                }
-                className={`w-full p-3 border rounded-lg ${
-                  errors.bank ? "border-red-500" : "border-gray-300"
-                }`}
-              >
-                <option value="">Choose your bank</option>
-                {uaeBanks.map((bank) => (
-                  <option key={bank} value={bank}>
-                    {bank}
-                  </option>
-                ))}
-              </select>
-              {errors.bank && (
-                <p className="text-red-500 text-sm mt-1">{errors.bank}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Account Number
-              </label>
-              <input
-                type="text"
-                placeholder="Enter your account number"
-                value={bankForm.accountNumber}
-                onChange={(e) =>
-                  setBankForm((prev) => ({
-                    ...prev,
-                    accountNumber: e.target.value,
-                  }))
-                }
-                className={`w-full p-3 border rounded-lg ${
-                  errors.accountNumber ? "border-red-500" : "border-gray-300"
-                }`}
-              />
-              {errors.accountNumber && (
-                <p className="text-red-500 text-sm mt-1">
-                  {errors.accountNumber}
-                </p>
-              )}
-            </div>
-
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-center">
-                <AlertCircle className="h-5 w-5 text-blue-600 mr-2" />
-                <span className="text-sm text-blue-800">
-                  You will receive bank transfer instructions after
-                  confirmation.
-                </span>
-              </div>
-            </div>
-          </div>
-        );
-
-      case "digital_wallet":
-        return (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Wallet
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                {digitalWallets.map((wallet) => (
-                  <div
-                    key={wallet.id}
-                    className={`p-3 border rounded-lg cursor-pointer text-center transition-colors ${
-                      digitalWalletForm.walletType === wallet.id
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                    onClick={() =>
-                      setDigitalWalletForm((prev) => ({
-                        ...prev,
-                        walletType: wallet.id,
-                      }))
-                    }
-                  >
-                    <div className="text-2xl mb-1">{wallet.icon}</div>
-                    <div className="text-sm font-medium">{wallet.name}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {(digitalWalletForm.walletType === "careem_pay" ||
-              digitalWalletForm.walletType === "beam_wallet") && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone Number
-                </label>
-                <input
-                  type="tel"
-                  placeholder="+971 50 123 4567"
-                  value={digitalWalletForm.phoneNumber}
-                  onChange={(e) =>
-                    setDigitalWalletForm((prev) => ({
-                      ...prev,
-                      phoneNumber: e.target.value,
-                    }))
-                  }
-                  className={`w-full p-3 border rounded-lg ${
-                    errors.phoneNumber ? "border-red-500" : "border-gray-300"
-                  }`}
-                />
-                {errors.phoneNumber && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.phoneNumber}
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        );
 
       case "cash_on_pickup":
         return (
@@ -910,28 +693,6 @@ const PaymentModal = ({
           </div>
 
           {/* Payment Method Specific Instructions */}
-          {paymentMethod === "bank_transfer" && (
-            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <h4 className="font-medium text-blue-900 mb-2">
-                Bank Transfer Instructions
-              </h4>
-              <div className="text-sm text-blue-800 space-y-1">
-                <p>
-                  1. You will receive detailed bank transfer instructions via
-                  email
-                </p>
-                <p>
-                  2. Transfer must be completed within 24 hours to hold your
-                  booking
-                </p>
-                <p>
-                  3. Include your booking reference in the transfer description
-                </p>
-                <p>4. Upload transfer receipt in your booking dashboard</p>
-              </div>
-            </div>
-          )}
-
           {paymentMethod === "cash_on_pickup" && (
             <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
               <h4 className="font-medium text-yellow-900 mb-2">
@@ -942,24 +703,6 @@ const PaymentModal = ({
                 <p>• Meeting location and time are confirmed upon booking</p>
                 <p>• Bring valid ID for verification</p>
                 <p>• Late arrival may result in booking cancellation</p>
-              </div>
-            </div>
-          )}
-
-          {paymentMethod === "digital_wallet" && (
-            <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-              <h4 className="font-medium text-purple-900 mb-2">
-                Digital Wallet Payment
-              </h4>
-              <div className="text-sm text-purple-800 space-y-1">
-                <p>
-                  • You will be redirected to complete payment with your
-                  selected wallet
-                </p>
-                <p>
-                  • Ensure you have sufficient balance or linked payment method
-                </p>
-                <p>• Payment confirmation will be sent via email</p>
               </div>
             </div>
           )}
