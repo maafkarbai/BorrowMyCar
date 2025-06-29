@@ -217,7 +217,11 @@ const Navbar = () => {
     { label: t("profile.myProfile"), path: "/profile", icon: User },
     { label: t("navigation.settings"), path: "/settings", icon: Settings },
     ...(user?.role === "owner"
-      ? [{ label: "Earnings", path: "/earnings", icon: BarChart3 }]
+      ? [
+          { label: "Seller Dashboard", path: "/seller/dashboard", icon: BarChart3 },
+          { label: "My Listings", path: "/seller/listings", icon: Car },
+          { label: "Orders", path: "/seller/orders", icon: Calendar },
+        ]
       : []),
     { label: "Support", path: "/support", icon: MessageCircle },
   ];

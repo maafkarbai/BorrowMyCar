@@ -9,6 +9,11 @@ import {
   getCarsByOwner,
   getMyCars,
   getCarAvailability,
+  getSellerDashboard,
+  getSellerOrders,
+  bulkUpdateCars,
+  toggleCarStatus,
+  duplicateCarListing,
 } from "../controllers/carController.js";
 import {
   protect,
@@ -154,6 +159,21 @@ router.use(protect); // Apply protection to all routes below
 
 // GET /api/cars/my/cars - Get current user's cars (Owner only)
 router.get("/my/cars", restrictTo("owner"), getMyCars);
+
+// GET /api/cars/seller/dashboard - Get seller dashboard data (Owner only)
+router.get("/seller/dashboard", restrictTo("owner"), getSellerDashboard);
+
+// GET /api/cars/seller/orders - Get seller orders (Owner only)
+router.get("/seller/orders", restrictTo("owner"), getSellerOrders);
+
+// PUT /api/cars/bulk - Bulk update multiple cars (Owner only)
+router.put("/bulk", restrictTo("owner"), bulkUpdateCars);
+
+// PATCH /api/cars/:id/toggle-status - Toggle car active/inactive status (Owner only)
+router.patch("/:id/toggle-status", restrictTo("owner"), toggleCarStatus);
+
+// POST /api/cars/:id/duplicate - Duplicate car listing (Owner only)
+router.post("/:id/duplicate", restrictTo("owner"), duplicateCarListing);
 
 // POST /api/cars - Create new car (Owner only)
 router.post(

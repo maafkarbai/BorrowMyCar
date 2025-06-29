@@ -561,6 +561,222 @@ export const getMyCars = handleAsyncError(async (req, res) => {
   });
 });
 
+// GET SELLER DASHBOARD DATA
+export const getSellerDashboard = handleAsyncError(async (req, res) => {
+  const user = req.user;
+  const { period = "30" } = req.query; // days to look back
+
+  // Check if user is an owner
+  if (user.role !== "owner") {
+    return res.status(403).json({
+      success: false,
+      message: "Only car owners can access seller dashboard",
+      code: "INSUFFICIENT_PERMISSIONS",
+    });
+  }
+
+  const periodDays = parseInt(period);
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - periodDays);
+
+  // Get user's cars
+  const userCars = await Car.find({ owner: user.id }).select("_id title");
+  const carIds = userCars.map(car => car._id);
+
+  // Get overall statistics
+  const [overallStats] = await Booking.aggregate([
+    { $match: { car: { $in: carIds } } },
+    {
+      $group: {
+        _id: null,
+        totalBookings: { $sum: 1 },
+        totalEarnings: { $sum: "$totalPayable" },
+        avgBookingValue: { $avg: "$totalPayable" },
+        completedBookings: {
+          $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] }
+        },
+        activeBookings: {
+          $sum: {
+            $cond: [
+              { $in: ["$status", ["pending", "approved", "confirmed", "active"]] },
+              1,
+              0
+            ]
+          }
+        }
+      }
+    }
+  ]);
+
+  // Get earnings by period
+  const earningsByPeriod = await Booking.aggregate([
+    {
+      $match: {
+        car: { $in: carIds },
+        createdAt: { $gte: startDate },
+        status: { $in: ["completed", "confirmed", "active"] }
+      }
+    },
+    {
+      $group: {
+        _id: {
+          year: { $year: "$createdAt" },
+          month: { $month: "$createdAt" },
+          day: { $dayOfMonth: "$createdAt" }
+        },
+        dailyEarnings: { $sum: "$totalPayable" },
+        dailyBookings: { $sum: 1 }
+      }
+    },
+    { $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 } }
+  ]);
+
+  // Get top performing cars
+  const topCars = await Booking.aggregate([
+    { $match: { car: { $in: carIds } } },
+    {
+      $group: {
+        _id: "$car",
+        totalEarnings: { $sum: "$totalPayable" },
+        totalBookings: { $sum: 1 },
+        avgRating: { $avg: "$renterReview.rating" }
+      }
+    },
+    { $sort: { totalEarnings: -1 } },
+    { $limit: 5 },
+    {
+      $lookup: {
+        from: "cars",
+        localField: "_id",
+        foreignField: "_id",
+        as: "carDetails"
+      }
+    },
+    { $unwind: "$carDetails" }
+  ]);
+
+  // Get recent bookings
+  const recentBookings = await Booking.find({
+    car: { $in: carIds }
+  })
+    .populate("car", "title make model images")
+    .populate("renter", "name email")
+    .sort({ createdAt: -1 })
+    .limit(10)
+    .lean();
+
+  // Get booking status distribution
+  const statusDistribution = await Booking.aggregate([
+    { $match: { car: { $in: carIds } } },
+    {
+      $group: {
+        _id: "$status",
+        count: { $sum: 1 }
+      }
+    }
+  ]);
+
+  const stats = overallStats || {
+    totalBookings: 0,
+    totalEarnings: 0,
+    avgBookingValue: 0,
+    completedBookings: 0,
+    activeBookings: 0
+  };
+
+  res.json({
+    success: true,
+    data: {
+      overview: {
+        totalCars: userCars.length,
+        totalBookings: stats.totalBookings,
+        totalEarnings: stats.totalEarnings,
+        avgBookingValue: stats.avgBookingValue || 0,
+        completedBookings: stats.completedBookings,
+        activeBookings: stats.activeBookings,
+        completionRate: stats.totalBookings > 0 ? (stats.completedBookings / stats.totalBookings * 100).toFixed(1) : 0
+      },
+      earningsByPeriod,
+      topPerformingCars: topCars,
+      recentBookings,
+      statusDistribution
+    }
+  });
+});
+
+// GET SELLER ORDERS (Bookings)
+export const getSellerOrders = handleAsyncError(async (req, res) => {
+  const user = req.user;
+  const {
+    page = 1,
+    limit = 20,
+    status,
+    startDate,
+    endDate,
+    carId,
+    sortBy = "createdAt",
+    sortOrder = "desc"
+  } = req.query;
+
+  // Check if user is an owner
+  if (user.role !== "owner") {
+    return res.status(403).json({
+      success: false,
+      message: "Only car owners can access orders",
+      code: "INSUFFICIENT_PERMISSIONS",
+    });
+  }
+
+  // Get user's cars
+  const userCars = await Car.find({ owner: user.id }).select("_id");
+  const carIds = userCars.map(car => car._id);
+
+  // Build filter
+  const filter = { car: { $in: carIds } };
+  
+  if (status) filter.status = status;
+  if (carId) filter.car = carId;
+  if (startDate || endDate) {
+    filter.createdAt = {};
+    if (startDate) filter.createdAt.$gte = new Date(startDate);
+    if (endDate) filter.createdAt.$lte = new Date(endDate);
+  }
+
+  // Pagination
+  const skip = (parseInt(page) - 1) * parseInt(limit);
+  const sortOptions = {};
+  sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
+
+  // Execute query
+  const [orders, totalCount] = await Promise.all([
+    Booking.find(filter)
+      .populate("car", "title make model year images price city")
+      .populate("renter", "name email phone profileImage")
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean(),
+    Booking.countDocuments(filter)
+  ]);
+
+  const totalPages = Math.ceil(totalCount / parseInt(limit));
+
+  res.json({
+    success: true,
+    data: {
+      orders,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages,
+        totalCount,
+        hasNext: parseInt(page) < totalPages,
+        hasPrev: parseInt(page) > 1,
+        limit: parseInt(limit)
+      }
+    }
+  });
+});
+
 
 // Get car availability with existing bookings
 export const getCarAvailability = handleAsyncError(async (req, res, next) => {
@@ -598,5 +814,134 @@ export const getCarAvailability = handleAsyncError(async (req, res, next) => {
       minimumRentalDays: car.minimumRentalDays || 1,
       maximumRentalDays: car.maximumRentalDays || 30,
     },
+  });
+});
+
+// BULK UPDATE CARS
+export const bulkUpdateCars = handleAsyncError(async (req, res) => {
+  const user = req.user;
+  const { carIds, updateData } = req.body;
+
+  if (!carIds || !Array.isArray(carIds) || carIds.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: "Car IDs array is required",
+      code: "INVALID_INPUT"
+    });
+  }
+
+  // Verify ownership of all cars
+  const cars = await Car.find({ 
+    _id: { $in: carIds }, 
+    owner: user.id 
+  });
+
+  if (cars.length !== carIds.length) {
+    return res.status(403).json({
+      success: false,
+      message: "You can only update your own cars",
+      code: "UNAUTHORIZED"
+    });
+  }
+
+  // Sanitize update data
+  const allowedFields = ['status', 'price', 'availabilityFrom', 'availabilityTo', 'deliveryAvailable', 'deliveryFee'];
+  const sanitizedData = {};
+  
+  for (const field of allowedFields) {
+    if (updateData[field] !== undefined) {
+      sanitizedData[field] = updateData[field];
+    }
+  }
+
+  // Perform bulk update
+  const result = await Car.updateMany(
+    { _id: { $in: carIds }, owner: user.id },
+    { $set: sanitizedData }
+  );
+
+  res.json({
+    success: true,
+    message: `${result.modifiedCount} cars updated successfully`,
+    data: { modifiedCount: result.modifiedCount }
+  });
+});
+
+// TOGGLE CAR STATUS
+export const toggleCarStatus = handleAsyncError(async (req, res) => {
+  const user = req.user;
+  const { id } = req.params;
+
+  const car = await Car.findById(id);
+  if (!car) {
+    return res.status(404).json({
+      success: false,
+      message: "Car not found",
+      code: "CAR_NOT_FOUND"
+    });
+  }
+
+  if (car.owner.toString() !== user.id) {
+    return res.status(403).json({
+      success: false,
+      message: "You can only update your own cars",
+      code: "UNAUTHORIZED"
+    });
+  }
+
+  // Toggle between active and inactive
+  car.status = car.status === "active" ? "inactive" : "active";
+  await car.save();
+
+  res.json({
+    success: true,
+    message: `Car status changed to ${car.status}`,
+    data: { car: { ...car.toObject(), pricePerDay: car.price } }
+  });
+});
+
+// DUPLICATE CAR LISTING
+export const duplicateCarListing = handleAsyncError(async (req, res) => {
+  const user = req.user;
+  const { id } = req.params;
+
+  const originalCar = await Car.findById(id);
+  if (!originalCar) {
+    return res.status(404).json({
+      success: false,
+      message: "Car not found",
+      code: "CAR_NOT_FOUND"
+    });
+  }
+
+  if (originalCar.owner.toString() !== user.id) {
+    return res.status(403).json({
+      success: false,
+      message: "You can only duplicate your own cars",
+      code: "UNAUTHORIZED"
+    });
+  }
+
+  // Create duplicate with modified data
+  const duplicateData = {
+    ...originalCar.toObject(),
+    _id: undefined,
+    title: `${originalCar.title} (Copy)`,
+    plateNumber: "", // Reset plate number - must be unique
+    status: "pending", // Reset status
+    totalBookings: 0,
+    averageRating: 0,
+    createdAt: undefined,
+    updatedAt: undefined
+  };
+
+  const duplicatedCar = new Car(duplicateData);
+  await duplicatedCar.save();
+  await duplicatedCar.populate("owner", "name email phone");
+
+  res.status(201).json({
+    success: true,
+    message: "Car listing duplicated successfully",
+    data: { car: { ...duplicatedCar.toObject(), pricePerDay: duplicatedCar.price } }
   });
 });

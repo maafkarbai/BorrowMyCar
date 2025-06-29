@@ -22,6 +22,9 @@ import Profile from "./Profile.jsx";
 import AdminDashboard from "./AdminDashboard.jsx";
 import AdminLogin from "./AdminLogin.jsx";
 import AdminLayout from "./AdminLayout.jsx";
+import SellerDashboard from "./SellerDashboard.jsx";
+import ListingManagement from "./ListingManagement.jsx";
+import OrderManagement from "./OrderManagement.jsx";
 import NotFound from "./NotFound.jsx";
 import Navbar from "./Navbar.jsx";
 import Footer from "./Footer.jsx";
@@ -118,6 +121,30 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <Settings />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "seller/dashboard",
+        element: (
+          <ProtectedRoute requiredRole="owner" requireApproval={true}>
+            <SellerDashboard />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "seller/listings",
+        element: (
+          <ProtectedRoute requiredRole="owner" requireApproval={true}>
+            <ListingManagement />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "seller/orders",
+        element: (
+          <ProtectedRoute requiredRole="owner" requireApproval={true}>
+            <OrderManagement />
           </ProtectedRoute>
         ),
       },
