@@ -57,8 +57,6 @@ export const validateBookingForm = (booking, car) => {
     ![
       "Card",
       "Cash",
-      "cash_on_pickup",
-      "stripe",
     ].includes(booking.paymentMethod)
   ) {
     errors.paymentMethod = "Invalid payment method selected";

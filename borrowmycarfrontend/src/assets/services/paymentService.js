@@ -162,12 +162,12 @@ class PaymentService {
       let result;
 
       switch (paymentData.paymentMethod) {
-        case "stripe":
+        case "Card":
           result = await this.processStripePayment(paymentData);
           break;
 
 
-        case "cash_on_pickup":
+        case "Cash":
           result = await this.processCashOnPickup(paymentData);
           break;
 

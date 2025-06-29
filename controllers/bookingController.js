@@ -354,18 +354,64 @@ export const getBookingById = handleAsyncError(async (req, res) => {
 // CANCEL BOOKING
 export const cancelBooking = handleAsyncError(async (req, res) => {
   const { id } = req.params;
+  const { cancellationReason } = req.body;
 
   try {
-    const booking = await Booking.findById(id);
+    const booking = await Booking.findById(id).populate("car");
 
     if (!booking) {
       return res.status(404).json({
         success: false,
         message: "Booking not found",
+        code: "BOOKING_NOT_FOUND",
       });
     }
 
+    // Authorization check - only renter, owner, or admin can cancel
+    const isOwner = booking.car.owner.toString() === req.user.id;
+    const isRenter = booking.renter.toString() === req.user.id;
+    const isAdmin = req.user.role === "admin";
+
+    if (!isOwner && !isRenter && !isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to cancel this booking",
+        code: "INSUFFICIENT_PERMISSIONS",
+      });
+    }
+
+    // Business logic checks
+    if (booking.status === "cancelled") {
+      return res.status(400).json({
+        success: false,
+        message: "Booking is already cancelled",
+        code: "ALREADY_CANCELLED",
+      });
+    }
+
+    if (booking.status === "completed") {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot cancel a completed booking",
+        code: "BOOKING_COMPLETED",
+      });
+    }
+
+    // Additional restrictions for owners
+    if (isOwner && booking.status !== "pending") {
+      return res.status(400).json({
+        success: false,
+        message: "Owners can only cancel pending bookings",
+        code: "INVALID_STATUS_CHANGE",
+      });
+    }
+
+    // Update booking with cancellation details
     booking.status = "cancelled";
+    booking.cancelledBy = isRenter ? "renter" : isOwner ? "owner" : "admin";
+    if (cancellationReason) {
+      booking.cancellationReason = cancellationReason;
+    }
     await booking.save();
 
     res.json({
@@ -374,10 +420,12 @@ export const cancelBooking = handleAsyncError(async (req, res) => {
       data: { booking },
     });
   } catch (error) {
+    console.error("Cancel booking error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to cancel booking",
       error: error.message,
+      code: "CANCELLATION_ERROR",
     });
   }
 });

@@ -33,7 +33,7 @@ router.post(
   "/process",
   [
     body("paymentMethod")
-      .isIn(["stripe", "cash_on_pickup"])
+      .isIn(["stripe", "cash_on_pickup", "Cash", "Card"])
       .withMessage("Invalid payment method"),
     body("amount")
       .isFloat({ min: 50, max: 50000 })
@@ -43,9 +43,11 @@ router.post(
       .isIn(["aed", "AED"])
       .withMessage("Currency must be AED"),
     // Conditional validation based on payment method
-    body("cardDetails").if(body("paymentMethod").equals("stripe")).notEmpty(),
+    body("cardDetails")
+      .if(body("paymentMethod").isIn(["stripe", "Card"]))
+      .notEmpty(),
     body("cashDetails")
-      .if(body("paymentMethod").equals("cash_on_pickup"))
+      .if(body("paymentMethod").isIn(["cash_on_pickup", "Cash"]))
       .notEmpty(),
   ],
   handleValidationErrors,

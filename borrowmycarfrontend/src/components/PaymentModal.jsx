@@ -183,9 +183,13 @@ const PaymentModal = ({
     setProcessing(true);
 
     try {
-      // Prepare base payment data
+      // Prepare base payment data with normalized payment method
+      let normalizedPaymentMethod = paymentMethod;
+      if (paymentMethod === "cash_on_pickup") normalizedPaymentMethod = "Cash";
+      if (paymentMethod === "stripe") normalizedPaymentMethod = "Card";
+
       let paymentData = {
-        paymentMethod: paymentMethod,
+        paymentMethod: normalizedPaymentMethod,
         amount: bookingData.totalAmount,
         currency: "AED",
         bookingId: bookingData.bookingId,

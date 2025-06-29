@@ -145,7 +145,7 @@ export const validateCreateBooking = [
   body("endDate").isISO8601().withMessage("Please provide a valid end date"),
   body("paymentMethod")
     .optional()
-    .isIn(["Cash", "Card", "cash_on_pickup", "stripe"])
+    .isIn(["Cash", "Card", "stripe", "cash_on_pickup"])
     .withMessage("Please select a valid payment method"),
   body("pickupLocation")
     .optional()
@@ -270,6 +270,15 @@ export const validateCarData = (carData) => {
   const errors = [];
   const currentYear = new Date().getFullYear();
 
+  // Handle null/undefined input
+  if (!carData || typeof carData !== 'object') {
+    errors.push('Car data is required');
+    return {
+      isValid: false,
+      errors
+    };
+  }
+
   // Required fields
   if (!carData.title || carData.title.trim().length === 0) {
     errors.push('Title is required');
@@ -322,6 +331,11 @@ export const validateCarData = (carData) => {
 
 // Car data sanitization function
 export const sanitizeCarData = (carData) => {
+  // Handle null/undefined input
+  if (!carData || typeof carData !== 'object') {
+    return {};
+  }
+
   const sanitized = {};
 
   // String fields - trim whitespace

@@ -8,6 +8,7 @@ import {
   deleteCar,
   getCarsByOwner,
   getMyCars,
+  getCarAvailability,
 } from "../controllers/carController.js";
 import {
   protect,
@@ -141,6 +142,9 @@ router.get(
 
 // GET /api/cars/:id - Get single car
 router.get("/:id", optionalAuth, getCarById);
+
+// GET /api/cars/:id/availability - Get car availability and existing bookings
+router.get("/:id/availability", getCarAvailability);
 
 // GET /api/cars/owner/:ownerId - Get cars by specific owner
 router.get("/owner/:ownerId", getCarsByOwner);

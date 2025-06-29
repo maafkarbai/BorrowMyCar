@@ -1,5 +1,6 @@
 module.exports = {
   testEnvironment: 'node',
+  transform: {},
   collectCoverageFrom: [
     'controllers/**/*.js',
     'utils/**/*.js',

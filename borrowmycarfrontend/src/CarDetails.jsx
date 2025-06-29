@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import API from "./api";
 import PaymentModal from "./components/PaymentModal";
+import AvailabilityDatePicker from "./components/AvailabilityDatePicker";
 
 const CarDetails = () => {
   const { id } = useParams();
@@ -88,7 +89,20 @@ const CarDetails = () => {
     setBookingError("");
   };
 
-  const validateBookingDates = () => {
+  const handleDatePickerChange = ({ startDate, endDate }) => {
+    setBooking((prev) => ({
+      ...prev,
+      startDate: startDate || "",
+      endDate: endDate || "",
+    }));
+    setBookingError("");
+  };
+
+  const handleDatePickerError = (error) => {
+    setBookingError(error);
+  };
+
+  const validateBookingDates = async () => {
     if (!booking.startDate || !booking.endDate) {
       setBookingError("Please select both start and end dates");
       return false;
@@ -119,13 +133,57 @@ const CarDetails = () => {
       return false;
     }
 
+    // Check minimum rental days
+    const diffTime = Math.abs(end - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const minimumDays = car.minimumRentalDays || 1;
+    const maximumDays = car.maximumRentalDays || 30;
+
+    if (diffDays < minimumDays) {
+      setBookingError(`Minimum rental period is ${minimumDays} day${minimumDays !== 1 ? 's' : ''}`);
+      return false;
+    }
+
+    if (diffDays > maximumDays) {
+      setBookingError(`Maximum rental period is ${maximumDays} day${maximumDays !== 1 ? 's' : ''}`);
+      return false;
+    }
+
+    // Real-time availability check to prevent double booking
+    try {
+      const response = await API.get(`/cars/${car._id}/availability`);
+      const { unavailableDates } = response.data.data;
+      
+      // Check if selected dates overlap with any existing bookings
+      const selectedStart = start.getTime();
+      const selectedEnd = end.getTime();
+      
+      const hasConflict = unavailableDates.some(booking => {
+        const bookingStart = new Date(booking.startDate).getTime();
+        const bookingEnd = new Date(booking.endDate).getTime();
+        
+        // Check for any overlap
+        return (selectedStart < bookingEnd && selectedEnd > bookingStart);
+      });
+      
+      if (hasConflict) {
+        setBookingError("Selected dates conflict with existing bookings. Please choose different dates.");
+        return false;
+      }
+    } catch (error) {
+      console.error("Error checking availability:", error);
+      setBookingError("Unable to verify availability. Please try again.");
+      return false;
+    }
+
     return true;
   };
 
   const handleBook = async (e) => {
     e.preventDefault();
 
-    if (!validateBookingDates()) {
+    const isValid = await validateBookingDates();
+    if (!isValid) {
       return;
     }
 
@@ -468,39 +526,13 @@ const CarDetails = () => {
                     Book This Car
                   </h2>
                   <form onSubmit={handleBook} className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Start Date
-                      </label>
-                      <input
-                        type="date"
-                        name="startDate"
-                        value={booking.startDate}
-                        onChange={handleBookingChange}
-                        min={new Date().toISOString().split("T")[0]}
-                        max={car.availabilityTo}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-colors"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        End Date
-                      </label>
-                      <input
-                        type="date"
-                        name="endDate"
-                        value={booking.endDate}
-                        onChange={handleBookingChange}
-                        min={
-                          booking.startDate ||
-                          new Date().toISOString().split("T")[0]
-                        }
-                        max={car.availabilityTo}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-colors"
-                        required
-                      />
-                    </div>
+                    <AvailabilityDatePicker
+                      carId={car._id}
+                      startDate={booking.startDate}
+                      endDate={booking.endDate}
+                      onDateChange={handleDatePickerChange}
+                      onError={handleDatePickerError}
+                    />
 
                     {/* Cost Breakdown */}
                     {numberOfDays > 0 && (

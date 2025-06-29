@@ -11,8 +11,11 @@ export const formatUAEPhone = (phone) => {
   // Remove all non-digit characters
   const cleanPhone = phone.replace(/\D/g, "");
 
-  // If no digits remain, return empty string
-  if (cleanPhone.length === 0) return '';
+  // If no digits remain, handle edge cases
+  if (cleanPhone.length === 0) {
+    // Return empty string for whitespace-only input
+    return phone.trim() === '' ? '' : phone;
+  }
 
   // Handle different input formats
   if (cleanPhone.startsWith("971") && cleanPhone.length === 12) {

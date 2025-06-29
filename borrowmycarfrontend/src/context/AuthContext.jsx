@@ -45,10 +45,42 @@ const authReducer = (state, action) => {
   }
 };
 
+// Safe localStorage access
+const getStorageItem = (key) => {
+  try {
+    return typeof window !== 'undefined' && window.localStorage 
+      ? localStorage.getItem(key) 
+      : null;
+  } catch (error) {
+    console.warn('localStorage access failed:', error);
+    return null;
+  }
+};
+
+const setStorageItem = (key, value) => {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(key, value);
+    }
+  } catch (error) {
+    console.warn('localStorage setItem failed:', error);
+  }
+};
+
+const removeStorageItem = (key) => {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.removeItem(key);
+    }
+  } catch (error) {
+    console.warn('localStorage removeItem failed:', error);
+  }
+};
+
 const initialState = {
   isAuthenticated: false,
   user: null,
-  token: localStorage.getItem("token"),
+  token: getStorageItem("token"),
   loading: true,
   error: null,
 };
@@ -58,7 +90,7 @@ export const AuthProvider = ({ children }) => {
 
   // Check if user is logged in on app start
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = getStorageItem("token");
     if (token) {
       getCurrentUser();
     } else {
@@ -88,7 +120,7 @@ export const AuthProvider = ({ children }) => {
           type: "LOGIN_SUCCESS",
           payload: {
             user,
-            token: localStorage.getItem("token"),
+            token: getStorageItem("token"),
           },
         });
       } else {
@@ -98,8 +130,8 @@ export const AuthProvider = ({ children }) => {
       console.error("Get current user error:", error);
 
       // Clear invalid tokens
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
+      removeStorageItem("token");
+      removeStorageItem("user");
 
       dispatch({ type: "LOGOUT" });
     } finally {
@@ -145,8 +177,8 @@ export const AuthProvider = ({ children }) => {
 
       if (token && user) {
         // Store authentication data
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(user));
+        setStorageItem("token", token);
+        setStorageItem("user", JSON.stringify(user));
 
         dispatch({
           type: "LOGIN_SUCCESS",
@@ -224,8 +256,8 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (token && user) {
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(user));
+        setStorageItem("token", token);
+        setStorageItem("user", JSON.stringify(user));
 
         dispatch({
           type: "LOGIN_SUCCESS",
@@ -254,8 +286,8 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     // Clear local storage
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    removeStorageItem("token");
+    removeStorageItem("user");
 
     // Clear state
     dispatch({ type: "LOGOUT" });
@@ -279,7 +311,7 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: "UPDATE_USER", payload: userData });
 
     // Update localStorage
-    localStorage.setItem("user", JSON.stringify(userData));
+    setStorageItem("user", JSON.stringify(userData));
   };
 
   const value = {

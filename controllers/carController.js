@@ -560,3 +560,43 @@ export const getMyCars = handleAsyncError(async (req, res) => {
     },
   });
 });
+
+
+// Get car availability with existing bookings
+export const getCarAvailability = handleAsyncError(async (req, res, next) => {
+  const { id } = req.params;
+
+  // Find the car
+  const car = await Car.findById(id);
+  if (!car) {
+    return res.status(404).json({
+      success: false,
+      message: "Car not found",
+    });
+  }
+
+  // Get all approved bookings for this car
+  const existingBookings = await Booking.find({
+    car: id,
+    status: { $in: ["pending", "approved", "confirmed", "in_progress"] }, // Include all active booking statuses
+  }).select("startDate endDate status");
+
+  // Create array of unavailable date ranges
+  const unavailableDates = existingBookings.map(booking => ({
+    startDate: booking.startDate,
+    endDate: booking.endDate,
+    status: booking.status,
+  }));
+
+  res.status(200).json({
+    success: true,
+    data: {
+      carId: car._id,
+      availabilityFrom: car.availabilityFrom,
+      availabilityTo: car.availabilityTo,
+      unavailableDates,
+      minimumRentalDays: car.minimumRentalDays || 1,
+      maximumRentalDays: car.maximumRentalDays || 30,
+    },
+  });
+});

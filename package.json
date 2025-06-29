@@ -13,8 +13,8 @@
     "seed:admin": "node scripts/seedAdmin.js",
     "setup": "npm install && cd borrowmycarfrontend && npm install",
     "build": "cd borrowmycarfrontend && npm run build",
-    "test": "jest",
-    "test:watch": "jest --watch",
+    "test": "NODE_OPTIONS=\"--experimental-vm-modules\" jest --testTimeout=10000",
+    "test:watch": "NODE_OPTIONS=\"--experimental-vm-modules\" jest --watch --testTimeout=10000",
     "cleanup:indexes": "node scripts/cleanupIndexes.js",
     "fresh:start": "npm run cleanup:indexes && npm run seed && npm run dev:both"
   },

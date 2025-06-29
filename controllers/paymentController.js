@@ -65,6 +65,7 @@ export const processPayment = handleAsyncError(async (req, res) => {
 
     // Process based on payment method
     switch (paymentMethod) {
+      case "Card":
       case "stripe":
         if (!stripe) {
           return res.status(500).json({
@@ -91,7 +92,7 @@ export const processPayment = handleAsyncError(async (req, res) => {
           result = {
             success: true,
             paymentId: paymentIntent.id,
-            paymentMethod: "stripe",
+            paymentMethod: "Card",
             status: "completed",
             amount: amount,
             currency: currency,
@@ -116,6 +117,7 @@ export const processPayment = handleAsyncError(async (req, res) => {
         }
         break;
 
+      case "Cash":
       case "cash_on_pickup":
         if (!cashDetails) {
           return res.status(400).json({
@@ -128,7 +130,7 @@ export const processPayment = handleAsyncError(async (req, res) => {
         result = {
           success: true,
           paymentId: `cash_${Date.now()}`,
-          paymentMethod: "cash_on_pickup",
+          paymentMethod: "Cash",
           status: "pending_pickup",
           meetingDetails: {
             location: cashDetails.meetingLocation,
