@@ -311,9 +311,35 @@ export const AuthProvider = ({ children }) => {
     currentStorage.setItem("user", JSON.stringify(userData));
   };
 
+  // Direct login method for when we already have token and user data (e.g., after email verification)
+  const loginWithToken = (token, user, rememberMe = false) => {
+    try {
+      if (!token || !user) {
+        throw new Error("Token and user data are required");
+      }
+
+      console.log("Direct login with token and user:", { user: user.name, email: user.email });
+
+      // Store authentication data
+      storeAuthData(token, user, rememberMe);
+
+      dispatch({
+        type: "LOGIN_SUCCESS",
+        payload: { user, token },
+      });
+
+      return { success: true, user };
+    } catch (error) {
+      console.error("Direct login error:", error);
+      dispatch({ type: "LOGIN_FAILURE", payload: error.message });
+      return { success: false, error: error.message };
+    }
+  };
+
   const value = {
     ...state,
     login,
+    loginWithToken,
     signup,
     logout,
     clearError,

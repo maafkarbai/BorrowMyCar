@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { MapPin, Navigation, Star } from "lucide-react";
+import { MapPin, Navigation, Star, Phone, User } from "lucide-react";
 
 const CarCard = ({ car, userLocation = null, showDistance = true }) => {
   const getDistanceText = () => {
@@ -62,9 +62,60 @@ const CarCard = ({ car, userLocation = null, showDistance = true }) => {
           </div>
         </div>
 
-        <div className="flex justify-between items-center">
-          <div className="text-sm text-gray-500">
-            {car.owner?.name || 'Owner'}
+        {/* Owner Information Section */}
+        <div className="border-t border-gray-100 pt-3 mt-3">
+          <div className="flex items-center justify-between">
+            <Link 
+              to={`/users/${car.owner?._id}`}
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center space-x-2 hover:bg-gray-50 rounded-lg p-2 -ml-2 transition-colors"
+            >
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                {car.owner?.profileImage ? (
+                  <img 
+                    src={car.owner.profileImage} 
+                    alt={car.owner.name}
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <User className="w-4 h-4 text-green-600" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">
+                  {car.owner?.name || 'Owner'}
+                </p>
+                <div className="flex items-center space-x-2">
+                  {car.owner?.averageRating && (
+                    <div className="flex items-center">
+                      <Star className="w-3 h-3 text-yellow-400 fill-current" />
+                      <span className="text-xs text-gray-600 ml-1">
+                        {car.owner.averageRating.toFixed(1)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Link>
+            
+            {/* Contact Button */}
+            {car.owner?.phone && (
+              <a 
+                href={`tel:${car.owner.phone}`}
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center space-x-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md text-sm transition-colors"
+                title={`Call ${car.owner.name}`}
+              >
+                <Phone className="w-3 h-3" />
+                <span>Call</span>
+              </a>
+            )}
+          </div>
+        </div>
+
+        <div className="flex justify-between items-center mt-3">
+          <div className="text-xs text-gray-500">
+            Listed by {car.owner?.name || 'Owner'}
           </div>
           <div className="text-right">
             <span className="text-xl font-bold text-gray-900">

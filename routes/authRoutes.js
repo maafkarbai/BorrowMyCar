@@ -2,8 +2,11 @@
 import express from "express";
 import {
   signup,
+  verifyEmail, // NEW
+  resendOTP, // NEW
   login,
   getProfile,
+  getPublicUserProfile, // NEW
   updateProfile,
   updateProfilePicture, // NEW
   removeProfilePicture, // NEW
@@ -114,6 +117,36 @@ router.post(
   handleValidationErrors,
   login
 );
+
+// Email verification routes
+router.post(
+  "/verify-email",
+  authLimiter,
+  body("email")
+    .isEmail()
+    .normalizeEmail()
+    .withMessage("Please provide a valid email"),
+  body("otp")
+    .isLength({ min: 6, max: 6 })
+    .isNumeric()
+    .withMessage("OTP must be a 6-digit number"),
+  handleValidationErrors,
+  verifyEmail
+);
+
+router.post(
+  "/resend-otp",
+  authLimiter,
+  body("email")
+    .isEmail()
+    .normalizeEmail()
+    .withMessage("Please provide a valid email"),
+  handleValidationErrors,
+  resendOTP
+);
+
+// Public user profile route (no authentication required)
+router.get("/users/:userId", getPublicUserProfile);
 
 // PROTECTED ROUTES (Authentication required)
 router.use(protect); // Apply protection to all routes below

@@ -26,6 +26,7 @@ import AdminLayout from "./AdminLayout.jsx";
 import SellerDashboard from "./SellerDashboard.jsx";
 import ListingManagement from "./ListingManagement.jsx";
 import OrderManagement from "./OrderManagement.jsx";
+import UserProfile from "./UserProfile.jsx";
 import NotFound from "./NotFound.jsx";
 import Navbar from "./Navbar.jsx";
 import Footer from "./Footer.jsx";
@@ -78,6 +79,10 @@ const router = createBrowserRouter([
       {
         path: "cars/:id",
         element: <CarDetails />,
+      },
+      {
+        path: "users/:userId",
+        element: <UserProfile />,
       },
       {
         path: "checkout/:carId",

@@ -118,6 +118,7 @@ vi.mock('mapbox-gl', () => ({
 
 // Mock react-map-gl
 vi.mock('react-map-gl', () => ({
+  default: ({ children }) => children,
   Map: ({ children }) => children,
   Marker: () => null,
   Popup: () => null,

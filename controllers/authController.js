@@ -2,11 +2,14 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { User } from "../models/User.js";
+import { OTP } from "../models/OTP.js";
+import Car from "../models/Car.js";
 import {
   uploadImagesToCloud,
   deleteImagesFromCloud,
 } from "../utils/cloudUploader.js";
 import { formatUAEPhone, validateUAEPhone } from "../utils/phoneUtils.js";
+import emailService from "../utils/emailService.js";
 
 // Enhanced async error handler
 const handleAsyncErrorLocal = (fn) => {
@@ -112,9 +115,9 @@ const validateUserData = (data, isSignup = false) => {
   };
 };
 
-// FIXED SIGNUP CONTROLLER
+// SIGNUP STEP 1: Send OTP for email verification
 export const signup = handleAsyncErrorLocal(async (req, res) => {
-  console.log("=== SIGNUP DEBUG ===");
+  console.log("=== SIGNUP STEP 1: Send OTP ===");
   console.log("Request body:", req.body);
   console.log(
     "Request files:",
@@ -169,7 +172,7 @@ export const signup = handleAsyncErrorLocal(async (req, res) => {
     });
   }
 
-  // Handle document uploads
+  // Handle document uploads (store temporarily)
   let documentUrls = {};
   if (req.files) {
     try {
@@ -221,28 +224,203 @@ export const signup = handleAsyncErrorLocal(async (req, res) => {
     }
   }
 
-  // Create user
-  const userCreateData = {
+  // Prepare temporary user data for OTP storage
+  const tempUserData = {
     name,
     email,
     phone: formattedPhone,
-    password,
+    password, // Will be hashed when creating actual user
     role,
     preferredCity,
     ...documentUrls,
     isApproved: false,
+    isEmailVerified: false,
   };
 
-  const user = await User.create(userCreateData);
-  console.log("User created successfully:", user._id);
+  try {
+    // Generate and store OTP
+    const { otp } = await OTP.createOTP(email, "signup", tempUserData);
+    
+    // Send OTP email
+    const emailResult = await emailService.sendOTPEmail(email, otp, "signup");
+    
+    if (!emailResult.success) {
+      console.error("Failed to send OTP email:", emailResult.message);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send verification email. Please try again.",
+        code: "EMAIL_SEND_FAILED",
+      });
+    }
 
-  // Send consistent response
-  sendTokenResponse(
-    user,
-    201,
-    res,
-    "Account created successfully. Awaiting admin approval."
-  );
+    console.log("OTP sent successfully for:", email);
+
+    // Return success response
+    res.status(200).json({
+      success: true,
+      message: "Verification code sent to your email. Please check your inbox.",
+      data: {
+        email,
+        nextStep: "verify-email",
+        expiresIn: "10 minutes",
+      },
+    });
+
+  } catch (error) {
+    console.error("Signup OTP generation error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to process registration. Please try again.",
+      code: "INTERNAL_ERROR",
+    });
+  }
+});
+
+// SIGNUP STEP 2: Verify OTP and create user account
+export const verifyEmail = handleAsyncErrorLocal(async (req, res) => {
+  console.log("=== SIGNUP STEP 2: Verify OTP ===");
+  
+  const { email, otp } = req.body;
+
+  // Validate input
+  if (!email || !otp) {
+    return res.status(400).json({
+      success: false,
+      message: "Email and OTP are required",
+      code: "MISSING_FIELDS",
+    });
+  }
+
+  try {
+    // Verify OTP
+    const verificationResult = await OTP.verifyOTP(email.toLowerCase().trim(), otp, "signup");
+    
+    if (!verificationResult.success) {
+      return res.status(400).json({
+        success: false,
+        message: verificationResult.message,
+        code: "OTP_VERIFICATION_FAILED",
+      });
+    }
+
+    // Get user data from OTP record
+    const tempUserData = verificationResult.userData;
+    if (!tempUserData) {
+      return res.status(400).json({
+        success: false,
+        message: "User data not found. Please restart registration.",
+        code: "USER_DATA_MISSING",
+      });
+    }
+
+    // Check if user already exists (double-check)
+    const existingUser = await User.findOne({
+      $or: [{ email: tempUserData.email }, { phone: tempUserData.phone }],
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "User already exists",
+        code: "USER_EXISTS",
+      });
+    }
+
+    // Create the actual user account
+    const userCreateData = {
+      ...tempUserData,
+      isEmailVerified: true,
+    };
+
+    const user = await User.create(userCreateData);
+    console.log("User created successfully after email verification:", user._id);
+
+    // Send welcome email
+    await emailService.sendWelcomeEmail(user.email, user.name, user.role);
+
+    // Send token response
+    sendTokenResponse(
+      user,
+      201,
+      res,
+      "Account created successfully! Welcome to BorrowMyCar."
+    );
+
+  } catch (error) {
+    console.error("Email verification error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to verify email. Please try again.",
+      code: "INTERNAL_ERROR",
+    });
+  }
+});
+
+// Resend OTP for email verification
+export const resendOTP = handleAsyncErrorLocal(async (req, res) => {
+  console.log("=== RESEND OTP ===");
+  
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({
+      success: false,
+      message: "Email is required",
+      code: "MISSING_EMAIL",
+    });
+  }
+
+  try {
+    // Check if there's a pending OTP for this email
+    const existingOTP = await OTP.findOne({
+      email: email.toLowerCase().trim(),
+      purpose: "signup",
+      isUsed: false,
+      expiresAt: { $gt: new Date() },
+    });
+
+    if (!existingOTP) {
+      return res.status(404).json({
+        success: false,
+        message: "No pending verification found. Please restart registration.",
+        code: "NO_PENDING_VERIFICATION",
+      });
+    }
+
+    // Generate new OTP (this will delete the old one)
+    const { otp } = await OTP.createOTP(email.toLowerCase().trim(), "signup", existingOTP.userData);
+    
+    // Send OTP email
+    const emailResult = await emailService.sendOTPEmail(email, otp, "signup");
+    
+    if (!emailResult.success) {
+      console.error("Failed to resend OTP email:", emailResult.message);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send verification email. Please try again.",
+        code: "EMAIL_SEND_FAILED",
+      });
+    }
+
+    console.log("OTP resent successfully for:", email);
+
+    res.status(200).json({
+      success: true,
+      message: "New verification code sent to your email.",
+      data: {
+        email,
+        expiresIn: "10 minutes",
+      },
+    });
+
+  } catch (error) {
+    console.error("Resend OTP error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to resend verification code. Please try again.",
+      code: "INTERNAL_ERROR",
+    });
+  }
 });
 
 // FIXED LOGIN CONTROLLER
@@ -635,6 +813,76 @@ export const updatePreferences = handleAsyncErrorLocal(async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to update preferences",
+      code: "INTERNAL_ERROR",
+    });
+  }
+});
+
+// GET PUBLIC USER PROFILE WITH THEIR CARS
+export const getPublicUserProfile = handleAsyncErrorLocal(async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required",
+        code: "MISSING_USER_ID",
+      });
+    }
+
+    // Get user profile (public fields only)
+    const user = await User.findById(userId).select(
+      "name email phone profileImage preferredCity createdAt averageRating totalBookings"
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+        code: "USER_NOT_FOUND",
+      });
+    }
+
+    // Get user's active car listings
+    const cars = await Car.find({ 
+      owner: userId, 
+      status: "active",
+      availabilityTo: { $gte: new Date() }
+    })
+    .select("-owner") // Don't include owner details since we already have the user
+    .sort({ createdAt: -1 })
+    .lean();
+
+    // Add pricePerDay field for frontend compatibility
+    const enhancedCars = cars.map((car) => ({
+      ...car,
+      pricePerDay: car.price,
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email, // Show email for contact
+          phone: user.phone, // Show phone for contact
+          profileImage: user.profileImage,
+          preferredCity: user.preferredCity,
+          createdAt: user.createdAt,
+          averageRating: user.averageRating || 0,
+          totalBookings: user.totalBookings || 0,
+          totalListings: cars.length,
+        },
+        cars: enhancedCars,
+      },
+    });
+  } catch (error) {
+    console.error("Get public user profile error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch user profile",
       code: "INTERNAL_ERROR",
     });
   }

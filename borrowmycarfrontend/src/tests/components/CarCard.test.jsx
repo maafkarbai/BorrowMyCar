@@ -18,6 +18,7 @@ const mockCar = {
   make: 'Toyota',
   model: 'Camry',
   year: 2023,
+  price: 150,
   pricePerDay: 150,
   transmission: 'Automatic',
   fuelType: 'Petrol',
@@ -28,7 +29,11 @@ const mockCar = {
     'https://example.com/image2.jpg'
   ],
   owner: {
+    _id: 'owner123',
     name: 'John Doe',
+    phone: '+971501234567',
+    email: 'john@example.com',
+    profileImage: 'https://example.com/profile.jpg',
     averageRating: 4.5,
   },
   status: 'active',
@@ -49,7 +54,8 @@ describe('CarCard Component', () => {
     expect(screen.getByText('Toyota Camry 2023')).toBeInTheDocument();
     expect(screen.getByText('Toyota')).toBeInTheDocument();
     expect(screen.getByText('2023')).toBeInTheDocument();
-    expect(screen.getByText('AED 150/day')).toBeInTheDocument();
+    expect(screen.getByText('AED 150')).toBeInTheDocument();
+    expect(screen.getByText('per day')).toBeInTheDocument();
     expect(screen.getByText('Automatic')).toBeInTheDocument();
     expect(screen.getByText('Petrol')).toBeInTheDocument();
     expect(screen.getByText('5 seats')).toBeInTheDocument();
@@ -87,19 +93,11 @@ describe('CarCard Component', () => {
     expect(screen.getByText('Unavailable')).toBeInTheDocument();
   });
 
-  it('navigates to car details when clicked', () => {
-    const mockNavigate = vi.fn();
-    vi.mock('react-router-dom', () => ({
-      ...vi.importActual('react-router-dom'),
-      useNavigate: () => mockNavigate,
-    }));
-
+  it('links to car details page', () => {
     renderCarCard();
 
-    const card = screen.getByRole('button', { name: /view details/i });
-    fireEvent.click(card);
-
-    // Note: This test would need to be adjusted based on actual navigation implementation
+    const cardLink = screen.getByRole('link');
+    expect(cardLink.href).toContain('/cars/1');
   });
 
   it('shows correct rating stars', () => {
@@ -114,7 +112,7 @@ describe('CarCard Component', () => {
     const expensiveCar = { ...mockCar, pricePerDay: 1500 };
     renderCarCard({ car: expensiveCar });
 
-    expect(screen.getByText('AED 1500/day')).toBeInTheDocument();
+    expect(screen.getByText('AED 1500')).toBeInTheDocument();
   });
 
   it('handles missing owner information', () => {
@@ -137,9 +135,127 @@ describe('CarCard Component', () => {
   it('applies correct CSS classes', () => {
     renderCarCard();
 
-    const cardElement = screen.getByRole('button', { name: /view details/i });
+    const cardElement = screen.getByRole('link');
     expect(cardElement).toHaveClass('bg-white');
     expect(cardElement).toHaveClass('rounded-lg');
     expect(cardElement).toHaveClass('shadow-md');
+  });
+
+  // Tests for new owner profile features
+  describe('Owner Profile Features', () => {
+    it('displays owner profile image when available', () => {
+      renderCarCard();
+      
+      const profileImage = screen.getByAltText('John Doe');
+      expect(profileImage).toBeInTheDocument();
+      expect(profileImage.src).toBe('https://example.com/profile.jpg');
+    });
+
+    it('shows user icon when no profile image', () => {
+      const carWithoutProfileImage = {
+        ...mockCar,
+        owner: { ...mockCar.owner, profileImage: null }
+      };
+      renderCarCard({ car: carWithoutProfileImage });
+      
+      // Should display the user icon placeholder
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+    });
+
+    it('displays owner rating correctly', () => {
+      renderCarCard();
+      
+      expect(screen.getByText('4.5')).toBeInTheDocument();
+    });
+
+    it('creates phone call link when phone number available', () => {
+      renderCarCard();
+      
+      const callButton = screen.getByTitle('Call John Doe');
+      expect(callButton).toBeInTheDocument();
+      expect(callButton.href).toBe('tel:+971501234567');
+      expect(screen.getByText('Call')).toBeInTheDocument();
+    });
+
+    it('creates user profile link', () => {
+      renderCarCard();
+      
+      const profileLink = screen.getByRole('link', { name: /john doe/i });
+      expect(profileLink).toBeInTheDocument();
+      expect(profileLink.href).toContain('/users/owner123');
+    });
+
+    it('handles missing phone number gracefully', () => {
+      const carWithoutPhone = {
+        ...mockCar,
+        owner: { ...mockCar.owner, phone: null }
+      };
+      renderCarCard({ car: carWithoutPhone });
+      
+      expect(screen.queryByText('Call')).not.toBeInTheDocument();
+    });
+
+    it('handles missing owner rating gracefully', () => {
+      const carWithoutRating = {
+        ...mockCar,
+        owner: { ...mockCar.owner, averageRating: null }
+      };
+      renderCarCard({ car: carWithoutRating });
+      
+      // Should still display owner name
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+    });
+
+    it('displays "Listed by" text', () => {
+      renderCarCard();
+      
+      expect(screen.getByText('Listed by John Doe')).toBeInTheDocument();
+    });
+
+    it('prevents event bubbling on owner profile click', () => {
+      const mockStopPropagation = vi.fn();
+      renderCarCard();
+      
+      const profileLink = screen.getByRole('link', { name: /john doe/i });
+      
+      // Simulate click event
+      fireEvent.click(profileLink, { 
+        stopPropagation: mockStopPropagation 
+      });
+      
+      // Event should be handled
+      expect(profileLink).toBeInTheDocument();
+    });
+
+    it('prevents event bubbling on call button click', () => {
+      const mockStopPropagation = vi.fn();
+      renderCarCard();
+      
+      const callButton = screen.getByTitle('Call John Doe');
+      
+      // Simulate click event
+      fireEvent.click(callButton, { 
+        stopPropagation: mockStopPropagation 
+      });
+      
+      expect(callButton).toBeInTheDocument();
+    });
+
+    it('displays correct price with AED currency', () => {
+      renderCarCard();
+      
+      expect(screen.getByText('AED 150')).toBeInTheDocument();
+      expect(screen.getByText('per day')).toBeInTheDocument();
+    });
+
+    it('formats owner rating to one decimal place', () => {
+      const carWithHighRating = {
+        ...mockCar,
+        owner: { ...mockCar.owner, averageRating: 4.8765 }
+      };
+      renderCarCard({ car: carWithHighRating });
+      
+      expect(screen.getByText('4.9')).toBeInTheDocument();
+    });
   });
 });

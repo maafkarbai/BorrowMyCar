@@ -10,7 +10,9 @@
       "Bash(timeout 10s npm run dev)",
       "Bash(sed:*)",
       "Bash(ls:*)",
-      "Bash(bun run:*)"
+      "Bash(bun run:*)",
+      "Bash(bun test:*)",
+      "Bash(bun add:*)"
     ],
     "deny": []
   }

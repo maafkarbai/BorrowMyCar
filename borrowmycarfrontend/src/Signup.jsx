@@ -1,8 +1,10 @@
-// src/Signup.jsx - Updated with UAE Phone Input
+// src/Signup.jsx - Updated with OTP Email Verification
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import API from "./api";
 import PhoneInput from "./components/PhoneInput";
+import OTPVerification from "./components/OTPVerification";
+import { useAuth } from "./context/AuthProvider";
 
 const Signup = () => {
   const location = useLocation();
@@ -29,8 +31,11 @@ const Signup = () => {
   const [errors, setErrors] = useState({});
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
+  const [showOTPVerification, setShowOTPVerification] = useState(false);
+  const [pendingVerificationEmail, setPendingVerificationEmail] = useState("");
 
   const _navigate = useNavigate();
+  const { loginWithToken } = useAuth();
 
   // Handle role from navigation state
   useEffect(() => {
@@ -235,8 +240,14 @@ const Signup = () => {
 
       console.log("Registration response:", response.data);
 
-      // Registration successful
-      setStep(4); // Success step
+      // Step 1 successful - email sent for verification
+      if (response.data.success && response.data.data?.nextStep === "verify-email") {
+        setPendingVerificationEmail(form.email);
+        setShowOTPVerification(true);
+      } else {
+        // Fallback - show success step
+        setStep(4);
+      }
     } catch (error) {
       console.error("Registration error:", error);
       if (error.response) {
@@ -263,6 +274,36 @@ const Signup = () => {
   };
 
   const strengthText = getPasswordStrengthText();
+
+  // Handle OTP verification success
+  const handleVerificationSuccess = (verificationData) => {
+    console.log("Email verification successful:", verificationData);
+    
+    // If we received user data and token, log them in automatically
+    if (verificationData.token && verificationData.user) {
+      const loginResult = loginWithToken(verificationData.token, verificationData.user);
+      if (loginResult.success) {
+        console.log("Automatic login successful after email verification");
+        _navigate("/", { replace: true });
+      } else {
+        console.error("Automatic login failed:", loginResult.error);
+        // Fallback - show success step
+        setShowOTPVerification(false);
+        setStep(4);
+      }
+    } else {
+      // Fallback - show success step
+      setShowOTPVerification(false);
+      setStep(4);
+    }
+  };
+
+  // Handle back to signup from OTP verification
+  const handleBackToSignup = () => {
+    setShowOTPVerification(false);
+    setPendingVerificationEmail("");
+    setStep(3); // Go back to review step
+  };
 
   // Step 1: Basic Information
   const renderStep1 = () => (
@@ -818,6 +859,17 @@ const Signup = () => {
       </div>
     </div>
   );
+
+  // Show OTP verification if needed
+  if (showOTPVerification) {
+    return (
+      <OTPVerification
+        email={pendingVerificationEmail}
+        onVerificationSuccess={handleVerificationSuccess}
+        onBackToSignup={handleBackToSignup}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">

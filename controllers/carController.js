@@ -129,7 +129,7 @@ export const createCar = handleAsyncError(async (req, res) => {
   });
 
   const savedCar = await newCar.save();
-  await savedCar.populate("owner", "name email phone");
+  await savedCar.populate("owner", "name email phone profileImage");
 
   // Add pricePerDay for frontend compatibility
   const responseData = {
@@ -223,7 +223,7 @@ export const getCars = handleAsyncError(async (req, res) => {
   // Execute query with LEAN for better performance
   const [cars, totalCount] = await Promise.all([
     Car.find(filter)
-      .populate("owner", "name email phone averageRating")
+      .populate("owner", "name email phone profileImage averageRating")
       .sort(sortOptions)
       .skip(skip)
       .limit(parseInt(limit))
@@ -346,7 +346,7 @@ export const updateCar = handleAsyncError(async (req, res) => {
   const updatedCar = await Car.findByIdAndUpdate(id, updateData, {
     new: true,
     runValidators: true,
-  }).populate("owner", "name email phone");
+  }).populate("owner", "name email phone profileImage");
 
   // Add pricePerDay for frontend compatibility
   const responseData = {
@@ -440,7 +440,7 @@ export const getCarsByOwner = handleAsyncError(async (req, res) => {
   // Execute query
   const [cars, totalCount] = await Promise.all([
     Car.find(filter)
-      .populate("owner", "name email phone profileImage")
+      .populate("owner", "name email phone profileImage averageRating")
       .sort(sortOptions)
       .skip(skip)
       .limit(parseInt(limit))
@@ -937,7 +937,7 @@ export const duplicateCarListing = handleAsyncError(async (req, res) => {
 
   const duplicatedCar = new Car(duplicateData);
   await duplicatedCar.save();
-  await duplicatedCar.populate("owner", "name email phone");
+  await duplicatedCar.populate("owner", "name email phone profileImage");
 
   res.status(201).json({
     success: true,
