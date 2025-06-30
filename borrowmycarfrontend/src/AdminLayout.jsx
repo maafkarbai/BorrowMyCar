@@ -1,17 +1,38 @@
 import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthProvider';
+import { useAdminAuth } from './context/AdminAuthProvider';
 import { Helmet } from 'react-helmet-async';
 
 const AdminLayout = () => {
-  const { user, logout } = useAuth();
+  const { login: _login } = useAuth();
+  const { adminUser, adminLogout } = useAdminAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/admin');
+  const handleLogout = async () => {
+    // Get previous user state before logging out
+    const previousUserState = adminLogout();
+    
+    // If there was a previous user session, restore it
+    if (previousUserState?.user && previousUserState?.token) {
+      try {
+        // Restore the previous user session to the appropriate storage
+        const storage = localStorage.getItem('user') ? localStorage : sessionStorage;
+        storage.setItem('token', previousUserState.token);
+        storage.setItem('user', JSON.stringify(previousUserState.user));
+        
+        // Force a page reload to properly restore the AuthProvider state
+        window.location.href = '/';
+      } catch (error) {
+        console.error('Error restoring previous session:', error);
+        navigate('/', { replace: true });
+      }
+    } else {
+      // No previous session, just navigate to home page
+      navigate('/', { replace: true });
+    }
   };
 
   const navigation = [
@@ -125,11 +146,11 @@ const AdminLayout = () => {
                 <div className="flex items-center space-x-3">
                   <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
                     <span className="text-red-600 font-semibold text-sm">
-                      {user?.name?.charAt(0)?.toUpperCase()}
+                      {adminUser?.name?.charAt(0)?.toUpperCase()}
                     </span>
                   </div>
                   <div className="hidden sm:block">
-                    <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+                    <p className="text-sm font-medium text-gray-900">{adminUser?.name}</p>
                     <p className="text-xs text-gray-500">Administrator</p>
                   </div>
                 </div>

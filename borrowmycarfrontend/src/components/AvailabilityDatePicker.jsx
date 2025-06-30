@@ -149,7 +149,7 @@ const AvailabilityDatePicker = ({
   };
 
   // Generate disabled dates pattern for input (not all browsers support this)
-  const getDisabledDatesPattern = () => {
+  const _getDisabledDatesPattern = () => {
     // This is a basic implementation - modern browsers have limited support
     // for disabling specific dates in date inputs
     return "";

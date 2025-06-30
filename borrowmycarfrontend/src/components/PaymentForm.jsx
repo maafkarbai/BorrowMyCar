@@ -7,7 +7,7 @@ import {
   useElements,
 } from "@stripe/react-stripe-js";
 import { usePayment } from "../context/PaymentContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate as _useNavigate } from "react-router-dom";
 import {
   CreditCard,
   Lock,
@@ -47,7 +47,7 @@ const CheckoutForm = ({ booking, onSuccess, onError }) => {
   } = usePayment();
   const [processing, setProcessing] = useState(false);
   const [clientSecret, setClientSecret] = useState("");
-  const [paymentIntentId, setPaymentIntentId] = useState("");
+  const [_paymentIntentId, _setPaymentIntentId] = useState("");
   const [cardComplete, setCardComplete] = useState(false);
   const [cardError, setCardError] = useState("");
 
@@ -62,7 +62,7 @@ const CheckoutForm = ({ booking, onSuccess, onError }) => {
           booking.totalPayable || 100
         );
         setClientSecret(result.data.clientSecret);
-        setPaymentIntentId(result.data.paymentIntentId);
+        _setPaymentIntentId(result.data.paymentIntentId);
       } catch (error) {
         console.error("Payment initialization error:", error);
         onError(error.message || "Failed to initialize payment");

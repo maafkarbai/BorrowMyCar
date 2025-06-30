@@ -29,7 +29,9 @@ import NotFound from "./NotFound.jsx";
 import Navbar from "./Navbar.jsx";
 import Footer from "./Footer.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import ProtectedAdminRoute from "./components/ProtectedAdminRoute.jsx";
 import { AuthProvider } from "./context/AuthProvider.jsx";
+import { AdminAuthProvider } from "./context/AdminAuthProvider.jsx";
 import { PaymentProvider } from "./context/PaymentContext.jsx";
 import { HelmetProvider } from "react-helmet-async";
 import "./global.css";
@@ -160,9 +162,9 @@ const router = createBrowserRouter([
       {
         path: "dashboard",
         element: (
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedAdminRoute>
             <AdminLayout />
-          </ProtectedRoute>
+          </ProtectedAdminRoute>
         ),
         children: [
           {
@@ -174,9 +176,9 @@ const router = createBrowserRouter([
       {
         path: "users",
         element: (
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedAdminRoute>
             <AdminLayout />
-          </ProtectedRoute>
+          </ProtectedAdminRoute>
         ),
         children: [
           {
@@ -188,9 +190,9 @@ const router = createBrowserRouter([
       {
         path: "cars",
         element: (
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedAdminRoute>
             <AdminLayout />
-          </ProtectedRoute>
+          </ProtectedAdminRoute>
         ),
         children: [
           {
@@ -202,9 +204,9 @@ const router = createBrowserRouter([
       {
         path: "bookings",
         element: (
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedAdminRoute>
             <AdminLayout />
-          </ProtectedRoute>
+          </ProtectedAdminRoute>
         ),
         children: [
           {
@@ -216,9 +218,9 @@ const router = createBrowserRouter([
       {
         path: "reports",
         element: (
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedAdminRoute>
             <AdminLayout />
-          </ProtectedRoute>
+          </ProtectedAdminRoute>
         ),
         children: [
           {
@@ -230,9 +232,9 @@ const router = createBrowserRouter([
       {
         path: "settings",
         element: (
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedAdminRoute>
             <AdminLayout />
-          </ProtectedRoute>
+          </ProtectedAdminRoute>
         ),
         children: [
           {
@@ -276,9 +278,11 @@ createRoot(document.getElementById("root")).render(
   <StrictMode>
     <HelmetProvider>
       <AuthProvider>
-        <PaymentProvider>
-          <RouterProvider router={router} />
-        </PaymentProvider>
+        <AdminAuthProvider>
+          <PaymentProvider>
+            <RouterProvider router={router} />
+          </PaymentProvider>
+        </AdminAuthProvider>
       </AuthProvider>
     </HelmetProvider>
   </StrictMode>

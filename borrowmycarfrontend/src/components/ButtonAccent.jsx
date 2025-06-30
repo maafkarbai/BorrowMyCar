@@ -39,7 +39,7 @@ const PaymentModal = ({
   });
 
   const [errors, setErrors] = useState({});
-  const [savedCards, setSavedCards] = useState([]);
+  const [_savedCards, _setSavedCards] = useState([]);
   const [selectedSavedCard, setSelectedSavedCard] = useState("");
 
   // Payment Methods (Cash and Card only)
@@ -72,7 +72,7 @@ const PaymentModal = ({
   const fetchSavedCards = async () => {
     try {
       const response = await API.get("/payments/saved-cards");
-      setSavedCards(response.data.data?.cards || []);
+      _setSavedCards(response.data.data?.cards || []);
     } catch (error) {
       console.error("Failed to fetch saved cards:", error);
     }

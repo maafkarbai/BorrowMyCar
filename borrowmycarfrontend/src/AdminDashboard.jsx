@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "./context/AuthProvider";
+import { useAdminAuth } from "./context/AdminAuthProvider";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import API from "./api";
@@ -891,7 +891,7 @@ const BulkActionsBar = ({
 };
 
 const AdminDashboard = () => {
-  const { user } = useAuth();
+  const { adminUser, getAdminAPI } = useAdminAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [stats, setStats] = useState(null);
@@ -905,7 +905,7 @@ const AdminDashboard = () => {
   const [filterRole, setFilterRole] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [selectedUsers, setSelectedUsers] = useState([]);
-  const [selectedCars, setSelectedCars] = useState([]);
+  const [_selectedCars, _setSelectedCars] = useState([]);
   const [showUserDetails, setShowUserDetails] = useState(null);
   const [showSystemConfig, setShowSystemConfig] = useState(false);
   const [activityLog, setActivityLog] = useState([]);
@@ -930,12 +930,12 @@ const AdminDashboard = () => {
   const activeTab = getActiveTab();
 
   useEffect(() => {
-    if (!user || user.role !== "admin") {
+    if (!adminUser || adminUser.role !== "admin") {
       navigate("/admin");
       return;
     }
     initializeData();
-  }, [user, navigate]);
+  }, [adminUser, navigate]);
 
   const initializeData = async () => {
     await Promise.all([
@@ -950,7 +950,8 @@ const AdminDashboard = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await API.get("/admin/stats");
+      const adminAPI = getAdminAPI();
+      const response = await adminAPI.get("/admin/stats");
       if (response.data.success) {
         setStats(response.data.data.stats);
       }
@@ -967,7 +968,8 @@ const AdminDashboard = () => {
         ...filters,
       });
 
-      const response = await API.get(`/admin/users?${params}`);
+      const adminAPI = getAdminAPI();
+      const response = await adminAPI.get(`/admin/users?${params}`);
 
       if (response.data.success) {
         const { users, pagination: userPagination } = response.data.data;
@@ -991,7 +993,8 @@ const AdminDashboard = () => {
         ...filters,
       });
 
-      const response = await API.get(`/admin/cars?${params}`);
+      const adminAPI = getAdminAPI();
+      const response = await adminAPI.get(`/admin/cars?${params}`);
 
       if (response.data.success) {
         const { cars, pagination: carPagination } = response.data.data;
@@ -1012,7 +1015,8 @@ const AdminDashboard = () => {
         ...filters,
       });
 
-      const response = await API.get(`/admin/bookings?${params}`);
+      const adminAPI = getAdminAPI();
+      const response = await adminAPI.get(`/admin/bookings?${params}`);
 
       if (response.data.success) {
         const { bookings, pagination: bookingPagination } = response.data.data;
@@ -1027,7 +1031,8 @@ const AdminDashboard = () => {
 
   const approveUser = async (userId) => {
     try {
-      await API.patch(`/admin/users/${userId}/approve`);
+      const adminAPI = getAdminAPI();
+      await adminAPI.patch(`/admin/users/${userId}/approve`);
       await Promise.all([fetchUsers(), fetchStats()]);
       setError("");
     } catch (err) {
@@ -1038,7 +1043,8 @@ const AdminDashboard = () => {
 
   const rejectUser = async (userId, reason = "") => {
     try {
-      await API.patch(`/admin/users/${userId}/reject`, { reason });
+      const adminAPI = getAdminAPI();
+      await adminAPI.patch(`/admin/users/${userId}/reject`, { reason });
       await Promise.all([fetchUsers(), fetchStats()]);
       setError("");
     } catch (err) {
@@ -1049,7 +1055,8 @@ const AdminDashboard = () => {
 
   const updateCarStatus = async (carId, status, reason = "") => {
     try {
-      await API.patch(`/admin/cars/${carId}/approval`, { status, reason });
+      const adminAPI = getAdminAPI();
+      await adminAPI.patch(`/admin/cars/${carId}/approval`, { status, reason });
       await Promise.all([fetchCars(), fetchStats()]);
       setError("");
     } catch (err) {
@@ -1062,7 +1069,8 @@ const AdminDashboard = () => {
     if (!window.confirm("Are you sure you want to delete this user?")) return;
 
     try {
-      await API.delete(`/admin/users/${userId}`);
+      const adminAPI = getAdminAPI();
+      await adminAPI.delete(`/admin/users/${userId}`);
       await Promise.all([fetchUsers(), fetchStats()]);
       setError("");
     } catch (err) {
@@ -1075,7 +1083,8 @@ const AdminDashboard = () => {
     if (!window.confirm("Are you sure you want to delete this car?")) return;
 
     try {
-      await API.delete(`/admin/cars/${carId}`);
+      const adminAPI = getAdminAPI();
+      await adminAPI.delete(`/admin/cars/${carId}`);
       await Promise.all([fetchCars(), fetchStats()]);
       setError("");
     } catch (err) {
@@ -1129,7 +1138,8 @@ const AdminDashboard = () => {
 
   const fetchActivityLog = async () => {
     try {
-      const response = await API.get("/admin/activity-log");
+      const adminAPI = getAdminAPI();
+      const response = await adminAPI.get("/admin/activity-log");
       if (response.data.success) {
         setActivityLog(response.data.data);
       }
@@ -1140,7 +1150,8 @@ const AdminDashboard = () => {
 
   const fetchSystemConfig = async () => {
     try {
-      const response = await API.get("/admin/config");
+      const adminAPI = getAdminAPI();
+      const response = await adminAPI.get("/admin/config");
       if (response.data.success) {
         setSystemConfig(response.data.data.config);
       }
@@ -1151,7 +1162,8 @@ const AdminDashboard = () => {
 
   const fetchUserDetails = async (userId) => {
     try {
-      const response = await API.get(`/admin/users/${userId}/details`);
+      const adminAPI = getAdminAPI();
+      const response = await adminAPI.get(`/admin/users/${userId}/details`);
       if (response.data.success) {
         setShowUserDetails(response.data.data);
       }
@@ -1182,7 +1194,8 @@ const AdminDashboard = () => {
     }
 
     try {
-      await API.post("/admin/users/bulk-actions", {
+      const adminAPI = getAdminAPI();
+      await adminAPI.post("/admin/users/bulk-actions", {
         userIds: selectedUsers,
         action,
         reason,
@@ -1199,7 +1212,8 @@ const AdminDashboard = () => {
 
   const exportData = async (type) => {
     try {
-      const response = await API.get(`/admin/export?type=${type}`);
+      const adminAPI = getAdminAPI();
+      const response = await adminAPI.get(`/admin/export?type=${type}`);
       if (response.data.success) {
         const dataStr = JSON.stringify(response.data.data, null, 2);
         const dataBlob = new Blob([dataStr], { type: "application/json" });
@@ -1220,7 +1234,8 @@ const AdminDashboard = () => {
 
   const updateSystemConfig = async (configUpdates) => {
     try {
-      await API.patch("/admin/config", configUpdates);
+      const adminAPI = getAdminAPI();
+      await adminAPI.patch("/admin/config", configUpdates);
       await fetchSystemConfig();
       setError("");
     } catch (err) {
@@ -1245,7 +1260,7 @@ const AdminDashboard = () => {
     }
   };
 
-  if (!user || user.role !== "admin") {
+  if (!adminUser || adminUser.role !== "admin") {
     return null;
   }
 

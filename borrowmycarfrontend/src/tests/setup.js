@@ -32,9 +32,9 @@ beforeAll(() => {
   vi.stubGlobal('sessionStorage', sessionStorageMock);
 
   // Mock document methods
-  global.document.getElementById = vi.fn();
-  global.document.querySelector = vi.fn();
-  global.document.querySelectorAll = vi.fn();
+  globalThis.document.getElementById = vi.fn();
+  globalThis.document.querySelector = vi.fn();
+  globalThis.document.querySelectorAll = vi.fn();
 });
 
 // Mock window.matchMedia
@@ -53,21 +53,21 @@ Object.defineProperty(window, 'matchMedia', {
 });
 
 // Mock IntersectionObserver
-global.IntersectionObserver = vi.fn().mockImplementation(() => ({
+globalThis.IntersectionObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
 }));
 
 // Mock ResizeObserver
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
+globalThis.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
 }));
 
 // Mock URL and URLSearchParams
-global.URL = vi.fn().mockImplementation((url) => ({
+globalThis.URL = vi.fn().mockImplementation((url) => ({
   href: url,
   pathname: new URL(url).pathname,
   search: new URL(url).search,
@@ -80,7 +80,7 @@ vi.mock('react-router-dom', () => ({
   Routes: ({ children }) => children,
   Route: ({ children }) => children,
   Link: ({ children, to, ...props }) => {
-    const React = require('react');
+    const React = globalThis.require('react');
     return React.createElement('a', { href: to, ...props }, children);
   },
   useNavigate: () => vi.fn(),
@@ -138,7 +138,7 @@ vi.mock('../api', () => ({
 
 // Mock Lucide React icons
 vi.mock('lucide-react', () => {
-  const React = require('react');
+  const React = globalThis.require('react');
   const MockIcon = ({ className, ...props }) => 
     React.createElement('div', { className: `mock-icon ${className || ''}`, ...props });
   

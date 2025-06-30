@@ -147,7 +147,7 @@ const SellerDashboard = () => {
     ],
   };
 
-  const StatCard = ({ title, value, icon: Icon, color, subtitle }) => (
+  const StatCard = ({ title, value, color, subtitle }) => (
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="flex items-center justify-between">
         <div>
@@ -327,7 +327,7 @@ const SellerDashboard = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {topPerformingCars.map((car, index) => (
+                  {topPerformingCars.map((car) => (
                     <tr key={car._id}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">

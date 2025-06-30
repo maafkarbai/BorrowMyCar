@@ -9,7 +9,7 @@ import {
   DollarSign,
 } from "lucide-react";
 import { MAPBOX_CONFIG } from "../config/mapbox";
-import { mapboxService } from "../utils/mapboxUtils";
+import { mapboxService as _mapboxService } from "../utils/mapboxUtils";
 import API from "../api";
 
 const MapSearchView = () => {
@@ -25,9 +25,9 @@ const MapSearchView = () => {
     category: "",
     transmission: "",
   });
-  const [mapBounds, setMapBounds] = useState(null);
-  const [selectedCar, setSelectedCar] = useState(null);
-  const markersRef = useRef([]);
+  const [_mapBounds, _setMapBounds] = useState(null);
+  const [_selectedCar, _setSelectedCar] = useState(null);
+  const _markersRef = useRef([]);
 
   useEffect(() => {
     initializeMap();
@@ -58,7 +58,7 @@ const MapSearchView = () => {
     // Listen for map movement to update search area
     map.current.on("moveend", () => {
       const bounds = map.current.getBounds();
-      setMapBounds(bounds);
+      _setMapBounds(bounds);
       searchCarsInArea(bounds);
     });
 
@@ -141,7 +141,7 @@ const MapSearchView = () => {
 
       map.current.on("click", "unclustered-point", (e) => {
         const car = e.features[0].properties;
-        setSelectedCar(JSON.parse(car.carData));
+        _setSelectedCar(JSON.parse(car.carData));
 
         // Show popup
         new mapboxgl.Popup()

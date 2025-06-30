@@ -1,5 +1,5 @@
 // src/Signup.jsx - Updated with UAE Phone Input
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import API from "./api";
 import PhoneInput from "./components/PhoneInput";
@@ -29,7 +29,7 @@ const Signup = () => {
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
 
-  const navigate = useNavigate();
+  const _navigate = useNavigate();
 
   const uaeCities = [
     "Dubai",

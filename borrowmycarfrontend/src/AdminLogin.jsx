@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from './context/AuthProvider';
+import { useAdminAuth } from './context/AdminAuthProvider';
 
 const AdminLogin = () => {
   const [formData, setFormData] = useState({
@@ -10,17 +11,13 @@ const AdminLogin = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { user, login, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
+  const { adminLogin, isAdminAuthenticated, adminUser } = useAdminAuth();
   const navigate = useNavigate();
 
   // Redirect if already logged in as admin
-  if (isAuthenticated && user?.role === 'admin') {
+  if (isAdminAuthenticated && adminUser?.role === 'admin') {
     return <Navigate to="/admin/dashboard" replace />;
-  }
-
-  // Redirect non-admin users
-  if (isAuthenticated && user?.role !== 'admin') {
-    return <Navigate to="/" replace />;
   }
 
   const handleSubmit = async (e) => {
@@ -29,17 +26,18 @@ const AdminLogin = () => {
     setError('');
 
     try {
-      // Use AuthProvider's login function
-      const result = await login(formData);
+      // Store current user state if user is logged in
+      const currentUserState = isAuthenticated ? { user, token: localStorage.getItem('token') || sessionStorage.getItem('token') } : null;
+      
+      // If regular user is logged in, log them out first
+      if (isAuthenticated) {
+        logout();
+      }
+      
+      // Use AdminAuthProvider's login function
+      const result = await adminLogin(formData, currentUserState);
       
       if (result.success) {
-        // Check if user is admin
-        if (result.user.role !== 'admin') {
-          setError('Access denied. Admin credentials required.');
-          setLoading(false);
-          return;
-        }
-
         // Navigate to admin dashboard
         navigate('/admin/dashboard', { replace: true });
       } else {

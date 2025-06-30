@@ -22,7 +22,7 @@ const LocationPicker = ({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(initialLocation);
   const [showMap, setShowMap] = useState(false);
-  const [currentLocation, setCurrentLocation] = useState(null);
+  const [_currentLocation, _setCurrentLocation] = useState(null);
 
   // Initialize map
   useEffect(() => {
@@ -138,7 +138,7 @@ const LocationPicker = ({
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { longitude, latitude } = position.coords;
-        setCurrentLocation([longitude, latitude]);
+        _setCurrentLocation([longitude, latitude]);
 
         const reverseResult = await mapboxService.reverseGeocode(
           longitude,

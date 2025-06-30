@@ -72,7 +72,8 @@ API.interceptors.response.use(
           sessionStorage.removeItem("user");
 
           // Only redirect if not already on auth pages
-          const currentPath = window.location.pathname;
+          {
+            const currentPath = window.location.pathname;
           if (
             !currentPath.includes("/login") &&
             !currentPath.includes("/signup") &&
@@ -82,6 +83,7 @@ API.interceptors.response.use(
             setTimeout(() => {
               window.location.href = "/auth/login";
             }, 100);
+          }
           }
           break;
 

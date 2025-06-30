@@ -19,10 +19,10 @@ import {
 } from 'lucide-react';
 
 const OrderManagement = () => {
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [_error, _setError] = useState(null);
   const [pagination, setPagination] = useState({});
   
   // Filters
@@ -50,14 +50,14 @@ const OrderManagement = () => {
       const params = new URLSearchParams({
         page: currentPage,
         limit: 10,
-        ...Object.fromEntries(Object.entries(filters).filter(([_, v]) => v))
+        ...Object.fromEntries(Object.entries(filters).filter(([, v]) => v))
       });
       
       const response = await api.get(`/cars/seller/orders?${params}`);
       setOrders(response.data.data.orders);
       setPagination(response.data.data.pagination);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load orders');
+      _setError(err.response?.data?.message || 'Failed to load orders');
     } finally {
       setLoading(false);
     }

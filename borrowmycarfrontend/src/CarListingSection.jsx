@@ -19,7 +19,7 @@ const CarListingSection = () => {
   const [sortOrder, setSortOrder] = useState("desc");
 
   // Memoized API params to prevent unnecessary re-renders
-  const apiParams = useMemo(() => {
+  const _apiParams = useMemo(() => {
     const params = new URLSearchParams({
       page: pagination.currentPage.toString(),
       limit: pagination.limit.toString(),
@@ -117,7 +117,7 @@ const CarListingSection = () => {
     const fetchWithRetry = async () => {
       try {
         await fetchCars();
-      } catch (error) {
+      } catch {
         if (retryCount < maxRetries) {
           retryCount++;
           console.log(`Retrying fetch cars, attempt ${retryCount}`);

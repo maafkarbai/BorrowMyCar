@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import bcrypt from "bcryptjs";
+import _bcrypt from "bcryptjs";
 import { User } from "../models/User.js";
 import Car from "../models/Car.js";
 import dotenv from "dotenv";
@@ -8,7 +8,7 @@ dotenv.config();
 
 const seedDatabase = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI);
+    await mongoose.connect(globalThis.process.env.MONGO_URI);
 
     // Clear existing data
     await User.deleteMany({});
@@ -26,7 +26,7 @@ const seedDatabase = async () => {
       drivingLicenseUrl: "https://via.placeholder.com/400x300",
     });
 
-    const testRenter = await User.create({
+    const _testRenter = await User.create({
       name: "Sarah Johnson",
       email: "sarah@test.com",
       phone: "+971509876543",
@@ -72,10 +72,10 @@ const seedDatabase = async () => {
     });
 
     console.log("✅ Database seeded successfully");
-    process.exit(0);
+    globalThis.process.exit(0);
   } catch (error) {
     console.error("❌ Error seeding database:", error);
-    process.exit(1);
+    globalThis.process.exit(1);
   }
 };
 

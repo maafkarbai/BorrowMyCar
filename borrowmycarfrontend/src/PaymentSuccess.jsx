@@ -16,7 +16,7 @@ import API from "./api";
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const _navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(null);
   const [error, setError] = useState("");

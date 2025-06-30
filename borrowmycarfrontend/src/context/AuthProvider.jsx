@@ -293,7 +293,7 @@ export const AuthProvider = ({ children }) => {
       API.post("/auth/logout").catch(() => {
         // Ignore logout endpoint errors
       });
-    } catch (error) {
+    } catch {
       // Ignore errors
     }
   };

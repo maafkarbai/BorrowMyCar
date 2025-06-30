@@ -27,7 +27,7 @@ const BookingSuccess = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [countdown, setCountdown] = useState(15);
-  const [showDetails, setShowDetails] = useState(false);
+  const [_showDetails, _setShowDetails] = useState(false);
 
   const { paymentIntent, booking, car } = location.state || {};
 

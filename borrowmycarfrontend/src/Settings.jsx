@@ -176,7 +176,7 @@ const Settings = () => {
     try {
       await API.patch("/auth/preferences", { notifications });
       showMessage("success", "Notification preferences updated");
-    } catch (err) {
+    } catch {
       showMessage("error", "Failed to update notification preferences");
     } finally {
       setUpdateLoading(false);
@@ -188,7 +188,7 @@ const Settings = () => {
     try {
       await API.patch("/auth/preferences", { privacy });
       showMessage("success", "Privacy settings updated");
-    } catch (err) {
+    } catch {
       showMessage("error", "Failed to update privacy settings");
     } finally {
       setUpdateLoading(false);
@@ -212,7 +212,7 @@ const Settings = () => {
         "success",
         "Data export started. Download will begin shortly."
       );
-    } catch (err) {
+    } catch {
       showMessage("error", "Failed to export data");
     } finally {
       setUpdateLoading(false);
@@ -236,7 +236,7 @@ const Settings = () => {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       navigate("/", { replace: true });
-    } catch (err) {
+    } catch {
       showMessage("error", "Failed to delete account");
     } finally {
       setUpdateLoading(false);

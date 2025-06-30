@@ -461,11 +461,11 @@ const ListCar = () => {
       });
 
       // Append images
-      images.forEach((image, index) => {
+      images.forEach((image) => {
         formData.append(`images`, image);
       });
 
-      const response = await API.post("/cars", formData, {
+      const _response = await API.post("/cars", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },

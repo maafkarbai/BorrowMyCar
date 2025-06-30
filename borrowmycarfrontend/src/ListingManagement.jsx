@@ -21,10 +21,10 @@ import {
 } from 'lucide-react';
 
 const ListingManagement = () => {
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
   const [cars, setCars] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [_error, _setError] = useState(null);
   const [pagination, setPagination] = useState({});
   
   // Filters and search
@@ -50,14 +50,14 @@ const ListingManagement = () => {
       const params = new URLSearchParams({
         page: currentPage,
         limit: 12,
-        ...Object.fromEntries(Object.entries(filters).filter(([_, v]) => v))
+        ...Object.fromEntries(Object.entries(filters).filter(([, v]) => v))
       });
       
       const response = await api.get(`/cars/my/cars?${params}`);
       setCars(response.data.data.cars);
       setPagination(response.data.data.pagination);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load cars');
+      _setError(err.response?.data?.message || 'Failed to load cars');
     } finally {
       setLoading(false);
     }

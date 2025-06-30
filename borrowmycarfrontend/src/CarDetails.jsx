@@ -80,7 +80,7 @@ const CarDetails = () => {
     }
   }, [booking.startDate, booking.endDate, car]);
 
-  const handleBookingChange = (e) => {
+  const _handleBookingChange = (e) => {
     const { name, value } = e.target;
     setBooking((prev) => ({
       ...prev,
