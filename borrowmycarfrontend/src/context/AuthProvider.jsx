@@ -140,10 +140,11 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: "LOGIN_START" });
 
     try {
-      console.log("Login attempt with:", { email: credentials.email });
+      console.log("Login attempt with:", { email: credentials.email, rememberMe: credentials.rememberMe });
       const res = await API.post("/auth/login", {
         email: credentials.email.trim(),
         password: credentials.password,
+        rememberMe: credentials.rememberMe,
       });
 
       console.log("Login response:", res.data);

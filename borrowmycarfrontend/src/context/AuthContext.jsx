@@ -45,42 +45,13 @@ const authReducer = (state, action) => {
   }
 };
 
-// Safe localStorage access
-const getStorageItem = (key) => {
-  try {
-    return typeof window !== 'undefined' && window.localStorage 
-      ? localStorage.getItem(key) 
-      : null;
-  } catch (error) {
-    console.warn('localStorage access failed:', error);
-    return null;
-  }
-};
-
-const setStorageItem = (key, value) => {
-  try {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      localStorage.setItem(key, value);
-    }
-  } catch (error) {
-    console.warn('localStorage setItem failed:', error);
-  }
-};
-
-const removeStorageItem = (key) => {
-  try {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      localStorage.removeItem(key);
-    }
-  } catch (error) {
-    console.warn('localStorage removeItem failed:', error);
-  }
-};
+// Cookie-based authentication - no local storage needed
+// Tokens are now stored in HTTP-only cookies on the server
 
 const initialState = {
   isAuthenticated: false,
   user: null,
-  token: getStorageItem("token"),
+  token: null, // No longer stored in frontend
   loading: true,
   error: null,
 };
@@ -88,14 +59,9 @@ const initialState = {
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
-  // Check if user is logged in on app start
+  // Check if user is logged in on app start (cookie-based)
   useEffect(() => {
-    const token = getStorageItem("token");
-    if (token) {
-      getCurrentUser();
-    } else {
-      dispatch({ type: "SET_LOADING", payload: false });
-    }
+    getCurrentUser();
   }, []);
 
   const getCurrentUser = async () => {
@@ -120,7 +86,7 @@ export const AuthProvider = ({ children }) => {
           type: "LOGIN_SUCCESS",
           payload: {
             user,
-            token: getStorageItem("token"),
+            token: null, // No token needed on frontend
           },
         });
       } else {
@@ -129,10 +95,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error("Get current user error:", error);
 
-      // Clear invalid tokens
-      removeStorageItem("token");
-      removeStorageItem("user");
-
+      // No storage to clear - cookies are HTTP-only
       dispatch({ type: "LOGOUT" });
     } finally {
       dispatch({ type: "SET_LOADING", payload: false });
@@ -148,6 +111,7 @@ export const AuthProvider = ({ children }) => {
       const res = await API.post("/auth/login", {
         email: credentials.email.trim(),
         password: credentials.password,
+        rememberMe: credentials.rememberMe,
       });
 
       console.log("Login response:", res.data);
@@ -156,39 +120,31 @@ export const AuthProvider = ({ children }) => {
       let token = null;
       let user = null;
 
-      // Try different response structures
-      if (res.data.token && res.data.user) {
-        // Direct format: { token, user }
-        token = res.data.token;
+      // Cookie-based auth - only need user data in response
+      if (res.data.user) {
+        // Direct format: { user }
         user = res.data.user;
-      } else if (res.data.data?.token && res.data.data?.user) {
-        // Nested format: { data: { token, user } }
-        token = res.data.data.token;
+        token = "cookie-based"; // Placeholder
+      } else if (res.data.data?.user) {
+        // Nested format: { data: { user } }
         user = res.data.data.user;
-      } else if (res.data.success && res.data.token) {
-        // Success format: { success: true, token, user }
-        token = res.data.token;
+        token = "cookie-based"; // Placeholder
+      } else if (res.data.success && res.data.user) {
+        // Success format: { success: true, user }
         user = res.data.user;
-      } else if (res.data.accessToken) {
-        // Alternative token field
-        token = res.data.accessToken;
-        user = res.data.user || res.data.data?.user;
       }
 
-      if (token && user) {
-        // Store authentication data
-        setStorageItem("token", token);
-        setStorageItem("user", JSON.stringify(user));
-
+      if (user) {
+        // No storage needed - cookies are handled automatically
         dispatch({
           type: "LOGIN_SUCCESS",
-          payload: { user, token },
+          payload: { user, token: null },
         });
 
         return { success: true, user };
       } else {
         console.error("Invalid login response format:", res.data);
-        throw new Error("Invalid response format - missing token or user data");
+        throw new Error("Invalid response format - missing user data");
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -240,28 +196,22 @@ export const AuthProvider = ({ children }) => {
 
       console.log("Signup response:", res.data);
 
-      // Handle signup response (same robust logic as login)
-      let token = null;
+      // Handle signup response (cookie-based)
       let user = null;
 
-      if (res.data.token && res.data.user) {
-        token = res.data.token;
+      if (res.data.user) {
         user = res.data.user;
-      } else if (res.data.data?.token && res.data.data?.user) {
-        token = res.data.data.token;
+      } else if (res.data.data?.user) {
         user = res.data.data.user;
       } else if (res.data.success) {
-        token = res.data.token;
         user = res.data.user || res.data.data?.user;
       }
 
-      if (token && user) {
-        setStorageItem("token", token);
-        setStorageItem("user", JSON.stringify(user));
-
+      if (user) {
+        // No storage needed - cookies are handled automatically
         dispatch({
           type: "LOGIN_SUCCESS",
-          payload: { user, token },
+          payload: { user, token: null },
         });
 
         return { success: true, user };
@@ -284,22 +234,17 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    // Clear local storage
-    removeStorageItem("token");
-    removeStorageItem("user");
-
-    // Clear state
-    dispatch({ type: "LOGOUT" });
-
-    // Optional: Call logout endpoint
+  const logout = async () => {
     try {
-      API.post("/auth/logout").catch(() => {
-        // Ignore logout endpoint errors
-      });
-    } catch {
-      // Ignore errors
+      // Call logout endpoint to clear HTTP-only cookie
+      await API.post("/auth/logout");
+    } catch (error) {
+      console.warn("Logout endpoint error:", error);
+      // Continue with logout even if endpoint fails
     }
+
+    // Clear state (no storage to clear)
+    dispatch({ type: "LOGOUT" });
   };
 
   const clearError = () => {
@@ -307,11 +252,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateUser = (userData) => {
-    // Update user in state
+    // Update user in state (no storage needed)
     dispatch({ type: "UPDATE_USER", payload: userData });
-
-    // Update localStorage
-    setStorageItem("user", JSON.stringify(userData));
   };
 
   const value = {

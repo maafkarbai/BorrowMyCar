@@ -1,29 +1,24 @@
 // borrowmycarfrontend/src/api.js - Fixed API client
 import axios from "axios";
 
-// Create API instance with comprehensive configuration
+// Create API instance with cookie-based authentication
 const API = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api",
   timeout: 30000, // 30 second timeout
+  withCredentials: true, // Include cookies in requests
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Helper function to get token from storage
-const getStoredToken = () => {
-  return localStorage.getItem("token") || sessionStorage.getItem("token");
-};
+// Cookie-based authentication - no token handling needed
+// Cookies are automatically sent with requests
 
-// Request interceptor to automatically include token and handle requests
+// Request interceptor for cookie-based auth
 API.interceptors.request.use(
   (req) => {
-    // Get token from either storage
-    const token = getStoredToken();
-    if (token) {
-      req.headers.Authorization = `Bearer ${token}`;
-    }
-
+    // Cookies are automatically included - no manual token handling needed
+    
     // Handle FormData for file uploads
     if (req.data instanceof FormData) {
       delete req.headers["Content-Type"]; // Let browser set it for FormData
@@ -64,12 +59,8 @@ API.interceptors.response.use(
 
       switch (status) {
         case 401:
-          // Unauthorized - clear auth data and redirect
-          console.log("🔐 Authentication failed - clearing session");
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-          sessionStorage.removeItem("token");
-          sessionStorage.removeItem("user");
+          // Unauthorized - redirect to login (cookies cleared by server)
+          console.log("🔐 Authentication failed - redirecting to login");
 
           // Only redirect if not already on auth pages
           {
@@ -192,46 +183,24 @@ export const uploadFile = async (url, formData, onProgress = null) => {
   }
 };
 
-// Check if user is authenticated
+// Cookie-based auth - these functions are no longer needed
+// Authentication state is managed by the server via HTTP-only cookies
+
+// Check if user is authenticated (deprecated - use API call instead)
 export const isAuthenticated = () => {
-  const token = getStoredToken();
-  if (!token) return false;
-
-  try {
-    // Check if token is expired (basic check)
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    const currentTime = Date.now() / 1000;
-    return payload.exp > currentTime;
-  } catch {
-    return false;
-  }
+  console.warn('isAuthenticated() is deprecated with cookie-based auth. Use API call to check auth status.');
+  return false;
 };
 
-// Get current user from token
+// Get current user (deprecated - use API call instead)
 export const getCurrentUser = () => {
-  const token = getStoredToken();
-  if (!token) return null;
-
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    return {
-      id: payload.id || payload.userId || payload._id,
-      role: payload.role,
-      isApproved: payload.isApproved,
-      email: payload.email,
-      name: payload.name,
-    };
-  } catch {
-    return null;
-  }
+  console.warn('getCurrentUser() is deprecated with cookie-based auth. Use API call to get user data.');
+  return null;
 };
 
-// Clear authentication data
+// Clear authentication data (deprecated - use logout API instead)
 export const clearAuth = () => {
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-  sessionStorage.removeItem("token");
-  sessionStorage.removeItem("user");
+  console.warn('clearAuth() is deprecated with cookie-based auth. Use logout API endpoint.');
 };
 
 // API Health check
@@ -244,20 +213,10 @@ export const checkAPIHealth = async () => {
   }
 };
 
-// Refresh token (if your backend supports it)
+// Refresh token (deprecated with cookie-based auth)
 export const refreshToken = async () => {
-  try {
-    const response = await API.post("/auth/refresh");
-    const { token } = response.data;
-    if (token) {
-      localStorage.setItem("token", token);
-      return { success: true, token };
-    }
-    throw new Error("No token received");
-  } catch (error) {
-    clearAuth();
-    return { success: false, error: error.message };
-  }
+  console.warn('refreshToken() is deprecated with cookie-based auth. Tokens are managed by the server.');
+  return { success: false, error: 'Not implemented with cookie-based auth' };
 };
 
 // Cars API functions

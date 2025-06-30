@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import API from "./api";
 import PaymentModal from "./components/PaymentModal";
-import AvailabilityDatePicker from "./components/AvailabilityDatePicker";
+import DatePicker from "./components/DatePicker";
 
 const CarDetails = () => {
   const { id } = useParams();
@@ -526,7 +526,7 @@ const CarDetails = () => {
                     Book This Car
                   </h2>
                   <form onSubmit={handleBook} className="space-y-4">
-                    <AvailabilityDatePicker
+                    <DatePicker
                       carId={car._id}
                       startDate={booking.startDate}
                       endDate={booking.endDate}

@@ -18,8 +18,10 @@ const handleAsyncErrorLocal = (fn) => {
   };
 };
 
-// Token generator
-const generateToken = (user) => {
+// Token generator with optional extended expiry for "remember me"
+const generateToken = (user, rememberMe = false) => {
+  const expiresIn = rememberMe ? "30d" : "7d"; // 30 days for remember me, 7 days for regular login
+  
   return jwt.sign(
     {
       id: user._id,
@@ -27,15 +29,16 @@ const generateToken = (user) => {
       isApproved: user.isApproved,
       email: user.email,
       name: user.name,
+      rememberMe, // Include remember me flag in token
     },
     process.env.JWT_SECRET,
-    { expiresIn: "7d" }
+    { expiresIn }
   );
 };
 
-// FIXED: Consistent response helper
-const sendTokenResponse = (user, statusCode, res, message = "Success") => {
-  const token = generateToken(user);
+// SECURE: Cookie-based authentication response helper
+const sendTokenResponse = (user, statusCode, res, message = "Success", rememberMe = false) => {
+  const token = generateToken(user, rememberMe);
 
   const userData = {
     id: user._id,
@@ -50,15 +53,27 @@ const sendTokenResponse = (user, statusCode, res, message = "Success") => {
     lastLoginAt: user.lastLoginAt,
   };
 
-  // CONSISTENT response format for all auth endpoints
+  // Cookie options
+  const cookieOptions = {
+    expires: new Date(Date.now() + (rememberMe ? 30 : 7) * 24 * 60 * 60 * 1000), // 30 days or 7 days
+    httpOnly: true, // Prevents XSS attacks
+    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // CSRF protection
+    path: '/', // Available on all paths
+  };
+
+  // Set HTTP-only cookie
+  res.cookie('jwt', token, cookieOptions);
+
+  // FIXED response format - Include token for frontend compatibility
   res.status(statusCode).json({
     success: true,
     message,
-    token, // Frontend expects this at root level
-    user: userData, // Frontend expects this at root level
+    token, // Include token in response body for frontend
+    user: userData,
     data: {
-      token,
       user: userData,
+      token, // Also include in data object for consistency
     },
   });
 };
@@ -423,10 +438,10 @@ export const resendOTP = handleAsyncErrorLocal(async (req, res) => {
   }
 });
 
-// FIXED LOGIN CONTROLLER
+// FIXED LOGIN CONTROLLER with Remember Me support
 export const login = handleAsyncErrorLocal(async (req, res) => {
-  const { email, password } = req.body;
-  console.log("Login attempt for:", email);
+  const { email, password, rememberMe } = req.body;
+  console.log("Login attempt for:", email, "- Remember Me:", !!rememberMe);
 
   // Input validation
   if (!email || !password) {
@@ -464,8 +479,8 @@ export const login = handleAsyncErrorLocal(async (req, res) => {
 
     console.log("Login successful for:", email);
 
-    // Send consistent response
-    sendTokenResponse(user, 200, res, "Login successful");
+    // Send consistent response with remember me support
+    sendTokenResponse(user, 200, res, "Login successful", rememberMe);
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({
@@ -979,8 +994,17 @@ export const deleteAccount = handleAsyncErrorLocal(async (req, res) => {
   }
 });
 
-// LOGOUT
+// LOGOUT - Clear HTTP-only cookie
 export const logout = handleAsyncErrorLocal(async (req, res) => {
+  // Clear the JWT cookie
+  res.cookie('jwt', '', {
+    expires: new Date(Date.now() + 10 * 1000), // Expire in 10 seconds
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    path: '/'
+  });
+
   res.json({
     success: true,
     message: "Logged out successfully",

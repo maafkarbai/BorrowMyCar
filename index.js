@@ -4,6 +4,7 @@ dotenv.config();
 
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import { connectDB, checkDBHealth } from "./config/db.js";
 import { globalErrorHandler } from "./utils/errorHandler.js";
 import { generalLimiter } from "./utils/validators.js";
@@ -58,6 +59,7 @@ app.use("/api/payments/webhook", express.raw({ type: "application/json" }));
 // Regular JSON parsing for other routes
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(cookieParser());
 
 // Security headers
 app.use((req, res, next) => {

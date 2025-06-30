@@ -157,10 +157,13 @@ const AvailabilityDatePicker = ({
 
   if (loading) {
     return (
-      <div className={`space-y-4 ${className}`}>
+      <div className={`space-y-4 sm:space-y-6 ${className}`}>
         <div className="animate-pulse">
-          <div className="h-12 bg-gray-200 rounded-lg mb-4"></div>
-          <div className="h-12 bg-gray-200 rounded-lg"></div>
+          <div className="h-16 sm:h-20 bg-gray-200 rounded-xl mb-4 sm:mb-6"></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            <div className="h-12 sm:h-16 bg-gray-200 rounded-xl"></div>
+            <div className="h-12 sm:h-16 bg-gray-200 rounded-xl"></div>
+          </div>
         </div>
       </div>
     );
@@ -178,79 +181,94 @@ const AvailabilityDatePicker = ({
   const maxDate = getMaxDate()?.toISOString().split('T')[0];
 
   return (
-    <div className={`space-y-4 ${className}`}>
+    <div className={`space-y-4 sm:space-y-6 ${className}`}>
       {/* Availability Info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
-        <div className="font-medium text-blue-800 mb-1">Availability Period</div>
-        <div className="text-blue-700">
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 sm:p-5 text-sm">
+        <div className="font-medium text-blue-800 mb-2">Availability Period</div>
+        <div className="text-blue-700 font-medium">
           {new Date(availability.availabilityFrom).toLocaleDateString()} - {new Date(availability.availabilityTo).toLocaleDateString()}
         </div>
         {unavailableDates.length > 0 && (
-          <div className="mt-2 text-blue-600">
+          <div className="mt-3 text-blue-600">
             {unavailableDates.length} booking{unavailableDates.length !== 1 ? 's' : ''} during this period
           </div>
         )}
       </div>
 
-      {/* Start Date */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Start Date
-        </label>
-        <input
-          type="date"
-          value={startDate}
-          onChange={handleStartDateChange}
-          min={minDate}
-          max={maxDate}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-colors"
-          required
-        />
-      </div>
+      {/* Date Inputs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+        {/* Start Date */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Start Date
+          </label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={handleStartDateChange}
+            min={minDate}
+            max={maxDate}
+            className="w-full px-4 py-3 sm:py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-colors text-sm sm:text-base touch-manipulation"
+            required
+          />
+        </div>
 
-      {/* End Date */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          End Date
-        </label>
-        <input
-          type="date"
-          value={endDate}
-          onChange={handleEndDateChange}
-          min={startDate || minDate}
-          max={maxDate}
-          disabled={!startDate}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
-          required
-        />
+        {/* End Date */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            End Date
+          </label>
+          <input
+            type="date"
+            value={endDate}
+            onChange={handleEndDateChange}
+            min={startDate || minDate}
+            max={maxDate}
+            disabled={!startDate}
+            className="w-full px-4 py-3 sm:py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed text-sm sm:text-base touch-manipulation"
+            required
+          />
+        </div>
       </div>
 
       {/* Booking Constraints Info */}
-      <div className="text-xs text-gray-500 space-y-1">
-        <div>• Minimum rental: {availability.minimumRentalDays} day{availability.minimumRentalDays !== 1 ? 's' : ''}</div>
-        <div>• Maximum rental: {availability.maximumRentalDays} day{availability.maximumRentalDays !== 1 ? 's' : ''}</div>
-        {unavailableDates.length > 0 && (
-          <div>• Some dates may be unavailable due to existing bookings</div>
-        )}
+      <div className="bg-gray-50 rounded-xl p-4 sm:p-5">
+        <div className="text-sm font-medium text-gray-700 mb-3">Rental Information</div>
+        <div className="text-xs sm:text-sm text-gray-600 space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full flex-shrink-0"></span>
+            <span>Minimum rental: {availability.minimumRentalDays} day{availability.minimumRentalDays !== 1 ? 's' : ''}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full flex-shrink-0"></span>
+            <span>Maximum rental: {availability.maximumRentalDays} day{availability.maximumRentalDays !== 1 ? 's' : ''}</span>
+          </div>
+          {unavailableDates.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-orange-400 rounded-full flex-shrink-0"></span>
+              <span>Some dates may be unavailable due to existing bookings</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Visual Calendar Legend */}
       {unavailableDates.length > 0 && (
-        <div className="bg-gray-50 rounded-lg p-3">
-          <div className="text-sm font-medium text-gray-700 mb-2">Unavailable Periods:</div>
-          <div className="space-y-1 text-xs">
+        <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 sm:p-5">
+          <div className="text-sm font-medium text-orange-800 mb-3">Unavailable Periods</div>
+          <div className="space-y-2 sm:space-y-3">
             {unavailableDates.slice(0, 3).map((booking, index) => (
-              <div key={index} className="flex justify-between text-gray-600">
-                <span>
+              <div key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 text-xs sm:text-sm">
+                <span className="text-gray-700 font-medium">
                   {new Date(booking.startDate).toLocaleDateString()} - {new Date(booking.endDate).toLocaleDateString()}
                 </span>
-                <span className="capitalize text-orange-600 font-medium">
+                <span className="capitalize text-orange-600 font-medium px-2 py-1 bg-orange-100 rounded-full text-xs sm:text-sm">
                   {booking.status}
                 </span>
               </div>
             ))}
             {unavailableDates.length > 3 && (
-              <div className="text-gray-500 italic">
+              <div className="text-orange-600 italic text-xs sm:text-sm pt-2 border-t border-orange-200">
                 +{unavailableDates.length - 3} more booking{unavailableDates.length - 3 !== 1 ? 's' : ''}
               </div>
             )}

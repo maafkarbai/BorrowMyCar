@@ -7,7 +7,8 @@ import { useAdminAuth } from './context/AdminAuthProvider';
 const AdminLogin = () => {
   const [formData, setFormData] = useState({
     email: '',
-    password: ''
+    password: '',
+    rememberMe: false
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -52,9 +53,10 @@ const AdminLogin = () => {
   };
 
   const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: type === 'checkbox' ? checked : value
     });
   };
 
@@ -118,6 +120,23 @@ const AdminLogin = () => {
                   placeholder="Enter admin password"
                   autoComplete="current-password"
                 />
+              </div>
+
+              {/* Remember Me Checkbox */}
+              <div className="flex items-center justify-between">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="rememberMe"
+                    checked={formData.rememberMe}
+                    onChange={handleChange}
+                    className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Remember me</span>
+                </label>
+                <div className="text-xs text-gray-500">
+                  Stay logged in for 30 days
+                </div>
               </div>
 
               <button

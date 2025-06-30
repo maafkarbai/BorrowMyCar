@@ -16,7 +16,8 @@
       "Bash(bun test:*)",
       "Bash(bun add:*)",
       "Bash(bun run:*)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(bun:*)"
     ],
     "deny": []
   }

@@ -45,25 +45,48 @@ const adminAuthReducer = (state, action) => {
 
 // Helper functions for admin token storage (separate from regular auth)
 const getStoredAdminToken = () => {
+  // Check localStorage first (for remember me), then sessionStorage
+  const localToken = localStorage.getItem("adminToken");
+  if (localToken) return localToken;
+  
   return sessionStorage.getItem("adminToken");
 };
 
 const getStoredAdminUser = () => {
   try {
-    const userData = sessionStorage.getItem("adminUser");
-    return userData ? JSON.parse(userData) : null;
+    // Check localStorage first (for remember me), then sessionStorage
+    const localUserData = localStorage.getItem("adminUser");
+    if (localUserData) return JSON.parse(localUserData);
+    
+    const sessionUserData = sessionStorage.getItem("adminUser");
+    return sessionUserData ? JSON.parse(sessionUserData) : null;
   } catch {
     return null;
   }
 };
 
-const storeAdminAuthData = (token, user) => {
-  // Always use sessionStorage for admin (more secure)
-  sessionStorage.setItem("adminToken", token);
-  sessionStorage.setItem("adminUser", JSON.stringify(user));
+const storeAdminAuthData = (token, user, rememberMe = false) => {
+  if (rememberMe) {
+    // For remember me - use localStorage (persists across browser sessions)
+    localStorage.setItem("adminToken", token);
+    localStorage.setItem("adminUser", JSON.stringify(user));
+    // Remove from sessionStorage if it exists
+    sessionStorage.removeItem("adminToken");
+    sessionStorage.removeItem("adminUser");
+  } else {
+    // For regular login - use sessionStorage (cleared when browser closes)
+    sessionStorage.setItem("adminToken", token);
+    sessionStorage.setItem("adminUser", JSON.stringify(user));
+    // Remove from localStorage if it exists
+    localStorage.removeItem("adminToken");
+    localStorage.removeItem("adminUser");
+  }
 };
 
 const clearAdminAuthData = () => {
+  // Remove from both storages
+  localStorage.removeItem("adminToken");
+  localStorage.removeItem("adminUser");
   sessionStorage.removeItem("adminToken");
   sessionStorage.removeItem("adminUser");
 };
@@ -144,11 +167,12 @@ export const AdminAuthProvider = ({ children }) => {
     dispatch({ type: "ADMIN_LOGIN_START" });
 
     try {
-      console.log("Admin login attempt with:", { email: credentials.email });
+      console.log("Admin login attempt with:", { email: credentials.email, rememberMe: !!credentials.rememberMe });
       
       const res = await API.post("/auth/login", {
         email: credentials.email.trim(),
         password: credentials.password,
+        rememberMe: credentials.rememberMe,
       });
 
       console.log("Admin login response:", res.data);
@@ -182,8 +206,8 @@ export const AdminAuthProvider = ({ children }) => {
           sessionStorage.setItem("previousUserState", JSON.stringify(currentUserState));
         }
 
-        // Store admin authentication data
-        storeAdminAuthData(token, user);
+        // Store admin authentication data with remember me preference
+        storeAdminAuthData(token, user, credentials.rememberMe);
 
         dispatch({
           type: "ADMIN_LOGIN_SUCCESS",
