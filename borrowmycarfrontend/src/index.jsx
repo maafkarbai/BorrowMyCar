@@ -11,6 +11,7 @@ import App from "./App.jsx";
 import BrowseCars from "./BrowseCars.jsx";
 import Login from "./Login.jsx";
 import Signup from "./Signup.jsx";
+import RoleSelection from "./RoleSelection.jsx";
 import CarDetails from "./CarDetails.jsx";
 import Checkout from "./pages/Checkout.jsx";
 import BookingSuccess from "./pages/BookingSuccess.jsx";
@@ -250,6 +251,10 @@ const router = createBrowserRouter([
     element: <AuthLayout />,
     children: [
       {
+        index: true,
+        element: <RoleSelection />,
+      },
+      {
         path: "login",
         element: <Login />,
       },
@@ -266,7 +271,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/signup",
-    element: <Navigate to="/auth/signup" replace />,
+    element: <Navigate to="/auth" replace />,
   },
   {
     path: "*",

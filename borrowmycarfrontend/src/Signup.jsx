@@ -1,10 +1,11 @@
 // src/Signup.jsx - Updated with UAE Phone Input
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import API from "./api";
 import PhoneInput from "./components/PhoneInput";
 
 const Signup = () => {
+  const location = useLocation();
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -30,6 +31,17 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   const _navigate = useNavigate();
+
+  // Handle role from navigation state
+  useEffect(() => {
+    const selectedRole = location.state?.role;
+    if (selectedRole) {
+      setForm(prev => ({ ...prev, role: selectedRole }));
+    } else {
+      // If no role is selected, redirect back to role selection
+      _navigate("/auth", { replace: true });
+    }
+  }, [location.state, _navigate]);
 
   const uaeCities = [
     "Dubai",
@@ -328,24 +340,19 @@ const Signup = () => {
           />
         </div>
 
-        {/* Role */}
+        {/* Role Display (read-only) */}
         <div>
-          <label
-            htmlFor="role"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            I want to *
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Selected Role
           </label>
-          <select
-            id="role"
-            name="role"
-            value={form.role}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
-          >
-            <option value="renter">Rent cars from others</option>
-            <option value="owner">List my car for rent</option>
-          </select>
+          <div className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-700">
+            {form.role === "renter" ? "🚗 Rent cars from others" : "🔑 List my car for rent"}
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            <Link to="/auth" className="text-green-600 hover:underline">
+              Change selection
+            </Link>
+          </p>
         </div>
 
         {/* Preferred City */}

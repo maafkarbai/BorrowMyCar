@@ -359,7 +359,7 @@ const HowItWorks = () => {
             {/* CTA */}
             <div className="text-center mt-16">
               <Link
-                to={activeTab === "renter" ? "/browse" : "/signup"}
+                to={activeTab === "renter" ? "/browse" : "/auth"}
                 className="inline-flex items-center px-8 py-4 border border-transparent text-lg font-medium rounded-lg text-white bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl"
               >
                 {activeTab === "renter"
@@ -493,7 +493,7 @@ const HowItWorks = () => {
                 <Search className="ml-2 h-5 w-5" />
               </Link>
               <Link
-                to="/signup"
+                to="/auth"
                 className="inline-flex items-center justify-center px-8 py-4 border-2 border-green-600 text-lg font-medium rounded-lg text-green-600 bg-white hover:bg-green-50 transition-colors"
               >
                 List Your Car
