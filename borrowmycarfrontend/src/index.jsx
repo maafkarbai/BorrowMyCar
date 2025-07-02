@@ -11,6 +11,7 @@ import App from "./App.jsx";
 import BrowseCars from "./BrowseCars.jsx";
 import Login from "./Login.jsx";
 import Signup from "./Signup.jsx";
+import ForgotPassword from "./ForgotPassword.jsx";
 import RoleSelection from "./RoleSelection.jsx";
 import CarDetails from "./CarDetails.jsx";
 import Checkout from "./pages/Checkout.jsx";
@@ -268,6 +269,11 @@ const router = createBrowserRouter([
         element: <Signup />,
       },
     ],
+  },
+  // Standalone auth routes
+  {
+    path: "/forgot-password",
+    element: <ForgotPassword />,
   },
   // Compatibility routes
   {

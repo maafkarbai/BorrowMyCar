@@ -1,164 +1,36 @@
-import React, { useState, useRef, useEffect } from "react";
-import mapboxgl from "mapbox-gl";
+import React, { useState, useEffect } from "react";
 import {
   Search,
-  Filter,
   List,
   Map as MapIcon,
   Car,
   DollarSign,
+  MapPin,
 } from "lucide-react";
-import { MAPBOX_CONFIG } from "../config/mapbox";
-import { mapboxService as _mapboxService } from "../utils/mapboxUtils";
 import API from "../api";
+import GeocodingSearch from "./GeocodingSearch";
 
 const MapSearchView = () => {
-  const mapContainer = useRef(null);
-  const map = useRef(null);
   const [cars, setCars] = useState([]);
   const [filteredCars, setFilteredCars] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [viewMode, setViewMode] = useState("map"); // 'map' or 'list'
+  const [viewMode, setViewMode] = useState("list"); // 'map' or 'list'
   const [filters, setFilters] = useState({
     priceMin: "",
     priceMax: "",
     category: "",
     transmission: "",
+    location: "",
   });
-  const [_mapBounds, _setMapBounds] = useState(null);
-  const [_selectedCar, _setSelectedCar] = useState(null);
-  const _markersRef = useRef([]);
+  const [searchLocation, setSearchLocation] = useState(null);
 
   useEffect(() => {
-    initializeMap();
     fetchCars();
   }, []);
 
   useEffect(() => {
-    if (cars.length > 0) {
-      updateMapMarkers();
-    }
-  }, [filteredCars]);
-
-  const initializeMap = () => {
-    if (!mapContainer.current) return;
-
-    mapboxgl.accessToken = MAPBOX_CONFIG.accessToken;
-
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: MAPBOX_CONFIG.style,
-      center: MAPBOX_CONFIG.center,
-      zoom: MAPBOX_CONFIG.zoom,
-      maxBounds: MAPBOX_CONFIG.uae.bounds,
-    });
-
-    map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
-
-    // Listen for map movement to update search area
-    map.current.on("moveend", () => {
-      const bounds = map.current.getBounds();
-      _setMapBounds(bounds);
-      searchCarsInArea(bounds);
-    });
-
-    map.current.on("load", () => {
-      // Add clusters for better performance
-      map.current.addSource("cars", {
-        type: "geojson",
-        data: {
-          type: "FeatureCollection",
-          features: [],
-        },
-        cluster: true,
-        clusterMaxZoom: 14,
-        clusterRadius: 50,
-      });
-
-      // Cluster circles
-      map.current.addLayer({
-        id: "clusters",
-        type: "circle",
-        source: "cars",
-        filter: ["has", "point_count"],
-        paint: {
-          "circle-color": [
-            "step",
-            ["get", "point_count"],
-            "#51bbd6",
-            10,
-            "#f1f075",
-            30,
-            "#f28cb1",
-          ],
-          "circle-radius": ["step", ["get", "point_count"], 20, 10, 30, 30, 40],
-        },
-      });
-
-      // Cluster count labels
-      map.current.addLayer({
-        id: "cluster-count",
-        type: "symbol",
-        source: "cars",
-        filter: ["has", "point_count"],
-        layout: {
-          "text-field": "{point_count_abbreviated}",
-          "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
-          "text-size": 12,
-        },
-      });
-
-      // Individual car points
-      map.current.addLayer({
-        id: "unclustered-point",
-        type: "circle",
-        source: "cars",
-        filter: ["!", ["has", "point_count"]],
-        paint: {
-          "circle-color": "#16a34a",
-          "circle-radius": 8,
-          "circle-stroke-width": 2,
-          "circle-stroke-color": "#fff",
-        },
-      });
-
-      // Click events
-      map.current.on("click", "clusters", (e) => {
-        const features = map.current.queryRenderedFeatures(e.point, {
-          layers: ["clusters"],
-        });
-        const clusterId = features[0].properties.cluster_id;
-        map.current
-          .getSource("cars")
-          .getClusterExpansionZoom(clusterId, (err, zoom) => {
-            if (err) return;
-            map.current.easeTo({
-              center: features[0].geometry.coordinates,
-              zoom: zoom,
-            });
-          });
-      });
-
-      map.current.on("click", "unclustered-point", (e) => {
-        const car = e.features[0].properties;
-        _setSelectedCar(JSON.parse(car.carData));
-
-        // Show popup
-        new mapboxgl.Popup()
-          .setLngLat(e.lngLat)
-          .setHTML(createCarPopupHTML(JSON.parse(car.carData)))
-          .addTo(map.current);
-      });
-
-      // Change cursor on hover
-      map.current.on("mouseenter", "clusters", () => {
-        map.current.getCanvas().style.cursor = "pointer";
-      });
-      map.current.on("mouseleave", "clusters", () => {
-        map.current.getCanvas().style.cursor = "";
-      });
-    });
-  };
+    applyFilters();
+  }, [cars, filters, searchLocation]);
 
   const fetchCars = async () => {
     setLoading(true);
@@ -169,7 +41,6 @@ const MapSearchView = () => {
           (car) => car.location && car.location.coordinates
         );
         setCars(carsWithLocation);
-        setFilteredCars(carsWithLocation);
       }
     } catch (error) {
       console.error("Error fetching cars:", error);
@@ -178,58 +49,22 @@ const MapSearchView = () => {
     }
   };
 
-  const searchCarsInArea = async (bounds) => {
-    // Filter cars that are within the current map bounds
-    const carsInBounds = cars.filter((car) => {
-      const [lng, lat] = car.location.coordinates;
-      return bounds.contains([lng, lat]);
-    });
-    setFilteredCars(carsInBounds);
-  };
-
-  const updateMapMarkers = () => {
-    if (!map.current) return;
-
-    const features = filteredCars.map((car) => ({
-      type: "Feature",
-      properties: {
-        carId: car._id,
-        carData: JSON.stringify(car),
-      },
-      geometry: {
-        type: "Point",
-        coordinates: car.location.coordinates,
-      },
-    }));
-
-    map.current.getSource("cars").setData({
-      type: "FeatureCollection",
-      features,
-    });
-  };
-
-  const createCarPopupHTML = (car) => {
-    return `
-      <div class="p-3 min-w-[200px]">
-        <img src="${car.images[0]}" alt="${car.title}" class="w-full h-24 object-cover rounded mb-2">
-        <h3 class="font-semibold text-sm mb-1">${car.title}</h3>
-        <div class="flex justify-between items-center mb-2">
-          <span class="text-green-600 font-bold">AED ${car.price}/day</span>
-          <span class="text-xs text-gray-500">${car.city}</span>
-        </div>
-        <button 
-          onclick="window.location.href='/cars/${car._id}'"
-          class="w-full bg-green-600 text-white py-1 px-2 rounded text-xs hover:bg-green-700"
-        >
-          View Details
-        </button>
-      </div>
-    `;
+  const calculateDistance = (point1, point2) => {
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = (point2[1] - point1[1]) * Math.PI / 180;
+    const dLon = (point2[0] - point1[0]) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(point1[1] * Math.PI / 180) * Math.cos(point2[1] * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
   };
 
   const applyFilters = () => {
-    let filtered = cars;
+    let filtered = [...cars];
 
+    // Price filters
     if (filters.priceMin) {
       filtered = filtered.filter(
         (car) => car.price >= parseFloat(filters.priceMin)
@@ -240,20 +75,50 @@ const MapSearchView = () => {
         (car) => car.price <= parseFloat(filters.priceMax)
       );
     }
+
+    // Transmission filter
     if (filters.transmission) {
       filtered = filtered.filter(
         (car) => car.transmission === filters.transmission
       );
     }
 
+    // Location-based filtering
+    if (searchLocation) {
+      const maxDistance = 50; // 50km radius
+      filtered = filtered.filter((car) => {
+        if (!car.location?.coordinates) return false;
+        const distance = calculateDistance(
+          searchLocation.coordinates,
+          car.location.coordinates
+        );
+        return distance <= maxDistance;
+      });
+
+      // Sort by distance
+      filtered.sort((a, b) => {
+        const distA = calculateDistance(searchLocation.coordinates, a.location.coordinates);
+        const distB = calculateDistance(searchLocation.coordinates, b.location.coordinates);
+        return distA - distB;
+      });
+    }
+
     setFilteredCars(filtered);
+  };
+
+  const handleLocationSelect = (location) => {
+    setSearchLocation(location);
+  };
+
+  const clearLocationFilter = () => {
+    setSearchLocation(null);
   };
 
   return (
     <div className="h-screen flex flex-col">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 p-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold text-gray-900">
             Find Cars Near You
           </h1>
@@ -261,17 +126,6 @@ const MapSearchView = () => {
           <div className="flex items-center space-x-4">
             {/* View Toggle */}
             <div className="flex bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setViewMode("map")}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                  viewMode === "map"
-                    ? "bg-white text-green-600 shadow-sm"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
-              >
-                <MapIcon className="w-4 h-4 mr-1 inline" />
-                Map
-              </button>
               <button
                 onClick={() => setViewMode("list")}
                 className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
@@ -283,6 +137,17 @@ const MapSearchView = () => {
                 <List className="w-4 h-4 mr-1 inline" />
                 List
               </button>
+              <button
+                onClick={() => setViewMode("map")}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                  viewMode === "map"
+                    ? "bg-white text-green-600 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                <MapIcon className="w-4 h-4 mr-1 inline" />
+                Map
+              </button>
             </div>
 
             {/* Results Count */}
@@ -292,8 +157,36 @@ const MapSearchView = () => {
           </div>
         </div>
 
+        {/* Location Search */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Search by Location
+          </label>
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <GeocodingSearch
+                onLocationSelect={handleLocationSelect}
+                placeholder="Search for cars near a location..."
+              />
+            </div>
+            {searchLocation && (
+              <button
+                onClick={clearLocationFilter}
+                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 text-sm"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          {searchLocation && (
+            <p className="text-xs text-gray-600 mt-1">
+              Showing cars within 50km of {searchLocation.name}
+            </p>
+          )}
+        </div>
+
         {/* Filters */}
-        <div className="mt-4 flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-4">
           <div className="flex items-center space-x-2">
             <DollarSign className="w-4 h-4 text-gray-400" />
             <input
@@ -328,39 +221,35 @@ const MapSearchView = () => {
             <option value="Automatic">Automatic</option>
             <option value="Manual">Manual</option>
           </select>
-
-          <button
-            onClick={applyFilters}
-            className="px-4 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-          >
-            Apply Filters
-          </button>
         </div>
       </div>
 
       {/* Content */}
       <div className="flex-1 flex">
-        {/* Map View */}
+        {/* Map View Placeholder */}
         {viewMode === "map" && (
-          <div className="flex-1 relative">
-            <div ref={mapContainer} className="w-full h-full" />
-
-            {loading && (
-              <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg p-3">
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full"></div>
-                  <span className="text-sm">Loading cars...</span>
-                </div>
+          <div className="flex-1 bg-gray-100 flex items-center justify-center">
+            <div className="text-center">
+              <MapIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-700 mb-2">
+                Map View
+              </h3>
+              <p className="text-gray-500 mb-4">
+                Interactive map view coming soon
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
+                {filteredCars.slice(0, 4).map((car) => (
+                  <div key={car._id} className="bg-white p-3 rounded-lg shadow">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <MapPin className="w-4 h-4 text-green-600" />
+                      <span className="text-sm font-medium">{car.title}</span>
+                    </div>
+                    <p className="text-xs text-gray-600">{car.location?.name}</p>
+                    <p className="text-sm font-bold text-green-600">AED {car.price}/day</p>
+                  </div>
+                ))}
               </div>
-            )}
-
-            {/* Search in this area button */}
-            <button
-              onClick={() => searchCarsInArea(map.current.getBounds())}
-              className="absolute top-4 right-4 bg-white hover:bg-gray-50 border border-gray-300 px-4 py-2 rounded-lg shadow-lg text-sm font-medium transition-colors"
-            >
-              Search this area
-            </button>
+            </div>
           </div>
         )}
 
@@ -369,39 +258,51 @@ const MapSearchView = () => {
           <div className="flex-1 overflow-y-auto">
             <div className="p-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredCars.map((car) => (
-                  <div
-                    key={car._id}
-                    className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-                  >
-                    <img
-                      src={car.images[0]}
-                      alt={car.title}
-                      className="w-full h-48 object-cover"
-                    />
-                    <div className="p-4">
-                      <h3 className="font-semibold text-gray-900 mb-1">
-                        {car.title}
-                      </h3>
-                      <p className="text-sm text-gray-600 mb-2">
-                        {car.location?.name}
-                      </p>
-                      <div className="flex justify-between items-center">
-                        <span className="text-green-600 font-bold">
-                          AED {car.price}/day
-                        </span>
-                        <button
-                          onClick={() =>
-                            (window.location.href = `/cars/${car._id}`)
-                          }
-                          className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors"
-                        >
-                          View Details
-                        </button>
+                {filteredCars.map((car) => {
+                  const distance = searchLocation && car.location?.coordinates 
+                    ? calculateDistance(searchLocation.coordinates, car.location.coordinates)
+                    : null;
+
+                  return (
+                    <div
+                      key={car._id}
+                      className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      <img
+                        src={car.images[0]}
+                        alt={car.title}
+                        className="w-full h-48 object-cover"
+                      />
+                      <div className="p-4">
+                        <h3 className="font-semibold text-gray-900 mb-1">
+                          {car.title}
+                        </h3>
+                        <div className="flex items-center text-sm text-gray-600 mb-2">
+                          <MapPin className="w-3 h-3 mr-1" />
+                          <span>{car.location?.name || car.city}</span>
+                          {distance && (
+                            <span className="ml-2 text-green-600 font-medium">
+                              ({distance.toFixed(1)}km away)
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-green-600 font-bold">
+                            AED {car.price}/day
+                          </span>
+                          <button
+                            onClick={() =>
+                              (window.location.href = `/cars/${car._id}`)
+                            }
+                            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                          >
+                            View Details
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {filteredCars.length === 0 && !loading && (
@@ -413,6 +314,13 @@ const MapSearchView = () => {
                   <p className="text-gray-600">
                     Try adjusting your filters or search in a different area.
                   </p>
+                </div>
+              )}
+
+              {loading && (
+                <div className="text-center py-12">
+                  <div className="animate-spin w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading cars...</p>
                 </div>
               )}
             </div>

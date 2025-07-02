@@ -4,6 +4,9 @@ import {
   signup,
   verifyEmail, // NEW
   resendOTP, // NEW
+  forgotPassword, // NEW
+  resetPassword, // NEW
+  resendPasswordResetOTP, // NEW
   login,
   getProfile,
   getPublicUserProfile, // NEW
@@ -143,6 +146,47 @@ router.post(
     .withMessage("Please provide a valid email"),
   handleValidationErrors,
   resendOTP
+);
+
+// Password reset routes
+router.post(
+  "/forgot-password",
+  authLimiter,
+  body("email")
+    .isEmail()
+    .normalizeEmail()
+    .withMessage("Please provide a valid email"),
+  handleValidationErrors,
+  forgotPassword
+);
+
+router.post(
+  "/reset-password",
+  authLimiter,
+  body("email")
+    .isEmail()
+    .normalizeEmail()
+    .withMessage("Please provide a valid email"),
+  body("otp")
+    .isLength({ min: 6, max: 6 })
+    .isNumeric()
+    .withMessage("OTP must be a 6-digit number"),
+  body("newPassword")
+    .isLength({ min: 6 })
+    .withMessage("New password must be at least 6 characters long"),
+  handleValidationErrors,
+  resetPassword
+);
+
+router.post(
+  "/resend-password-reset-otp",
+  authLimiter,
+  body("email")
+    .isEmail()
+    .normalizeEmail()
+    .withMessage("Please provide a valid email"),
+  handleValidationErrors,
+  resendPasswordResetOTP
 );
 
 // Public user profile route (no authentication required)

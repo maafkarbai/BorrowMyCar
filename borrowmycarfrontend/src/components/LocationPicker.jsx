@@ -1,130 +1,66 @@
-import React, { useState, useRef, useEffect } from "react";
-import mapboxgl from "mapbox-gl";
-import MapboxGeocoder from "@mapbox/mapbox-gl-geocoder";
+import React, { useState, useEffect } from 'react';
 import { MapPin, Navigation, Search, X } from "lucide-react";
-import { MAPBOX_CONFIG } from "../config/mapbox";
-import { mapboxService } from "../utils/mapboxUtils";
-import "mapbox-gl/dist/mapbox-gl.css";
-import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
+import LocationAutocomplete from './LocationAutocomplete';
 
 const LocationPicker = ({
   onLocationSelect,
   initialLocation = null,
-  placeholder = "Search for a location in UAE...",
+  placeholder = "Search for a location in Dubai...",
   showCurrentLocation = true,
   className = "",
 }) => {
-  const mapContainer = useRef(null);
-  const map = useRef(null);
-  const marker = useRef(null);
-  const geocoder = useRef(null);
-
   const [isLoading, setIsLoading] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(initialLocation);
   const [showMap, setShowMap] = useState(false);
-  const [_currentLocation, _setCurrentLocation] = useState(null);
+  const [inputMode, setInputMode] = useState('search'); // 'search' or 'coordinates'
+  const [manualCoords, setManualCoords] = useState({ lat: '', lng: '' });
 
-  // Initialize map
-  useEffect(() => {
-    if (!showMap || !mapContainer.current) return;
+  const dubaiCities = [
+    { name: 'Downtown Dubai', coordinates: [55.2744, 25.1972] },
+    { name: 'Dubai Marina', coordinates: [55.1415, 25.0805] },
+    { name: 'Business Bay', coordinates: [55.2634, 25.1867] },
+    { name: 'Jumeirah', coordinates: [55.2408, 25.2285] },
+    { name: 'Deira', coordinates: [55.3047, 25.2694] },
+    { name: 'Bur Dubai', coordinates: [55.2962, 25.2632] },
+    { name: 'Al Barsha', coordinates: [55.1952, 25.1124] },
+    { name: 'Dubai International City', coordinates: [55.4197, 25.1657] }
+  ];
 
-    mapboxgl.accessToken = MAPBOX_CONFIG.accessToken;
+  const handleLocationSelect = (location) => {
+    setSelectedLocation(location);
+    if (onLocationSelect) {
+      onLocationSelect({
+        name: location.name,
+        coordinates: [location.lng, location.lat],
+        address: location.address || {},
+        city: location.address?.city || 'Dubai',
+      });
+    }
+  };
 
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: MAPBOX_CONFIG.style,
-      center: initialLocation?.coordinates || MAPBOX_CONFIG.center,
-      zoom: MAPBOX_CONFIG.zoom,
-      maxBounds: MAPBOX_CONFIG.uae.bounds,
-    });
-
-    // Add navigation controls
-    map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
-
-    // Initialize geocoder
-    geocoder.current = new MapboxGeocoder({
-      accessToken: mapboxgl.accessToken,
-      mapboxgl: mapboxgl,
-      countries: "ae",
-      bbox: MAPBOX_CONFIG.uae.bounds.flat(),
-      placeholder: "Search UAE locations...",
-      proximity: MAPBOX_CONFIG.center,
-    });
-
-    map.current.addControl(geocoder.current, "top-left");
-
-    // Handle geocoder results
-    geocoder.current.on("result", (e) => {
-      const { result } = e;
-      const location = {
-        name: result.place_name,
-        coordinates: result.center,
-        address: result.properties.address || "",
-        city: mapboxService.extractCity(result.context),
-      };
-
-      setSelectedLocation(location);
-      onLocationSelect(location);
-      addMarker(result.center);
-    });
-
-    // Handle map clicks
-    map.current.on("click", async (e) => {
-      const { lng, lat } = e.lngLat;
-      setIsLoading(true);
-
-      const reverseResult = await mapboxService.reverseGeocode(lng, lat);
-
-      if (reverseResult.success) {
-        setSelectedLocation(reverseResult.result);
-        onLocationSelect(reverseResult.result);
-        addMarker([lng, lat]);
-      }
-
-      setIsLoading(false);
-    });
-
-    // Add initial marker if location provided
-    if (initialLocation?.coordinates) {
-      addMarker(initialLocation.coordinates);
+  const handleManualCoordsSubmit = () => {
+    const lat = parseFloat(manualCoords.lat);
+    const lng = parseFloat(manualCoords.lng);
+    
+    if (isNaN(lat) || isNaN(lng)) {
+      alert('Please enter valid coordinates');
+      return;
     }
 
-    return () => {
-      if (map.current) {
-        map.current.remove();
-      }
+    if (lat < 24.5 || lat > 25.5 || lng < 54.5 || lng > 55.8) {
+      alert('Coordinates must be within Dubai area');
+      return;
+    }
+
+    const location = {
+      name: `Custom Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
+      lat,
+      lng,
+      address: { manual: true }
     };
-  }, [showMap]);
 
-  const addMarker = (coordinates) => {
-    if (marker.current) {
-      marker.current.remove();
-    }
-
-    marker.current = new mapboxgl.Marker({
-      color: "#16a34a",
-      draggable: true,
-    })
-      .setLngLat(coordinates)
-      .addTo(map.current);
-
-    // Handle marker drag
-    marker.current.on("dragend", async () => {
-      const lngLat = marker.current.getLngLat();
-      setIsLoading(true);
-
-      const reverseResult = await mapboxService.reverseGeocode(
-        lngLat.lng,
-        lngLat.lat
-      );
-
-      if (reverseResult.success) {
-        setSelectedLocation(reverseResult.result);
-        onLocationSelect(reverseResult.result);
-      }
-
-      setIsLoading(false);
-    });
+    handleLocationSelect(location);
+    setManualCoords({ lat: '', lng: '' });
   };
 
   const getCurrentLocation = () => {
@@ -138,35 +74,30 @@ const LocationPicker = ({
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { longitude, latitude } = position.coords;
-        _setCurrentLocation([longitude, latitude]);
-
-        const reverseResult = await mapboxService.reverseGeocode(
-          longitude,
-          latitude
-        );
-
-        if (reverseResult.success) {
-          const locationData = {
-            name: reverseResult.address,
-            coordinates: [longitude, latitude],
-            address: reverseResult.address,
-            city: reverseResult.city,
-            type: "current_location"
+        
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`
+          );
+          const data = await response.json();
+          
+          const location = {
+            name: data.display_name || `Current Location (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`,
+            lat: latitude,
+            lng: longitude,
+            address: data.address || { current: true }
           };
 
-          setSelectedLocation(locationData);
-          onLocationSelect(locationData);
-
-          if (map.current) {
-            map.current.flyTo({
-              center: [longitude, latitude],
-              zoom: 15,
-            });
-            addMarker([longitude, latitude]);
-          }
-
-          // Auto-fill any visible text inputs with the location
-          autoFillLocationInputs(locationData);
+          handleLocationSelect(location);
+        } catch (error) {
+          console.error('Error getting address:', error);
+          const location = {
+            name: `Current Location (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`,
+            lat: latitude,
+            lng: longitude,
+            address: { current: true }
+          };
+          handleLocationSelect(location);
         }
 
         setIsLoading(false);
@@ -189,33 +120,31 @@ const LocationPicker = ({
       {
         enableHighAccuracy: true,
         timeout: 15000,
-        maximumAge: 300000, // 5 minutes cache
+        maximumAge: 300000,
       }
     );
   };
 
-  const autoFillLocationInputs = (locationData) => {
-    // Trigger a custom event that other components can listen to
-    const event = new CustomEvent('locationAutofill', {
-      detail: {
-        location: locationData,
-        timestamp: Date.now()
-      }
-    });
-    window.dispatchEvent(event);
-  };
-
   const clearSelection = () => {
     setSelectedLocation(null);
-    onLocationSelect(null);
-    if (marker.current) {
-      marker.current.remove();
-      marker.current = null;
-    }
-    if (geocoder.current) {
-      geocoder.current.clear();
+    if (onLocationSelect) {
+      onLocationSelect(null);
     }
   };
+
+  const handleCitySelect = (city) => {
+    const location = {
+      name: city.name,
+      lat: city.coordinates[1],
+      lng: city.coordinates[0],
+      address: { city: city.name, area: city.name }
+    };
+    handleLocationSelect(location);
+  };
+
+  useEffect(() => {
+    setSelectedLocation(initialLocation);
+  }, [initialLocation]);
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -229,9 +158,9 @@ const LocationPicker = ({
                 <p className="font-medium text-gray-900">
                   {selectedLocation.name}
                 </p>
-                {selectedLocation.city && (
+                {selectedLocation.address?.city && (
                   <p className="text-sm text-gray-600">
-                    {selectedLocation.city}, UAE
+                    {selectedLocation.address.city}, UAE
                   </p>
                 )}
               </div>
@@ -261,7 +190,7 @@ const LocationPicker = ({
               type="button"
               onClick={() => setShowMap(!showMap)}
               className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-              title="Open map"
+              title="Open location picker"
             >
               <Search className="w-4 h-4" />
             </button>
@@ -286,68 +215,121 @@ const LocationPicker = ({
         )}
       </div>
 
-      {/* Map Container */}
+      {/* Location Picker */}
       {showMap && (
-        <div className="relative">
-          <div
-            ref={mapContainer}
-            className="h-96 w-full rounded-lg border border-gray-300"
-          />
-
-          <button
-            onClick={() => setShowMap(false)}
-            className="absolute top-2 right-2 bg-white hover:bg-gray-50 border border-gray-300 p-2 rounded-lg shadow-lg transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
-
-          <div className="absolute bottom-2 left-2 bg-white p-2 rounded-lg shadow-lg text-xs text-gray-600">
-            Click on the map or drag the marker to select a location
+        <div className="relative border border-gray-300 rounded-lg p-4 bg-gray-50">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-medium text-gray-900">Select Location</h3>
+            <button
+              onClick={() => setShowMap(false)}
+              className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
+
+          {/* Input Mode Toggle */}
+          <div className="flex space-x-2 mb-4">
+            <button
+              onClick={() => setInputMode('search')}
+              className={`px-3 py-1 rounded text-sm ${
+                inputMode === 'search' 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-200 text-gray-700'
+              }`}
+            >
+              Search
+            </button>
+            <button
+              onClick={() => setInputMode('coordinates')}
+              className={`px-3 py-1 rounded text-sm ${
+                inputMode === 'coordinates' 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-200 text-gray-700'
+              }`}
+            >
+              Coordinates
+            </button>
+          </div>
+
+          {/* Search Mode */}
+          {inputMode === 'search' && (
+            <div className="space-y-3">
+              <LocationAutocomplete
+                onLocationSelect={handleLocationSelect}
+                value={selectedLocation?.name || ''}
+                placeholder="Search for a location in Dubai"
+              />
+            </div>
+          )}
+
+          {/* Coordinates Mode */}
+          {inputMode === 'coordinates' && (
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="number"
+                  step="any"
+                  placeholder="Latitude (e.g., 25.2048)"
+                  value={manualCoords.lat}
+                  onChange={(e) => setManualCoords(prev => ({ ...prev, lat: e.target.value }))}
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                />
+                <input
+                  type="number"
+                  step="any"
+                  placeholder="Longitude (e.g., 55.2708)"
+                  value={manualCoords.lng}
+                  onChange={(e) => setManualCoords(prev => ({ ...prev, lng: e.target.value }))}
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <button
+                onClick={handleManualCoordsSubmit}
+                className="w-full px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+              >
+                Set Location
+              </button>
+            </div>
+          )}
+
+          {/* Quick Location Buttons */}
+          <div className="mt-4">
+            <p className="text-sm text-gray-600 mb-2">Quick locations:</p>
+            <div className="flex flex-wrap gap-2">
+              {dubaiCities.map((city) => (
+                <button
+                  key={city.name}
+                  type="button"
+                  onClick={() => handleCitySelect(city)}
+                  className="px-3 py-1 text-xs bg-gray-100 hover:bg-green-100 text-gray-700 hover:text-green-700 rounded-full transition-colors"
+                >
+                  {city.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Selected Location Preview */}
+          {selectedLocation && (
+            <div className="mt-4 p-3 bg-white rounded-md border border-gray-200">
+              <h4 className="font-medium text-gray-900 mb-1">Selected:</h4>
+              <p className="text-sm text-gray-600">{selectedLocation.name}</p>
+              <p className="text-xs text-gray-500">
+                Coordinates: {selectedLocation.lat?.toFixed(6)}, {selectedLocation.lng?.toFixed(6)}
+              </p>
+              <div className="mt-2 w-full h-32 bg-gray-200 rounded-md flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-2xl mb-1">📍</div>
+                  <div className="text-xs text-gray-600">
+                    {selectedLocation.name}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
-
-      {/* Quick Location Buttons */}
-      <div className="flex flex-wrap gap-2">
-        {MAPBOX_CONFIG.uae.cities.map((city) => (
-          <button
-            key={city.name}
-            type="button"
-            onClick={async () => {
-              setIsLoading(true);
-              const reverseResult = await mapboxService.reverseGeocode(
-                city.coordinates[0],
-                city.coordinates[1]
-              );
-
-              if (reverseResult.success) {
-                setSelectedLocation({
-                  ...reverseResult.result,
-                  name: city.name,
-                  city: city.name,
-                });
-                onLocationSelect({
-                  ...reverseResult.result,
-                  name: city.name,
-                  city: city.name,
-                });
-
-                if (map.current && showMap) {
-                  map.current.flyTo({
-                    center: city.coordinates,
-                    zoom: 12,
-                  });
-                  addMarker(city.coordinates);
-                }
-              }
-              setIsLoading(false);
-            }}
-            className="px-3 py-1 text-xs bg-gray-100 hover:bg-green-100 text-gray-700 hover:text-green-700 rounded-full transition-colors"
-          >
-            {city.name}
-          </button>
-        ))}
-      </div>
     </div>
   );
 };

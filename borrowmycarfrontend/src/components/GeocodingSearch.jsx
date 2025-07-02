@@ -1,10 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Search, MapPin, Loader, X } from "lucide-react";
-import { mapboxService } from "../utils/mapboxUtils";
 
 const GeocodingSearch = ({
   onLocationSelect,
-  placeholder = "Search locations...",
+  placeholder = "Search locations in Dubai...",
   className = "",
 }) => {
   const [query, setQuery] = useState("");
@@ -34,20 +33,21 @@ const GeocodingSearch = ({
 
     setLoading(true);
     try {
-      const geocodeResult = await mapboxService.geocodeAddress(searchQuery);
-      if (geocodeResult.success) {
-        // Convert single result to array format expected by the component
-        const formattedResult = {
-          id: `${geocodeResult.coordinates[0]}-${geocodeResult.coordinates[1]}`,
-          name: geocodeResult.place_name,
-          city: geocodeResult.city,
-          coordinates: geocodeResult.coordinates,
-        };
-        setResults([formattedResult]);
-        setShowResults(true);
-      } else {
-        setResults([]);
-      }
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery + ', Dubai, UAE')}&limit=5&addressdetails=1`
+      );
+      const data = await response.json();
+      
+      const formattedResults = data.map(item => ({
+        id: item.place_id,
+        name: item.display_name,
+        city: item.address?.city || item.address?.suburb || 'Dubai',
+        coordinates: [parseFloat(item.lon), parseFloat(item.lat)],
+        address: item.address || {}
+      }));
+      
+      setResults(formattedResults);
+      setShowResults(true);
     } catch (error) {
       console.error("Geocoding error:", error);
       setResults([]);
@@ -73,7 +73,14 @@ const GeocodingSearch = ({
   const handleLocationClick = (location) => {
     setQuery(location.name);
     setShowResults(false);
-    onLocationSelect(location);
+    
+    // Convert to format expected by parent components
+    onLocationSelect({
+      name: location.name,
+      coordinates: location.coordinates,
+      city: location.city,
+      address: location.address
+    });
   };
 
   const clearSearch = () => {
@@ -82,6 +89,14 @@ const GeocodingSearch = ({
     setShowResults(false);
     onLocationSelect(null);
   };
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div ref={searchRef} className={`relative ${className}`}>
@@ -127,11 +142,11 @@ const GeocodingSearch = ({
               <MapPin className="w-4 h-4 text-gray-400 mt-1 mr-3 flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">
-                  {result.name}
+                  {result.address?.road || result.address?.suburb || 'Unknown location'}
                 </p>
-                {result.city && (
-                  <p className="text-xs text-gray-500">{result.city}, UAE</p>
-                )}
+                <p className="text-xs text-gray-500 truncate">
+                  {result.city}, UAE
+                </p>
               </div>
             </button>
           ))}

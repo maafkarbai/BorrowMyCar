@@ -48,6 +48,8 @@ const authReducer = (state, action) => {
 
 // Helper functions for token storage
 const getStoredToken = () => {
+  // Since we're using HTTP-only cookies, token storage is not used
+  // This function exists for backwards compatibility only
   return localStorage.getItem("token") || sessionStorage.getItem("token");
 };
 
@@ -61,11 +63,13 @@ const getStoredUser = () => {
 };
 
 const storeAuthData = (token, user, rememberMe = false) => {
+  // Always store user data for the session
+  // Since we're using HTTP-only cookies for authentication, we mainly need user data
   const storage = rememberMe ? localStorage : sessionStorage;
-  storage.setItem("token", token);
+  // Store user data in chosen storage, but don't store token (it's in HTTP-only cookie)
   storage.setItem("user", JSON.stringify(user));
   
-  // Clear from other storage to avoid conflicts
+  // Clear from other storage to avoid conflicts  
   const otherStorage = rememberMe ? sessionStorage : localStorage;
   otherStorage.removeItem("token");
   otherStorage.removeItem("user");
@@ -78,10 +82,13 @@ const clearAuthData = () => {
   sessionStorage.removeItem("user");
 };
 
+// Initialize state with stored data
+const storedUser = getStoredUser();
+
 const initialState = {
-  isAuthenticated: false,
-  user: getStoredUser(),
-  token: getStoredToken(),
+  isAuthenticated: !!storedUser,
+  user: storedUser,
+  token: null, // Token is in HTTP-only cookie, not accessible to JS
   loading: true,
   error: null,
 };
@@ -91,12 +98,14 @@ export const AuthProvider = ({ children }) => {
 
   // Check if user is logged in on app start
   useEffect(() => {
-    const token = getStoredToken();
-    if (token) {
-      getCurrentUser();
-    } else {
-      dispatch({ type: "SET_LOADING", payload: false });
-    }
+    const user = getStoredUser();
+    
+    console.log("🚀 App startup - checking auth state:");
+    console.log("  - Stored user:", user ? "present" : "absent");
+    
+    // Always check with server since auth is cookie-based
+    console.log("  - Checking authentication with server...");
+    getCurrentUser();
   }, []);
 
   const getCurrentUser = async () => {
@@ -116,11 +125,18 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (user) {
+        // Store the user data if we don't have it stored yet
+        if (!getStoredUser()) {
+          console.log("  - Storing user data from server response");
+          // Store in sessionStorage by default for cookie-based auth
+          sessionStorage.setItem("user", JSON.stringify(user));
+        }
+        
         dispatch({
           type: "LOGIN_SUCCESS",
           payload: {
             user,
-            token: getStoredToken(),
+            token: "cookie-session", // Placeholder since token is in HTTP-only cookie
           },
         });
       } else {
@@ -140,12 +156,22 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: "LOGIN_START" });
 
     try {
-      console.log("Login attempt with:", { email: credentials.email, rememberMe: credentials.rememberMe });
-      const res = await API.post("/auth/login", {
+      console.log("🔐 Login attempt with:", { 
+        email: credentials.email, 
+        rememberMe: credentials.rememberMe,
+        rememberMeType: typeof credentials.rememberMe,
+        credentialsKeys: Object.keys(credentials)
+      });
+      
+      const requestBody = {
         email: credentials.email.trim(),
         password: credentials.password,
         rememberMe: credentials.rememberMe,
-      });
+      };
+      
+      console.log("📤 Request body:", { ...requestBody, password: '[HIDDEN]' });
+      
+      const res = await API.post("/auth/login", requestBody);
 
       console.log("Login response:", res.data);
 
@@ -173,8 +199,14 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (token && user) {
-        // Store authentication data with rememberMe preference
-        storeAuthData(token, user, credentials.rememberMe);
+        // Store user data with rememberMe preference (token is in HTTP-only cookie)
+        const shouldRemember = Boolean(credentials.rememberMe);
+        console.log("Storing user data - rememberMe:", shouldRemember);
+        storeAuthData(token, user, shouldRemember);
+
+        console.log("User data stored. Checking storage:");
+        console.log("localStorage user:", localStorage.getItem("user") ? "present" : "absent");
+        console.log("sessionStorage user:", sessionStorage.getItem("user") ? "present" : "absent");
 
         dispatch({
           type: "LOGIN_SUCCESS",
@@ -184,6 +216,11 @@ export const AuthProvider = ({ children }) => {
         return { success: true, user };
       } else {
         console.error("Invalid login response format:", res.data);
+        console.error("Expected: { token, user } but got:", { 
+          hasToken: !!token, 
+          hasUser: !!user,
+          responseKeys: Object.keys(res.data)
+        });
         throw new Error("Invalid response format - missing token or user data");
       }
     } catch (error) {
@@ -309,24 +346,26 @@ export const AuthProvider = ({ children }) => {
 
     // Update in current storage location
     const currentStorage = localStorage.getItem("user") ? localStorage : sessionStorage;
-    currentStorage.setItem("user", JSON.stringify(userData));
+    if (currentStorage) {
+      currentStorage.setItem("user", JSON.stringify(userData));
+    }
   };
 
   // Direct login method for when we already have token and user data (e.g., after email verification)
   const loginWithToken = (token, user, rememberMe = false) => {
     try {
-      if (!token || !user) {
-        throw new Error("Token and user data are required");
+      if (!user) {
+        throw new Error("User data is required");
       }
 
-      console.log("Direct login with token and user:", { user: user.name, email: user.email });
+      console.log("Direct login with user:", { user: user.name, email: user.email });
 
-      // Store authentication data
+      // Store user data only (token is in HTTP-only cookie)
       storeAuthData(token, user, rememberMe);
 
       dispatch({
         type: "LOGIN_SUCCESS",
-        payload: { user, token },
+        payload: { user, token: "cookie-session" },
       });
 
       return { success: true, user };

@@ -89,42 +89,49 @@ vi.mock('react-router-dom', () => ({
   Navigate: () => null,
 }));
 
-// Mock Mapbox GL
-vi.mock('mapbox-gl', () => ({
-  default: {
-    Map: vi.fn().mockImplementation(() => ({
-      on: vi.fn(),
-      off: vi.fn(),
-      remove: vi.fn(),
-      addSource: vi.fn(),
-      addLayer: vi.fn(),
-      getSource: vi.fn(),
-      getLayer: vi.fn(),
-    })),
-    Marker: vi.fn().mockImplementation(() => ({
-      setLngLat: vi.fn().mockReturnThis(),
-      addTo: vi.fn().mockReturnThis(),
-      remove: vi.fn(),
-    })),
-    Popup: vi.fn().mockImplementation(() => ({
-      setLngLat: vi.fn().mockReturnThis(),
-      setHTML: vi.fn().mockReturnThis(),
-      addTo: vi.fn().mockReturnThis(),
-      remove: vi.fn(),
-    })),
-    accessToken: 'mock-token',
+// Mock geolocation
+Object.defineProperty(globalThis.navigator, 'geolocation', {
+  value: {
+    getCurrentPosition: vi.fn().mockImplementation((success) => {
+      success({
+        coords: {
+          latitude: 25.2048,
+          longitude: 55.2708,
+        },
+      });
+    }),
+    watchPosition: vi.fn(),
+    clearWatch: vi.fn(),
   },
-}));
+  writable: true,
+});
 
-// Mock react-map-gl
-vi.mock('react-map-gl', () => ({
-  default: ({ children }) => children,
-  Map: ({ children }) => children,
-  Marker: () => null,
-  Popup: () => null,
-  NavigationControl: () => null,
-  GeolocateControl: () => null,
-}));
+// Mock fetch for Nominatim API
+globalThis.fetch = vi.fn().mockImplementation((url) => {
+  if (url.includes('nominatim.openstreetmap.org')) {
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve([
+        {
+          place_id: '123',
+          display_name: 'Downtown Dubai, Dubai, UAE',
+          lat: '25.1972',
+          lon: '55.2744',
+          address: {
+            road: 'Sheikh Zayed Road',
+            suburb: 'Downtown Dubai',
+            city: 'Dubai',
+            country: 'UAE',
+          },
+        },
+      ]),
+    });
+  }
+  return Promise.resolve({
+    ok: true,
+    json: () => Promise.resolve({}),
+  });
+});
 
 // Mock API module
 vi.mock('../api', () => ({

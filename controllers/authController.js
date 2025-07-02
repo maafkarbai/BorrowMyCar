@@ -480,7 +480,7 @@ export const login = handleAsyncErrorLocal(async (req, res) => {
     console.log("Login successful for:", email);
 
     // Send consistent response with remember me support
-    sendTokenResponse(user, 200, res, "Login successful", rememberMe);
+    sendTokenResponse(user, 200, res, "Login successful", !!rememberMe);
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({
@@ -989,6 +989,230 @@ export const deleteAccount = handleAsyncErrorLocal(async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to delete account",
+      code: "INTERNAL_ERROR",
+    });
+  }
+});
+
+// FORGOT PASSWORD - Send reset OTP
+export const forgotPassword = handleAsyncErrorLocal(async (req, res) => {
+  console.log("=== FORGOT PASSWORD REQUEST ===");
+  
+  const { email } = req.body;
+
+  // Validate input
+  if (!email) {
+    return res.status(400).json({
+      success: false,
+      message: "Email is required",
+      code: "MISSING_EMAIL",
+    });
+  }
+
+  const userEmail = email.toLowerCase().trim();
+
+  try {
+    // Check if user exists
+    const user = await User.findOne({ email: userEmail });
+    
+    if (!user) {
+      // For security, don't reveal if email doesn't exist
+      return res.status(200).json({
+        success: true,
+        message: "If your email is registered, you will receive a password reset code shortly.",
+        data: {
+          email: userEmail,
+          nextStep: "check-email",
+        },
+      });
+    }
+
+    // Generate and store OTP for password reset
+    const { otp } = await OTP.createOTP(userEmail, "password-reset");
+    
+    // Send password reset email
+    const emailResult = await emailService.sendPasswordResetEmail(userEmail, otp);
+    
+    if (!emailResult.success) {
+      console.error("Failed to send password reset email:", emailResult.message);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send password reset email. Please try again.",
+        code: "EMAIL_SEND_FAILED",
+      });
+    }
+
+    console.log("Password reset OTP sent successfully for:", userEmail);
+
+    // Return success response (same message regardless of whether user exists)
+    res.status(200).json({
+      success: true,
+      message: "If your email is registered, you will receive a password reset code shortly.",
+      data: {
+        email: userEmail,
+        nextStep: "verify-reset-code",
+        expiresIn: "10 minutes",
+      },
+    });
+
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to process password reset request. Please try again.",
+      code: "INTERNAL_ERROR",
+    });
+  }
+});
+
+// RESET PASSWORD - Verify OTP and update password
+export const resetPassword = handleAsyncErrorLocal(async (req, res) => {
+  console.log("=== RESET PASSWORD REQUEST ===");
+  
+  const { email, otp, newPassword } = req.body;
+
+  // Validate input
+  if (!email || !otp || !newPassword) {
+    return res.status(400).json({
+      success: false,
+      message: "Email, OTP, and new password are required",
+      code: "MISSING_FIELDS",
+    });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({
+      success: false,
+      message: "New password must be at least 6 characters long",
+      code: "INVALID_PASSWORD",
+    });
+  }
+
+  const userEmail = email.toLowerCase().trim();
+
+  try {
+    // Verify OTP
+    const verificationResult = await OTP.verifyOTP(userEmail, otp, "password-reset");
+    
+    if (!verificationResult.success) {
+      return res.status(400).json({
+        success: false,
+        message: verificationResult.message,
+        code: "OTP_VERIFICATION_FAILED",
+      });
+    }
+
+    // Find user
+    const user = await User.findOne({ email: userEmail });
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+        code: "USER_NOT_FOUND",
+      });
+    }
+
+    // Update password (will be hashed by pre-save middleware)
+    user.password = newPassword;
+    await user.save();
+
+    console.log("Password reset successfully for:", userEmail);
+
+    // Send success response
+    res.status(200).json({
+      success: true,
+      message: "Password reset successfully. You can now login with your new password.",
+      data: {
+        email: userEmail,
+        nextStep: "login",
+      },
+    });
+
+  } catch (error) {
+    console.error("Reset password error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to reset password. Please try again.",
+      code: "INTERNAL_ERROR",
+    });
+  }
+});
+
+// RESEND PASSWORD RESET OTP
+export const resendPasswordResetOTP = handleAsyncErrorLocal(async (req, res) => {
+  console.log("=== RESEND PASSWORD RESET OTP ===");
+  
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({
+      success: false,
+      message: "Email is required",
+      code: "MISSING_EMAIL",
+    });
+  }
+
+  const userEmail = email.toLowerCase().trim();
+
+  try {
+    // Check if there's a pending password reset OTP for this email
+    const existingOTP = await OTP.findOne({
+      email: userEmail,
+      purpose: "password-reset",
+      isUsed: false,
+      expiresAt: { $gt: new Date() },
+    });
+
+    if (!existingOTP) {
+      return res.status(404).json({
+        success: false,
+        message: "No pending password reset found. Please start the process again.",
+        code: "NO_PENDING_RESET",
+      });
+    }
+
+    // Check if user still exists
+    const user = await User.findOne({ email: userEmail });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+        code: "USER_NOT_FOUND",
+      });
+    }
+
+    // Generate new OTP (this will delete the old one)
+    const { otp } = await OTP.createOTP(userEmail, "password-reset");
+    
+    // Send password reset email
+    const emailResult = await emailService.sendPasswordResetEmail(userEmail, otp);
+    
+    if (!emailResult.success) {
+      console.error("Failed to resend password reset email:", emailResult.message);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send password reset email. Please try again.",
+        code: "EMAIL_SEND_FAILED",
+      });
+    }
+
+    console.log("Password reset OTP resent successfully for:", userEmail);
+
+    res.status(200).json({
+      success: true,
+      message: "New password reset code sent to your email.",
+      data: {
+        email: userEmail,
+        expiresIn: "10 minutes",
+      },
+    });
+
+  } catch (error) {
+    console.error("Resend password reset OTP error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to resend password reset code. Please try again.",
       code: "INTERNAL_ERROR",
     });
   }

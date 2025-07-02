@@ -28,7 +28,6 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "@mapbox/mapbox-gl-geocoder": "^5.0.3",
     "@stripe/react-stripe-js": "^3.7.0",
     "@stripe/stripe-js": "^7.4.0",
     "@tailwindcss/vite": "^4.1.11",
@@ -37,13 +36,11 @@
     "i18next": "^25.2.1",
     "i18next-browser-languagedetector": "^8.2.0",
     "lucide-react": "^0.523.0",
-    "mapbox-gl": "^3.13.0",
     "react": "^19.1.0",
     "react-chartjs-2": "^5.2.0",
     "react-dom": "^19.1.0",
     "react-helmet-async": "^2.0.5",
     "react-i18next": "^15.5.3",
-    "react-map-gl": "^8.0.4",
     "react-router-dom": "^7.6.2",
     "tailwindcss": "^4.1.11"
   }

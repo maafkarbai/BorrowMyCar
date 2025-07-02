@@ -112,6 +112,42 @@ class EmailService {
     }
   }
 
+  // Send password reset email
+  async sendPasswordResetEmail(email, otp) {
+    if (!this.isConfigured) {
+      console.error("Email service not configured");
+      return { success: false, message: "Email service not available" };
+    }
+
+    try {
+      const subject = "Reset your password - BorrowMyCar";
+      const html = this.getPasswordResetEmailTemplate(otp);
+
+      const mailOptions = {
+        from: `"BorrowMyCar" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject,
+        html,
+      };
+
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log("Password reset email sent successfully:", result.messageId);
+
+      return {
+        success: true,
+        message: "Password reset email sent successfully",
+        messageId: result.messageId,
+      };
+    } catch (error) {
+      console.error("Failed to send password reset email:", error);
+      return {
+        success: false,
+        message: "Failed to send password reset email",
+        error: error.message,
+      };
+    }
+  }
+
   // Get subject line based on purpose
   getSubjectByPurpose(purpose) {
     switch (purpose) {
@@ -253,6 +289,70 @@ class EmailService {
                 </div>
                 
                 <p>If you have any questions, don't hesitate to reach out to our support team.</p>
+                
+                <p>Best regards,<br>The BorrowMyCar Team</p>
+            </div>
+            <div class="footer">
+                <p>This is an automated email. Please do not reply to this message.</p>
+                <p>© 2024 BorrowMyCar. All rights reserved.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+  }
+
+  // Password reset email template
+  getPasswordResetEmailTemplate(otp) {
+    return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Password Reset</title>
+        <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 30px 20px; border-radius: 0 0 10px 10px; }
+            .otp-box { background: white; border: 2px solid #ef4444; border-radius: 10px; padding: 20px; text-align: center; margin: 20px 0; }
+            .otp-code { font-size: 32px; font-weight: bold; color: #ef4444; letter-spacing: 5px; }
+            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+            .warning { background: #fef3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+            .security-notice { background: #fee2e2; border: 1px solid #fca5a5; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🚗 BorrowMyCar</h1>
+                <p>Password Reset Request</p>
+            </div>
+            <div class="content">
+                <h2>Reset Your Password</h2>
+                <p>We received a request to reset your password. To proceed with resetting your password, please use the verification code below:</p>
+                
+                <div class="otp-box">
+                    <p>Your password reset code is:</p>
+                    <div class="otp-code">${otp}</div>
+                </div>
+                
+                <div class="warning">
+                    <strong>⚠️ Important:</strong>
+                    <ul>
+                        <li>This code will expire in 10 minutes</li>
+                        <li>Do not share this code with anyone</li>
+                        <li>Use this code to reset your password in the app</li>
+                    </ul>
+                </div>
+                
+                <div class="security-notice">
+                    <strong>🔒 Security Notice:</strong>
+                    <p>If you didn't request a password reset, please ignore this email. Your account remains secure and no changes have been made.</p>
+                </div>
+                
+                <p>If you continue to have problems, feel free to contact our support team.</p>
                 
                 <p>Best regards,<br>The BorrowMyCar Team</p>
             </div>
