@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { api } from "./api";
+import API from "./api";
 
 const ForgotPassword = () => {
   const [step, setStep] = useState("request"); // "request" or "verify"
@@ -30,7 +30,7 @@ const ForgotPassword = () => {
     setSuccess("");
 
     try {
-      const response = await api.post("/auth/forgot-password", {
+      const response = await API.post("/auth/forgot-password", {
         email: formData.email,
       });
 
@@ -67,7 +67,7 @@ const ForgotPassword = () => {
     }
 
     try {
-      const response = await api.post("/auth/reset-password", {
+      const response = await API.post("/auth/reset-password", {
         email: formData.email,
         otp: formData.otp,
         newPassword: formData.newPassword,
@@ -95,7 +95,7 @@ const ForgotPassword = () => {
     setSuccess("");
 
     try {
-      const response = await api.post("/auth/resend-password-reset-otp", {
+      const response = await API.post("/auth/resend-password-reset-otp", {
         email: formData.email,
       });
 

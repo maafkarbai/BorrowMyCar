@@ -1,4 +1,3 @@
-// src/context/AuthProvider.jsx - COMPLETE FIX
 import { createContext, useContext, useReducer, useEffect } from "react";
 import API from "../api";
 
@@ -6,15 +5,14 @@ const AuthContext = createContext();
 
 const authReducer = (state, action) => {
   switch (action.type) {
-    case "LOGIN_START":
-      return { ...state, loading: true, error: null };
+    case "SET_LOADING":
+      return { ...state, loading: action.payload };
     case "LOGIN_SUCCESS":
       return {
         ...state,
         loading: false,
         isAuthenticated: true,
         user: action.payload.user,
-        token: action.payload.token,
         error: null,
       };
     case "LOGIN_FAILURE":
@@ -24,34 +22,27 @@ const authReducer = (state, action) => {
         error: action.payload,
         isAuthenticated: false,
         user: null,
-        token: null,
       };
     case "LOGOUT":
       return {
         ...state,
         isAuthenticated: false,
         user: null,
-        token: null,
         error: null,
+        loading: false,
       };
     case "CLEAR_ERROR":
       return { ...state, error: null };
-    case "SET_LOADING":
-      return { ...state, loading: action.payload };
     case "UPDATE_USER":
-      return { ...state, user: action.payload };
+      return { ...state, user: { ...state.user, ...action.payload } };
     default:
       return state;
   }
 };
 
-// Cookie-based authentication - no local storage needed
-// Tokens are now stored in HTTP-only cookies on the server
-
 const initialState = {
   isAuthenticated: false,
   user: null,
-  token: null, // No longer stored in frontend
   loading: true,
   error: null,
 };
@@ -59,43 +50,26 @@ const initialState = {
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
-  // Check if user is logged in on app start (cookie-based)
+  // Check authentication status on app start
   useEffect(() => {
-    getCurrentUser();
+    checkAuth();
   }, []);
 
-  const getCurrentUser = async () => {
+  const checkAuth = async () => {
     try {
       dispatch({ type: "SET_LOADING", payload: true });
-
-      const res = await API.get("/auth/profile");
-      console.log("Get current user response:", res.data);
-
-      // Handle different response formats
-      let user = null;
-      if (res.data.data?.user) {
-        user = res.data.data.user;
-      } else if (res.data.user) {
-        user = res.data.user;
-      } else if (res.data.data && !res.data.data.user) {
-        user = res.data.data;
-      }
-
-      if (user) {
+      
+      const response = await API.get("/auth/profile");
+      
+      if (response.data.success && response.data.data?.user) {
         dispatch({
           type: "LOGIN_SUCCESS",
-          payload: {
-            user,
-            token: null, // No token needed on frontend
-          },
+          payload: { user: response.data.data.user },
         });
       } else {
-        throw new Error("No user data received");
+        dispatch({ type: "LOGOUT" });
       }
     } catch (error) {
-      console.error("Get current user error:", error);
-
-      // No storage to clear - cookies are HTTP-only
       dispatch({ type: "LOGOUT" });
     } finally {
       dispatch({ type: "SET_LOADING", payload: false });
@@ -103,81 +77,45 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = async (credentials) => {
-    dispatch({ type: "LOGIN_START" });
-
     try {
-      console.log("Login attempt with:", { email: credentials.email });
+      dispatch({ type: "SET_LOADING", payload: true });
 
-      const res = await API.post("/auth/login", {
+      const response = await API.post("/auth/login", {
         email: credentials.email.trim(),
         password: credentials.password,
-        rememberMe: credentials.rememberMe,
+        rememberMe: credentials.rememberMe || false,
       });
 
-      console.log("Login response:", res.data);
-
-      // Robust handling of different response formats
-      let token = null;
-      let user = null;
-
-      // Cookie-based auth - only need user data in response
-      if (res.data.user) {
-        // Direct format: { user }
-        user = res.data.user;
-        token = "cookie-based"; // Placeholder
-      } else if (res.data.data?.user) {
-        // Nested format: { data: { user } }
-        user = res.data.data.user;
-        token = "cookie-based"; // Placeholder
-      } else if (res.data.success && res.data.user) {
-        // Success format: { success: true, user }
-        user = res.data.user;
-      }
-
-      if (user) {
-        // No storage needed - cookies are handled automatically
+      if (response.data.success && response.data.user) {
         dispatch({
           type: "LOGIN_SUCCESS",
-          payload: { user, token: null },
+          payload: { user: response.data.user },
         });
-
-        return { success: true, user };
+        return { success: true, user: response.data.user };
       } else {
-        console.error("Invalid login response format:", res.data);
-        throw new Error("Invalid response format - missing user data");
+        throw new Error(response.data.message || "Login failed");
       }
     } catch (error) {
-      console.error("Login error:", error);
-
-      const message =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        error.message ||
-        "Login failed. Please check your credentials.";
-
+      const message = error.response?.data?.message || error.message || "Login failed";
       dispatch({ type: "LOGIN_FAILURE", payload: message });
       return { success: false, error: message };
     }
   };
 
   const signup = async (userData) => {
-    dispatch({ type: "LOGIN_START" });
-
     try {
+      dispatch({ type: "SET_LOADING", payload: true });
+
       const formData = new FormData();
 
-      // Append form fields (exclude confirmPassword and files)
+      // Append form fields
       Object.keys(userData).forEach((key) => {
-        if (
-          key !== "confirmPassword" &&
-          key !== "files" &&
-          typeof userData[key] !== "object"
-        ) {
+        if (key !== "confirmPassword" && key !== "files" && typeof userData[key] !== "object") {
           formData.append(key, userData[key]);
         }
       });
 
-      // Append files if they exist
+      // Append files
       if (userData.files) {
         Object.keys(userData.files).forEach((key) => {
           if (userData.files[key]) {
@@ -186,49 +124,54 @@ export const AuthProvider = ({ children }) => {
         });
       }
 
-      console.log("Signup attempt...");
-
-      const res = await API.post("/auth/signup", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+      const response = await API.post("/auth/signup", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
-      console.log("Signup response:", res.data);
-
-      // Handle signup response (cookie-based)
-      let user = null;
-
-      if (res.data.user) {
-        user = res.data.user;
-      } else if (res.data.data?.user) {
-        user = res.data.data.user;
-      } else if (res.data.success) {
-        user = res.data.user || res.data.data?.user;
-      }
-
-      if (user) {
-        // No storage needed - cookies are handled automatically
-        dispatch({
-          type: "LOGIN_SUCCESS",
-          payload: { user, token: null },
-        });
-
-        return { success: true, user };
+      if (response.data.success) {
+        if (response.data.user) {
+          // User was created and logged in
+          dispatch({
+            type: "LOGIN_SUCCESS",
+            payload: { user: response.data.user },
+          });
+          return { success: true, user: response.data.user };
+        } else {
+          // Registration successful, but needs verification/approval
+          dispatch({ type: "SET_LOADING", payload: false });
+          return { 
+            success: true, 
+            requiresVerification: true, 
+            data: response.data.data 
+          };
+        }
       } else {
-        // Signup successful but no immediate login (approval required)
-        dispatch({ type: "SET_LOADING", payload: false });
-        return { success: true, requiresApproval: true };
+        throw new Error(response.data.message || "Registration failed");
       }
     } catch (error) {
-      console.error("Signup error:", error);
+      const message = error.response?.data?.message || error.message || "Registration failed";
+      dispatch({ type: "LOGIN_FAILURE", payload: message });
+      return { success: false, error: message };
+    }
+  };
 
-      const message =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        error.message ||
-        "Registration failed. Please try again.";
+  const verifyEmail = async (email, otp) => {
+    try {
+      dispatch({ type: "SET_LOADING", payload: true });
 
+      const response = await API.post("/auth/verify-email", { email, otp });
+
+      if (response.data.success && response.data.user) {
+        dispatch({
+          type: "LOGIN_SUCCESS",
+          payload: { user: response.data.user },
+        });
+        return { success: true, user: response.data.user };
+      } else {
+        throw new Error(response.data.message || "Verification failed");
+      }
+    } catch (error) {
+      const message = error.response?.data?.message || error.message || "Verification failed";
       dispatch({ type: "LOGIN_FAILURE", payload: message });
       return { success: false, error: message };
     }
@@ -236,14 +179,10 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      // Call logout endpoint to clear HTTP-only cookie
       await API.post("/auth/logout");
     } catch (error) {
-      console.warn("Logout endpoint error:", error);
-      // Continue with logout even if endpoint fails
+      // Continue with logout even if API call fails
     }
-
-    // Clear state (no storage to clear)
     dispatch({ type: "LOGOUT" });
   };
 
@@ -252,7 +191,6 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateUser = (userData) => {
-    // Update user in state (no storage needed)
     dispatch({ type: "UPDATE_USER", payload: userData });
   };
 
@@ -260,10 +198,11 @@ export const AuthProvider = ({ children }) => {
     ...state,
     login,
     signup,
+    verifyEmail,
     logout,
     clearError,
-    getCurrentUser,
     updateUser,
+    checkAuth,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -34,7 +34,7 @@ const UserProfile = () => {
       setLoading(true);
       setError("");
       
-      const response = await API.get(`/auth/users/${userId}`);
+      const response = await API.get(`/users/${userId}`);
       console.log("User profile response:", response.data);
       
       if (response.data.success) {

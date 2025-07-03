@@ -20,7 +20,11 @@
       "Bash(bun:*)",
       "Bash(curl:*)",
       "Bash(rm:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(pkill:*)",
+      "Bash(true)",
+      "Bash(mv:*)",
+      "Bash(npm run test:*)"
     ],
     "deny": []
   }

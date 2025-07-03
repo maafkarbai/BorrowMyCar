@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from './context/AuthProvider';
+import { useAuth } from './context/AuthContext';
 import { useAdminAuth } from './context/AdminAuthProvider';
 import { Helmet } from 'react-helmet-async';
 

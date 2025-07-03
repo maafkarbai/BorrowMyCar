@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { useAuth } from './context/AuthProvider';
+import { useAuth } from './context/AuthContext';
 import { useAdminAuth } from './context/AdminAuthProvider';
 
 const AdminLogin = () => {

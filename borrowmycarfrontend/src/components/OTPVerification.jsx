@@ -95,7 +95,9 @@ const OTPVerification = ({ email, onVerificationSuccess, onBackToSignup }) => {
         otp: otpToVerify,
       });
 
-      console.log("Email verification successful:", response.data);
+      if (process.env.NODE_ENV === 'development') {
+        console.log("Email verification successful:", response.data);
+      }
 
       // Call success callback with user data and token
       onVerificationSuccess(response.data);
@@ -132,7 +134,9 @@ const OTPVerification = ({ email, onVerificationSuccess, onBackToSignup }) => {
     try {
       const response = await API.post("/auth/resend-otp", { email });
       
-      console.log("OTP resent successfully:", response.data);
+      if (process.env.NODE_ENV === 'development') {
+        console.log("OTP resent successfully:", response.data);
+      }
       
       // Reset timer and cooldown
       setTimeLeft(600);

@@ -1,7 +1,7 @@
 // controllers/authController.js - FIXED with consistent response format
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { User } from "../models/User.js";
+import User from "../models/User.js";
 import { OTP } from "../models/OTP.js";
 import Car from "../models/Car.js";
 import {
@@ -36,7 +36,6 @@ const generateToken = (user, rememberMe = false) => {
   );
 };
 
-// SECURE: Cookie-based authentication response helper
 const sendTokenResponse = (user, statusCode, res, message = "Success", rememberMe = false) => {
   const token = generateToken(user, rememberMe);
 
@@ -53,28 +52,21 @@ const sendTokenResponse = (user, statusCode, res, message = "Success", rememberM
     lastLoginAt: user.lastLoginAt,
   };
 
-  // Cookie options
   const cookieOptions = {
-    expires: new Date(Date.now() + (rememberMe ? 30 : 7) * 24 * 60 * 60 * 1000), // 30 days or 7 days
-    httpOnly: true, // Prevents XSS attacks
-    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // CSRF protection
-    path: '/', // Available on all paths
+    expires: new Date(Date.now() + (rememberMe ? 30 : 7) * 24 * 60 * 60 * 1000),
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    path: '/',
   };
 
-  // Set HTTP-only cookie
   res.cookie('jwt', token, cookieOptions);
 
-  // FIXED response format - Include token for frontend compatibility
   res.status(statusCode).json({
     success: true,
     message,
-    token, // Include token in response body for frontend
     user: userData,
-    data: {
-      user: userData,
-      token, // Also include in data object for consistency
-    },
+    token,
   });
 };
 
@@ -438,12 +430,9 @@ export const resendOTP = handleAsyncErrorLocal(async (req, res) => {
   }
 });
 
-// FIXED LOGIN CONTROLLER with Remember Me support
 export const login = handleAsyncErrorLocal(async (req, res) => {
   const { email, password, rememberMe } = req.body;
-  console.log("Login attempt for:", email, "- Remember Me:", !!rememberMe);
 
-  // Input validation
   if (!email || !password) {
     return res.status(400).json({
       success: false,
@@ -453,8 +442,7 @@ export const login = handleAsyncErrorLocal(async (req, res) => {
   }
 
   try {
-    // Find user and include password
-    const user = await User.findOne({ email }).select("+password");
+    const user = await User.findOne({ email: email.toLowerCase().trim() }).select("+password");
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -463,7 +451,6 @@ export const login = handleAsyncErrorLocal(async (req, res) => {
       });
     }
 
-    // Check password
     const isPasswordValid = await user.matchPassword(password);
     if (!isPasswordValid) {
       return res.status(401).json({
@@ -473,16 +460,11 @@ export const login = handleAsyncErrorLocal(async (req, res) => {
       });
     }
 
-    // Update last login
     user.lastLoginAt = new Date();
     await user.save({ validateBeforeSave: false });
 
-    console.log("Login successful for:", email);
-
-    // Send consistent response with remember me support
-    sendTokenResponse(user, 200, res, "Login successful", !!rememberMe);
+    sendTokenResponse(user, 200, res, "Login successful", Boolean(rememberMe));
   } catch (error) {
-    console.error("Login error:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error",

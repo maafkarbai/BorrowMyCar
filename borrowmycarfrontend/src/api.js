@@ -63,8 +63,7 @@ API.interceptors.response.use(
           console.log("🔐 Authentication failed - redirecting to login");
 
           // Only redirect if not already on auth pages
-          {
-            const currentPath = window.location.pathname;
+          const currentPath = window.location.pathname;
           if (
             !currentPath.includes("/login") &&
             !currentPath.includes("/signup") &&
@@ -74,7 +73,6 @@ API.interceptors.response.use(
             setTimeout(() => {
               window.location.href = "/auth/login";
             }, 100);
-          }
           }
           break;
 
@@ -206,7 +204,7 @@ export const clearAuth = () => {
 // API Health check
 export const checkAPIHealth = async () => {
   try {
-    const response = await API.get("/health");
+    const response = await API.get("/api/health");
     return { success: true, data: response.data };
   } catch (error) {
     return { success: false, error: error.message };

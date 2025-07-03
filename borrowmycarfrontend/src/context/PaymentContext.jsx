@@ -3,11 +3,14 @@ import { createContext, useContext, useState } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import API from "../api";
 
-// Initialize Stripe with fallback configuration
-const stripePromise = loadStripe(
-  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 
-  "pk_test_51RX3UfE1ftluFYZTA31DraMngf6flFQNPIcw4ghE2aklYPFCKGvssRQxVGXw3ppcIqXHYm4Yyjj7Zl4WGSvJCeCQ00aKf3hncv"
-);
+// Initialize Stripe - requires environment variable
+const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+
+if (!stripePublishableKey) {
+  console.error('VITE_STRIPE_PUBLISHABLE_KEY environment variable is required');
+}
+
+const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
 
 const PaymentContext = createContext();
 

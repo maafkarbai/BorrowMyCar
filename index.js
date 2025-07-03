@@ -2,6 +2,26 @@
 import dotenv from "dotenv";
 dotenv.config();
 
+// Validate required environment variables
+const requiredEnvVars = [
+  'MONGODB_URI',
+  'JWT_SECRET',
+  'CLOUDINARY_CLOUD_NAME',
+  'CLOUDINARY_API_KEY', 
+  'CLOUDINARY_API_SECRET',
+  'EMAIL_USER',
+  'EMAIL_PASS'
+];
+
+const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+if (missingEnvVars.length > 0) {
+  console.error('❌ Missing required environment variables:');
+  missingEnvVars.forEach(varName => console.error(`  - ${varName}`));
+  console.error('Please check your .env file and add the missing variables.');
+  process.exit(1);
+}
+
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -20,13 +40,19 @@ import adminRoutes from "./routes/adminRoutes.js";
 const app = express();
 
 // Connect to database
-try {
-  await connectDB();
-  console.log("✅ Database connected");
-} catch (err) {
-  console.error("❌ Database connection failed:", err.message);
-  console.log("⚠️ Continuing without database - some features may not work");
-}
+const initializeDatabase = async () => {
+  try {
+    console.log("🔄 Attempting database connection...");
+    await connectDB();
+    console.log("✅ Database connected");
+  } catch (err) {
+    console.error("❌ Database connection failed:", err.message);
+    console.log("⚠️ Continuing without database - some features may not work");
+  }
+};
+
+// Initialize database connection
+initializeDatabase();
 
 // Enhanced CORS configuration
 const corsOptions = {
@@ -144,7 +170,7 @@ const PORT = parseInt(process.env.PORT) || 5000;
 
 const startServer = (port) => {
   const numPort = parseInt(port);
-  
+
   // Validate port range
   if (numPort < 1 || numPort > 65535) {
     console.error(`❌ Invalid port: ${numPort}. Using default port 5000.`);
@@ -158,17 +184,19 @@ const startServer = (port) => {
     console.log(`💚 Health Check: http://localhost:${numPort}/api/health`);
   });
 
-  server.on('error', (err) => {
-    if (err.code === 'EADDRINUSE') {
+  server.on("error", (err) => {
+    if (err.code === "EADDRINUSE") {
       const nextPort = numPort + 1;
       if (nextPort > 65535) {
-        console.error('❌ No available ports found. Exiting.');
+        console.error("❌ No available ports found. Exiting.");
         process.exit(1);
       }
-      console.log(`⚠️  Port ${numPort} is already in use, trying port ${nextPort}...`);
+      console.log(
+        `⚠️  Port ${numPort} is already in use, trying port ${nextPort}...`
+      );
       startServer(nextPort);
     } else {
-      console.error('❌ Server error:', err);
+      console.error("❌ Server error:", err);
       process.exit(1);
     }
   });

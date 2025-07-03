@@ -15,9 +15,10 @@ import {
   MessageCircle,
 } from "lucide-react";
 import API from "./api";
+import { useAuth } from "./context/AuthContext";
 
 const MyBookings = () => {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -28,25 +29,16 @@ const MyBookings = () => {
   const location = useLocation();
 
   useEffect(() => {
-    // Get user info from token
-    const token = localStorage.getItem("token");
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        setUser(payload);
-      } catch {
-        setUser(null);
-      }
+    if (user) {
+      fetchBookings();
     }
-
-    fetchBookings();
 
     // Show success message if coming from booking
     if (location.state?.message) {
       setMessage({ type: "success", text: location.state.message });
       setTimeout(() => setMessage({ type: "", text: "" }), 5000);
     }
-  }, [location.state]);
+  }, [location.state, user]);
 
   const fetchBookings = async () => {
     try {
@@ -54,18 +46,7 @@ const MyBookings = () => {
       setError("");
 
       // Get user role to determine endpoint
-      const token = localStorage.getItem("token");
-      let userRole = "renter";
-
-      if (token) {
-        try {
-          const payload = JSON.parse(atob(token.split(".")[1]));
-          userRole = payload.role;
-        } catch {
-          userRole = "renter";
-        }
-      }
-
+      const userRole = user?.role || "renter";
       const endpoint =
         userRole === "owner" ? "/bookings/owner" : "/bookings/me";
       console.log("Fetching bookings from:", endpoint);

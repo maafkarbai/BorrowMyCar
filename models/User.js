@@ -221,6 +221,5 @@ userSchema.set("toObject", { virtuals: true });
 // Create and export the model
 const User = mongoose.model("User", userSchema);
 
-// Export both named and default exports for compatibility
-export { User };
+// Export only default export for consistency
 export default User;

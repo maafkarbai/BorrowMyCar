@@ -158,5 +158,5 @@ bookingSchema.statics.findConflictingBookings = function (
   return this.findOne(filter);
 };
 
-export const Booking = mongoose.model("Booking", bookingSchema);
+const Booking = mongoose.model("Booking", bookingSchema);
 export default Booking;

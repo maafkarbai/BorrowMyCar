@@ -1,50 +1,49 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "./context/AuthProvider";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "./context/AuthContext";
 import Logo from "./assets/BorrowMyCar.png";
 import { Helmet } from "react-helmet-async";
 
 const Login = () => {
-  const [form, setForm] = useState({ email: "", password: "", rememberMe: false });
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    rememberMe: false,
+  });
   const [error, setError] = useState("");
+  
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, loading } = useAuth();
+
+  const from = location.state?.from?.pathname || "/";
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm({ 
-      ...form, 
-      [name]: type === "checkbox" ? checked : value 
-    });
-    if (error) setError(""); // Clear error when user starts typing
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+    if (error) setError("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Basic validation
-    if (!form.email || !form.password) {
+    if (!formData.email || !formData.password) {
       setError("Please fill in all fields");
       return;
     }
 
-    setError("");
-
     try {
-      const result = await login({
-        email: form.email.trim(),
-        password: form.password,
-        rememberMe: form.rememberMe
-      });
+      const result = await login(formData);
 
       if (result.success) {
-        // Redirect to homepage or dashboard
-        navigate("/", { replace: true });
+        navigate(from, { replace: true });
       } else {
         setError(result.error || "Login failed. Please try again.");
       }
     } catch (err) {
-      console.error("Login error:", err);
       setError("An unexpected error occurred. Please try again.");
     }
   };
@@ -59,50 +58,44 @@ const Login = () => {
         <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
           <div className="w-full max-w-md space-y-8">
             {/* Header */}
-            <div>
-              <div className="mx-auto h-20 sm:h-24 w-48 sm:w-64 flex items-center justify-center">
+            <div className="text-center">
+              <div className="mx-auto h-20 w-48 flex items-center justify-center">
                 <img
                   src={Logo}
-                  alt="BorrowMyCar Logo"
+                  alt="BorrowMyCar"
                   className="h-full w-full object-contain"
                 />
               </div>
-              <div className="space-y-2 text-center">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-                  Welcome Back
-                </h1>
-                <p className="text-sm sm:text-base text-gray-600">
-                  Sign in to your{" "}
-                  <span className="font-semibold text-green-500">
-                    BorrowMyCar
-                  </span>{" "}
-                  account
-                </p>
-              </div>
+              <h1 className="mt-6 text-3xl font-bold text-gray-900">
+                Welcome Back
+              </h1>
+              <p className="mt-2 text-gray-600">
+                Sign in to your{" "}
+                <span className="font-semibold text-green-500">BorrowMyCar</span>{" "}
+                account
+              </p>
             </div>
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-4">
-                {/* Email Input */}
                 <div>
                   <label htmlFor="email" className="sr-only">
-                    Email address
+                    Email
                   </label>
                   <input
                     id="email"
                     name="email"
                     type="email"
-                    value={form.email}
+                    value={formData.email}
                     onChange={handleChange}
                     placeholder="Email address"
                     required
                     autoComplete="email"
-                    className="input w-full text-sm sm:text-base"
+                    className="w-full px-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                   />
                 </div>
 
-                {/* Password Input */}
                 <div>
                   <label htmlFor="password" className="sr-only">
                     Password
@@ -111,40 +104,40 @@ const Login = () => {
                     id="password"
                     name="password"
                     type="password"
-                    value={form.password}
+                    value={formData.password}
                     onChange={handleChange}
                     placeholder="Password"
                     required
                     autoComplete="current-password"
-                    className="input w-full text-sm sm:text-base"
+                    className="w-full px-3 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                   />
                 </div>
               </div>
 
               {/* Error Message */}
               {error && (
-                <div className="text-red-600 text-sm text-center bg-red-50 border border-red-200 rounded-lg p-3">
+                <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
                   {error}
                 </div>
               )}
 
               {/* Remember Me & Forgot Password */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm">
+              <div className="flex items-center justify-between text-sm">
                 <label className="flex items-center cursor-pointer">
                   <input
                     type="checkbox"
                     name="rememberMe"
-                    checked={form.rememberMe}
+                    checked={formData.rememberMe}
                     onChange={handleChange}
-                    className="w-4 h-4 text-green-500 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
+                    className="w-4 h-4 text-green-500 border-gray-300 rounded focus:ring-green-500"
                   />
                   <span className="ml-2 text-gray-700">Remember me</span>
                 </label>
                 <Link
                   to="/forgot-password"
-                  className="accent-color hover:text-green-700 hover:underline transition-colors duration-200"
+                  className="text-green-600 hover:text-green-700 hover:underline transition-colors"
                 >
-                  Forgot your password?
+                  Forgot password?
                 </Link>
               </div>
 
@@ -152,30 +145,11 @@ const Login = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-green-500 hover:bg-green-600 disabled:bg-green-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200 text-sm sm:text-base focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                className="w-full bg-green-500 hover:bg-green-600 disabled:bg-green-300 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
               >
                 {loading ? (
                   <div className="flex items-center justify-center">
-                    <svg
-                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
+                    <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2"></div>
                     Signing in...
                   </div>
                 ) : (
@@ -188,7 +162,7 @@ const Login = () => {
                 Don't have an account?{" "}
                 <Link
                   to="/auth"
-                  className="font-semibold accent-color hover:text-green-700 hover:underline transition-colors duration-200"
+                  className="font-semibold text-green-600 hover:text-green-700 hover:underline transition-colors"
                 >
                   Sign up here
                 </Link>
@@ -200,36 +174,18 @@ const Login = () => {
         {/* Right Side - Welcome Section */}
         <div className="hidden lg:flex lg:flex-1 lg:items-center lg:justify-center bg-gradient-to-br from-green-50 to-emerald-100 p-8">
           <div className="text-center max-w-md space-y-6">
-            <div className="relative">
-              <div className="mx-auto w-64 h-48 bg-gradient-to-r from-green-400 to-emerald-500 rounded-2xl shadow-lg flex items-center justify-center">
-                <div className="text-white text-6xl">🚗</div>
-              </div>
+            <div className="w-64 h-48 bg-gradient-to-r from-green-400 to-emerald-500 rounded-2xl shadow-lg flex items-center justify-center text-white text-6xl">
+              🚗
             </div>
             <div className="space-y-3">
-              <h2 className="text-2xl xl:text-3xl font-bold text-gray-800">
+              <h2 className="text-3xl font-bold text-gray-800">
                 Welcome Back! 👋
               </h2>
               <p className="text-gray-600 text-lg">
                 Ready to hit the road again?
               </p>
               <p className="text-sm text-gray-500">
-                Access your bookings, browse available cars, and manage your
-                rentals.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile Welcome Section */}
-        <div className="lg:hidden bg-gradient-to-r from-green-50 to-emerald-50 p-6 text-center border-t">
-          <div className="flex items-center justify-center space-x-4">
-            <div className="w-16 h-16 bg-gradient-to-r from-green-400 to-emerald-500 rounded-lg flex items-center justify-center text-2xl">
-              🚗
-            </div>
-            <div className="text-left">
-              <p className="font-semibold text-gray-800">Ready to drive?</p>
-              <p className="text-sm text-gray-600">
-                Your next adventure awaits
+                Access your bookings, browse available cars, and manage your rentals.
               </p>
             </div>
           </div>

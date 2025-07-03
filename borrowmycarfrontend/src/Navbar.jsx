@@ -22,14 +22,13 @@ import {
 import API from "./api";
 import LanguageToggle from "./components/LanguageToggle";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "./context/AuthContext";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -40,27 +39,14 @@ const Navbar = () => {
   const profileRef = useRef(null);
   const searchRef = useRef(null);
   const { t } = useTranslation();
+  const { user, loading, logout } = useAuth();
 
-  // Get current user on component mount
+  // Fetch notifications when user is authenticated
   useEffect(() => {
-    const getCurrentUser = async () => {
-      const token = localStorage.getItem("token");
-      if (token) {
-        try {
-          const response = await API.get("/auth/profile");
-          setUser(response.data.data.user);
-          fetchNotifications();
-        } catch (error) {
-          console.error("Failed to get user profile:", error);
-          // Token might be invalid, remove it
-          localStorage.removeItem("token");
-        }
-      }
-      setLoading(false);
-    };
-
-    getCurrentUser();
-  }, []);
+    if (user) {
+      fetchNotifications();
+    }
+  }, [user]);
 
   // Fetch notifications for authenticated users
   const fetchNotifications = async () => {
@@ -228,19 +214,14 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     try {
-      // Call logout endpoint if available
-      // await API.post('/auth/logout');
-
-      localStorage.removeItem("token");
-      setUser(null);
+      await logout();
       setNotifications([]);
       setIsProfileOpen(false);
       navigate("/");
     } catch (error) {
       console.error("Logout failed:", error);
-      // Force logout even if API call fails
-      localStorage.removeItem("token");
-      setUser(null);
+      setNotifications([]);
+      setIsProfileOpen(false);
       navigate("/");
     }
   };
@@ -454,13 +435,13 @@ const Navbar = () => {
             {!user ? (
               <>
                 <Link
-                  to="/auth/login"
+                  to="/login"
                   className="text-gray-700 hover:text-green-600 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
                 >
                   {t("navigation.signIn")}
                 </Link>
                 <Link
-                  to="/auth/signup"
+                  to="/signup"
                   className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg"
                 >
                   {t("navigation.getStarted")}
@@ -665,13 +646,13 @@ const Navbar = () => {
             {!user && (
               <>
                 <Link
-                  to="/auth/login"
+                  to="/login"
                   className="flex items-center w-full text-gray-700 hover:text-green-600 hover:bg-green-50 px-3 py-3 rounded-lg text-base font-medium transition-colors"
                 >
                   {t("navigation.signIn")}
                 </Link>
                 <Link
-                  to="/auth/signup"
+                  to="/signup"
                   className="flex items-center w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-3 rounded-lg text-base font-medium transition-colors"
                 >
                   {t("navigation.getStarted")}

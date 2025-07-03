@@ -13,7 +13,10 @@
       "Bash(bun run:*)",
       "Bash(bun test:*)",
       "Bash(bun add:*)",
-      "Bash(bun install:*)"
+      "Bash(bun install:*)",
+      "Bash(find:*)",
+      "Bash(npm run build:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }

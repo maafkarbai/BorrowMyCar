@@ -60,7 +60,13 @@ const DashboardStats = ({ stats }) => {
             </div>
             <div className="ml-4 flex-shrink-0">
               <div
-                className={`w-12 h-12 lg:w-14 lg:h-14 rounded-lg bg-${stat.color}-50 flex items-center justify-center`}
+                className={`w-12 h-12 lg:w-14 lg:h-14 rounded-lg ${
+                  stat.color === 'blue' ? 'bg-blue-50' :
+                  stat.color === 'green' ? 'bg-green-50' :
+                  stat.color === 'yellow' ? 'bg-yellow-50' :
+                  stat.color === 'red' ? 'bg-red-50' :
+                  'bg-gray-50'
+                } flex items-center justify-center`}
               >
                 <span className="text-2xl lg:text-3xl">{stat.icon}</span>
               </div>

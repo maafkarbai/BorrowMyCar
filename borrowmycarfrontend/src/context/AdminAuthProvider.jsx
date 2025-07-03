@@ -1,4 +1,5 @@
 import { createContext, useContext, useReducer, useEffect } from "react";
+import axios from "axios";
 import API from "../api";
 
 const AdminAuthContext = createContext();
@@ -91,12 +92,23 @@ const clearAdminAuthData = () => {
   sessionStorage.removeItem("adminUser");
 };
 
-// Create admin API instance helper
+// Create admin API instance - hybrid approach for admin role switching
 const createAdminAPI = (token) => {
-  const adminAPI = API.create();
-  if (token) {
-    adminAPI.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  if (!token) {
+    return API; // Use cookie-based auth if no token
   }
+  
+  // Create new instance with token for admin role switching
+  const adminAPI = axios.create({
+    baseURL: API.defaults.baseURL,
+    timeout: API.defaults.timeout,
+    withCredentials: true,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
   return adminAPI;
 };
 
@@ -129,9 +141,8 @@ export const AdminAuthProvider = ({ children }) => {
         throw new Error("No admin token found");
       }
       
-      // Create temporary API instance with admin token
+      // Create admin API instance with stored token
       const adminAPI = createAdminAPI(adminToken);
-      
       const res = await adminAPI.get("/auth/profile");
 
       let user = null;
@@ -167,7 +178,9 @@ export const AdminAuthProvider = ({ children }) => {
     dispatch({ type: "ADMIN_LOGIN_START" });
 
     try {
-      console.log("Admin login attempt with:", { email: credentials.email, rememberMe: !!credentials.rememberMe });
+      if (process.env.NODE_ENV === 'development') {
+        console.log("Admin login attempt with:", { email: credentials.email, rememberMe: !!credentials.rememberMe });
+      }
       
       const res = await API.post("/auth/login", {
         email: credentials.email.trim(),
@@ -175,7 +188,9 @@ export const AdminAuthProvider = ({ children }) => {
         rememberMe: credentials.rememberMe,
       });
 
-      console.log("Admin login response:", res.data);
+      if (process.env.NODE_ENV === 'development') {
+        console.log("Admin login response:", res.data);
+      }
 
       let token = null;
       let user = null;

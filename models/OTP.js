@@ -1,5 +1,6 @@
 // models/OTP.js - OTP verification model
 import mongoose from "mongoose";
+import crypto from "crypto";
 
 const otpSchema = new mongoose.Schema(
   {
@@ -46,9 +47,9 @@ const otpSchema = new mongoose.Schema(
 otpSchema.index({ email: 1, purpose: 1 });
 otpSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // Auto-delete expired documents
 
-// Generate 6-digit OTP
+// Generate 6-digit OTP using cryptographically secure random
 otpSchema.statics.generateOTP = function () {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return crypto.randomInt(100000, 999999).toString();
 };
 
 // Create OTP record

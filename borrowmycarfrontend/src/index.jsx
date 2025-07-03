@@ -1,4 +1,3 @@
-// src/index.jsx - Fixed Router v7 Implementation
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import {
@@ -33,7 +32,7 @@ import Navbar from "./Navbar.jsx";
 import Footer from "./Footer.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute.jsx";
-import { AuthProvider } from "./context/AuthProvider.jsx";
+import { AuthProvider } from "./context/AuthContext.jsx";
 import { AdminAuthProvider } from "./context/AdminAuthProvider.jsx";
 import { PaymentProvider } from "./context/PaymentContext.jsx";
 import { HelmetProvider } from "react-helmet-async";
@@ -58,7 +57,7 @@ const AuthLayout = () => (
   </main>
 );
 
-// Define routes with React Router v7 syntax
+// Optimized routes with React Router v7
 const router = createBrowserRouter([
   {
     path: "/",
@@ -88,7 +87,7 @@ const router = createBrowserRouter([
       {
         path: "checkout/:carId",
         element: (
-          <ProtectedRoute requiredRole="renter">
+          <ProtectedRoute requiredRole="renter" requireApproval={true}>
             <Checkout />
           </ProtectedRoute>
         ),
@@ -180,110 +179,26 @@ const router = createBrowserRouter([
           },
         ],
       },
-      {
-        path: "users",
-        element: (
-          <ProtectedAdminRoute>
-            <AdminLayout />
-          </ProtectedAdminRoute>
-        ),
-        children: [
-          {
-            index: true,
-            element: <AdminDashboard />,
-          },
-        ],
-      },
-      {
-        path: "cars",
-        element: (
-          <ProtectedAdminRoute>
-            <AdminLayout />
-          </ProtectedAdminRoute>
-        ),
-        children: [
-          {
-            index: true,
-            element: <AdminDashboard />,
-          },
-        ],
-      },
-      {
-        path: "bookings",
-        element: (
-          <ProtectedAdminRoute>
-            <AdminLayout />
-          </ProtectedAdminRoute>
-        ),
-        children: [
-          {
-            index: true,
-            element: <AdminDashboard />,
-          },
-        ],
-      },
-      {
-        path: "reports",
-        element: (
-          <ProtectedAdminRoute>
-            <AdminLayout />
-          </ProtectedAdminRoute>
-        ),
-        children: [
-          {
-            index: true,
-            element: <AdminDashboard />,
-          },
-        ],
-      },
-      {
-        path: "settings",
-        element: (
-          <ProtectedAdminRoute>
-            <AdminLayout />
-          </ProtectedAdminRoute>
-        ),
-        children: [
-          {
-            index: true,
-            element: <AdminDashboard />,
-          },
-        ],
-      },
     ],
+  },
+  // Clean authentication routes
+  {
+    path: "/login",
+    element: <Login />,
   },
   {
     path: "/auth",
-    element: <AuthLayout />,
-    children: [
-      {
-        index: true,
-        element: <RoleSelection />,
-      },
-      {
-        path: "login",
-        element: <Login />,
-      },
-      {
-        path: "signup",
-        element: <Signup />,
-      },
-    ],
+    element: <RoleSelection />,
   },
-  // Standalone auth routes
+  {
+    path: "/signup",
+    element: <Signup />,
+  },
   {
     path: "/forgot-password",
     element: <ForgotPassword />,
   },
-  // Compatibility routes
-  {
-    path: "/login",
-    element: <Navigate to="/auth/login" replace />,
-  },
-  {
-    path: "/signup",
-    element: <Navigate to="/auth" replace />,
-  },
+  // 404 catch all
   {
     path: "*",
     element: <NotFound />,

@@ -4,10 +4,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import API from "./api";
 import PaymentModal from "./components/PaymentModal";
 import DatePicker from "./components/DatePicker";
+import { useAuth } from "./context/AuthContext";
 
 const CarDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
   const [car, setCar] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -17,7 +19,6 @@ const CarDetails = () => {
   });
   const [bookingError, setBookingError] = useState("");
   const [bookingLoading, setBookingLoading] = useState(false);
-  const [user, setUser] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [totalCost, setTotalCost] = useState(0);
   const [numberOfDays, setNumberOfDays] = useState(0);
@@ -37,20 +38,7 @@ const CarDetails = () => {
       }
     };
 
-    const getUser = () => {
-      const token = localStorage.getItem("token");
-      if (token) {
-        try {
-          const payload = JSON.parse(atob(token.split(".")[1]));
-          setUser(payload);
-        } catch {
-          setUser(null);
-        }
-      }
-    };
-
     fetchCar();
-    getUser();
   }, [id]);
 
   // Calculate total cost and days when dates change
@@ -520,7 +508,7 @@ const CarDetails = () => {
           {/* Right Column - Booking */}
           <div className="lg:col-span-1">
             <div className="sticky top-6">
-              {user && user.role === "renter" ? (
+              {isAuthenticated && user && user.role === "renter" ? (
                 <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-lg">
                   <h2 className="text-xl font-semibold text-gray-900 mb-4">
                     Book This Car
@@ -622,7 +610,7 @@ const CarDetails = () => {
                     🔒 Your booking is secure and protected
                   </div>
                 </div>
-              ) : user && user.role === "owner" ? (
+              ) : isAuthenticated && user && user.role === "owner" ? (
                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
                   <div className="text-center">
                     <svg
