@@ -206,7 +206,7 @@ export const clearAuth = () => {
 // API Health check
 export const checkAPIHealth = async () => {
   try {
-    const response = await API.get("/api/health");
+    const response = await API.get("/health");
     return { success: true, data: response.data };
   } catch (error) {
     return { success: false, error: error.message };

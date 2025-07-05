@@ -520,9 +520,21 @@ const CarDetails = () => {
                         {car.owner.phone && (
                           <button
                             onClick={() => {
-                              const phoneNumber = car.owner.phone.replace(/\s+/g, '').replace(/\+/g, '');
-                              const message = `Hi ${car.owner.name}, I'm interested in your car: ${car.title}. Is it available for rent?`;
-                              window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`, '_blank');
+                              try {
+                                const phoneNumber = car.owner?.phone?.replace(/\s+/g, '').replace(/\+/g, '') || '';
+                                const ownerName = car.owner?.name || 'Owner';
+                                const carTitle = car.title || 'this car';
+                                const message = `Hi ${ownerName}, I'm interested in your car: ${carTitle}. Is it available for rent?`;
+                                
+                                if (phoneNumber) {
+                                  window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`, '_blank');
+                                } else {
+                                  alert('Phone number not available');
+                                }
+                              } catch (error) {
+                                console.error('Error opening WhatsApp:', error);
+                                alert('Failed to open WhatsApp');
+                              }
                             }}
                             className="flex items-center justify-center w-10 h-10 bg-green-500 hover:bg-green-600 text-white rounded-full transition-colors"
                             title={`WhatsApp ${car.owner.name}`}
@@ -535,9 +547,24 @@ const CarDetails = () => {
                         {car.owner.email && (
                           <button
                             onClick={() => {
-                              const subject = `Inquiry about ${car.title}`;
-                              const body = `Hi ${car.owner.name},\n\nI'm interested in renting your car: ${car.title}\nLocation: ${car.city}\nPrice: AED ${car.price}/day\n\nCould you please let me know about its availability?\n\nThanks!`;
-                              window.location.href = `mailto:${car.owner.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                              try {
+                                const carTitle = car.title || 'this car';
+                                const ownerName = car.owner?.name || 'Owner';
+                                const carCity = car.city || 'Location not specified';
+                                const carPrice = car.price || 'Price not specified';
+                                const ownerEmail = car.owner?.email;
+                                
+                                if (ownerEmail) {
+                                  const subject = `Inquiry about ${carTitle}`;
+                                  const body = `Hi ${ownerName},\n\nI'm interested in renting your car: ${carTitle}\nLocation: ${carCity}\nPrice: AED ${carPrice}/day\n\nCould you please let me know about its availability?\n\nThanks!`;
+                                  window.location.href = `mailto:${ownerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                                } else {
+                                  alert('Email not available');
+                                }
+                              } catch (error) {
+                                console.error('Error opening email:', error);
+                                alert('Failed to open email');
+                              }
                             }}
                             className="flex items-center justify-center w-10 h-10 bg-blue-500 hover:bg-blue-600 text-white rounded-full transition-colors"
                             title={`Email ${car.owner.name}`}

@@ -24,7 +24,13 @@
       "Bash(pkill:*)",
       "Bash(true)",
       "Bash(mv:*)",
-      "Bash(npm run test:*)"
+      "Bash(npm run test:*)",
+      "Bash(for file in \"pages/Checkout.jsx\" \"pages/BookingSuccess.jsx\" \"HowItWorks.jsx\" \"RoleSelection.jsx\" \"NotFound.jsx\")",
+      "Bash(do if [ -f \"$file\" ])",
+      "Bash(then echo \"$file - EXISTS\")",
+      "Bash(else echo \"$file - MISSING\")",
+      "Bash(fi)",
+      "Bash(done)"
     ],
     "deny": []
   }

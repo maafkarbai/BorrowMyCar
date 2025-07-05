@@ -117,5 +117,4 @@ otpSchema.statics.cleanupExpired = async function () {
 
 const OTP = mongoose.model("OTP", otpSchema);
 
-export { OTP };
 export default OTP;

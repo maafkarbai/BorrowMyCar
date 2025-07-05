@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import API from "../src/api";
+import API from "./api";
 import { useNavigate } from "react-router-dom";
 
 const ListCar = () => {
@@ -20,7 +20,7 @@ const ListCar = () => {
     mileage: "",
     seatingCapacity: "",
     plateNumber: "",
-    specifications: "GCC",
+    specifications: "GCC Specs",
     features: [],
   });
   const [images, setImages] = useState([]);
@@ -57,13 +57,13 @@ const ListCar = () => {
   
   const seatingOptions = ["2", "4", "5", "7", "8"];
   
-  const specificationTypes = ["GCC", "US", "European", "Japanese"];
+  const specificationTypes = ["GCC Specs", "US Specs", "European Specs", "Japanese Specs", "Canadian Specs", "Korean Specs"];
   
   const availableFeatures = [
-    "Air Conditioning", "Bluetooth", "GPS Navigation", "Backup Camera",
-    "Sunroof", "Leather Seats", "Heated Seats", "Cruise Control",
-    "Keyless Entry", "Push Start", "USB Charging", "Android Auto",
-    "Apple CarPlay", "Parking Sensors", "Lane Assist", "Blind Spot Monitor"
+    "GPS Navigation", "Bluetooth", "USB Charging", "Wireless Charging",
+    "Sunroof", "Leather Seats", "Heated Seats", "Cooled Seats",
+    "Backup Camera", "Parking Sensors", "Cruise Control", "Keyless Entry",
+    "Push Start", "Auto AC", "Dual Zone AC", "Premium Sound System"
   ];
 
   // UAE Cities database
@@ -387,6 +387,7 @@ const ListCar = () => {
       fuelType,
       seatingCapacity,
       plateNumber,
+      mileage,
     } = form;
 
     if (!title.trim() || !description.trim() || !city.trim()) {
@@ -394,13 +395,40 @@ const ListCar = () => {
       return false;
     }
 
-    if (!make || !model || !year || !color || !transmission || !fuelType || !seatingCapacity || !plateNumber.trim()) {
+    if (!make || !model || !year || !color || !transmission || !fuelType || !seatingCapacity || !plateNumber.trim() || !mileage) {
       setError("Please fill in all car specification fields");
       return false;
     }
 
-    if (parseFloat(pricePerDay) <= 0) {
-      setError("Price per day must be greater than 0");
+    if (parseFloat(pricePerDay) < 50) {
+      setError("Price per day must be at least AED 50");
+      return false;
+    }
+
+    if (parseFloat(pricePerDay) > 5000) {
+      setError("Price per day cannot exceed AED 5000");
+      return false;
+    }
+
+    if (parseInt(year) < 2010 || parseInt(year) > new Date().getFullYear() + 1) {
+      setError("Car year must be between 2010 and current year");
+      return false;
+    }
+
+    if (parseInt(mileage) < 0) {
+      setError("Mileage cannot be negative");
+      return false;
+    }
+
+    if (parseInt(seatingCapacity) < 2 || parseInt(seatingCapacity) > 8) {
+      setError("Seating capacity must be between 2 and 8");
+      return false;
+    }
+
+    // Validate UAE plate number format
+    const plateRegex = /^[A-Z]{1,3}[0-9]{1,5}$/;
+    if (!plateRegex.test(plateNumber.toUpperCase())) {
+      setError("Please enter a valid UAE plate number (e.g., A12345)");
       return false;
     }
 

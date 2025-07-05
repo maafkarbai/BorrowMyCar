@@ -2,7 +2,7 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
-import { OTP } from "../models/OTP.js";
+import OTP from "../models/OTP.js";
 import Car from "../models/Car.js";
 import {
   uploadImagesToCloud,

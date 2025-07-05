@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const UserAvatar = ({ 
   user, 
@@ -6,6 +6,7 @@ const UserAvatar = ({
   className = '',
   showImage = true 
 }) => {
+  const [imageError, setImageError] = useState(false);
   const getInitials = (name) => {
     if (!name) return 'U';
     
@@ -68,15 +69,14 @@ const UserAvatar = ({
   const userName = user?.name || user?.username || '';
   const profileImage = user?.profileImage || user?.avatar;
 
-  if (showImage && profileImage) {
+  if (showImage && profileImage && !imageError) {
     return (
       <img 
         src={profileImage} 
         alt={userName}
         className={`${getSizeClasses()} rounded-full object-cover ${className}`}
-        onError={(e) => {
-          e.target.style.display = 'none';
-          e.target.nextSibling.style.display = 'flex';
+        onError={() => {
+          setImageError(true);
         }}
       />
     );

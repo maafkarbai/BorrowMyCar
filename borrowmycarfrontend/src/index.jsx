@@ -175,7 +175,7 @@ const router = createBrowserRouter([
       },
       {
         path: "support",
-        element: <NotFound />,
+        element: <Help />,
       },
       {
         path: "notifications",
@@ -238,7 +238,6 @@ const router = createBrowserRouter([
         element: <AdminLogin />,
       },
       {
-        path: "dashboard",
         element: (
           <ProtectedAdminRoute>
             <AdminLayout />
@@ -246,7 +245,27 @@ const router = createBrowserRouter([
         ),
         children: [
           {
-            index: true,
+            path: "dashboard",
+            element: <AdminDashboard />,
+          },
+          {
+            path: "users",
+            element: <AdminDashboard />,
+          },
+          {
+            path: "cars",
+            element: <AdminDashboard />,
+          },
+          {
+            path: "bookings",
+            element: <AdminDashboard />,
+          },
+          {
+            path: "reports",
+            element: <AdminDashboard />,
+          },
+          {
+            path: "settings",
             element: <AdminDashboard />,
           },
         ],

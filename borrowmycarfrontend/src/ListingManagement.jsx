@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from './context/AuthContext';
-import api from './api';
+import API from './api';
 import { 
   Plus, 
   Edit, 
@@ -17,7 +17,8 @@ import {
   MapPin,
   CheckSquare,
   Square,
-  MoreVertical
+  MoreVertical,
+  Car
 } from 'lucide-react';
 
 const ListingManagement = () => {
@@ -53,7 +54,7 @@ const ListingManagement = () => {
         ...Object.fromEntries(Object.entries(filters).filter(([, v]) => v))
       });
       
-      const response = await api.get(`/cars/my/cars?${params}`);
+      const response = await API.get(`/cars/my/cars?${params}`);
       setCars(response.data.data.cars);
       setPagination(response.data.data.pagination);
     } catch (err) {
@@ -65,7 +66,7 @@ const ListingManagement = () => {
 
   const handleToggleStatus = async (carId) => {
     try {
-      const response = await api.patch(`/cars/${carId}/toggle-status`);
+      const response = await API.patch(`/cars/${carId}/toggle-status`);
       const updatedCar = response.data.data.car;
       
       setCars(cars.map(car => 
@@ -80,7 +81,7 @@ const ListingManagement = () => {
 
   const handleDuplicateCar = async (carId) => {
     try {
-      const response = await api.post(`/cars/${carId}/duplicate`);
+      const response = await API.post(`/cars/${carId}/duplicate`);
       const duplicatedCar = response.data.data.car;
       
       setCars([duplicatedCar, ...cars]);
@@ -94,7 +95,7 @@ const ListingManagement = () => {
     if (!confirm('Are you sure you want to delete this car listing?')) return;
     
     try {
-      await api.delete(`/cars/${carId}`);
+      await API.delete(`/cars/${carId}`);
       setCars(cars.filter(car => car._id !== carId));
       alert('Car deleted successfully');
     } catch (err) {
@@ -125,7 +126,7 @@ const ListingManagement = () => {
     }
 
     try {
-      const response = await api.put('/cars/bulk', {
+      const response = await API.put('/cars/bulk', {
         carIds: selectedCars,
         updateData: bulkUpdateData
       });

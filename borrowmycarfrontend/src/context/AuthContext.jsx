@@ -52,33 +52,52 @@ export const AuthProvider = ({ children }) => {
 
   // Check authentication status on app start
   useEffect(() => {
-    checkAuth();
+    let isMounted = true;
+    
+    const checkAuthStatus = async () => {
+      if (isMounted) {
+        await checkAuth(isMounted);
+      }
+    };
+    
+    checkAuthStatus();
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  const checkAuth = async () => {
+  const checkAuth = async (isMounted = true) => {
     try {
-      dispatch({ type: "SET_LOADING", payload: true });
+      if (isMounted) dispatch({ type: "SET_LOADING", payload: true });
       
       const response = await API.get("/auth/profile");
       
-      if (response.data.success && response.data.data?.user) {
-        dispatch({
-          type: "LOGIN_SUCCESS",
-          payload: { user: response.data.data.user },
-        });
-      } else {
-        dispatch({ type: "LOGOUT" });
+      if (isMounted) {
+        if (response.data.success && response.data.data?.user) {
+          dispatch({
+            type: "LOGIN_SUCCESS",
+            payload: { user: response.data.data.user },
+          });
+        } else {
+          dispatch({ type: "LOGOUT" });
+        }
       }
     } catch (error) {
-      // Only logout if it's not a network error
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        dispatch({ type: "LOGOUT" });
-      } else {
-        // For network errors, just stop loading but don't logout
-        dispatch({ type: "SET_LOADING", payload: false });
+      if (isMounted) {
+        // Only logout if it's not a network error
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          dispatch({ type: "LOGOUT" });
+        } else {
+          // For network errors, just stop loading but don't logout
+          dispatch({ type: "SET_LOADING", payload: false });
+        }
       }
     } finally {
-      dispatch({ type: "SET_LOADING", payload: false });
+      if (isMounted) {
+        dispatch({ type: "SET_LOADING", payload: false });
+      }
     }
   };
 
