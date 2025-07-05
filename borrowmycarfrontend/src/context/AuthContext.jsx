@@ -70,7 +70,13 @@ export const AuthProvider = ({ children }) => {
         dispatch({ type: "LOGOUT" });
       }
     } catch (error) {
-      dispatch({ type: "LOGOUT" });
+      // Only logout if it's not a network error
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        dispatch({ type: "LOGOUT" });
+      } else {
+        // For network errors, just stop loading but don't logout
+        dispatch({ type: "SET_LOADING", payload: false });
+      }
     } finally {
       dispatch({ type: "SET_LOADING", payload: false });
     }

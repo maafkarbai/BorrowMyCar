@@ -309,4 +309,13 @@ Also don't remove any features and replace it with a temporary one fix the featu
 
 ## Project Memories
 
-- Always use bun
+- Always use bun package manager for both backend and frontend
+
+## Code Review Protocol
+
+1. Run automated analysis
+2. Check for common patterns from past projects (Memory MCP)
+3. Identify potential issues (memory, performance, security)
+4. Compare against established coding standards
+5. Provide actionable feedback with examples
+6. Store solutions for future reference

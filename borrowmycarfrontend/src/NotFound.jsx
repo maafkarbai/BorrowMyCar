@@ -16,14 +16,14 @@ const NotFound = () => {
     // Set up the timeout to navigate after the countdown completes
     const timeout = setTimeout(() => {
       navigate('/');
-    }, secondsLeft * 1000);
+    }, 3000); // Fixed timeout to 3 seconds
 
     // Cleanup function to clear the interval and timeout when the component unmounts
     return () => {
       clearInterval(interval);
       clearTimeout(timeout);
     };
-  }, [navigate, secondsLeft]);
+  }, [navigate]); // Removed secondsLeft from dependencies
 
   return (
     <div className="m-auto flex justify-center items-center h-screen">

@@ -4,7 +4,6 @@ import {
   Menu,
   X,
   Bell,
-  MessageCircle,
   Car,
   Calendar,
   Settings,
@@ -155,7 +154,7 @@ const Navbar = () => {
     if (user.role === "admin") {
       return [
         ...baseItems,
-        { label: "Admin Dashboard", path: "/admin", icon: BarChart3 },
+        { label: "Admin Dashboard", path: "/admin/dashboard", icon: BarChart3 },
         { label: "User Management", path: "/admin?tab=users", icon: User },
         { label: "Car Management", path: "/admin?tab=cars", icon: Shield },
         { label: "Bookings", path: "/admin?tab=bookings", icon: Calendar },
@@ -167,12 +166,6 @@ const Navbar = () => {
         ...baseItems,
         { label: "My Cars", path: "/my-cars", icon: Car },
         { label: t("navigation.myBookings"), path: "/my-bookings", icon: Calendar },
-        {
-          label: "Messages",
-          path: "/messages",
-          icon: MessageCircle,
-          badge: getUnreadMessagesCount(),
-        },
       ];
     }
 
@@ -180,18 +173,9 @@ const Navbar = () => {
     return [
       ...baseItems,
       { label: t("navigation.myBookings"), path: "/my-bookings", icon: Calendar },
-      {
-        label: "Messages",
-        path: "/messages",
-        icon: MessageCircle,
-        badge: getUnreadMessagesCount(),
-      },
     ];
   };
 
-  const getUnreadMessagesCount = () => {
-    return notifications.filter((n) => n.type === "message" && n.unread).length;
-  };
 
   const getUnreadNotificationsCount = () => {
     return notifications.filter((n) => n.unread).length;
@@ -209,7 +193,7 @@ const Navbar = () => {
           { label: "Orders", path: "/seller/orders", icon: Calendar },
         ]
       : []),
-    { label: "Support", path: "/support", icon: MessageCircle },
+    { label: "Support", path: "/support", icon: HelpCircle },
   ];
 
   const handleLogout = async () => {
@@ -288,7 +272,7 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex-shrink-0">
-            <Link to="/" className="flex items-center group">
+            <Link to="/" className="flex items-center group cursor-pointer">
               <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl mr-3 group-hover:shadow-lg transition-all duration-200">
                 <Car className="h-6 w-6 text-white" />
               </div>
@@ -340,7 +324,7 @@ const Navbar = () => {
                         <button
                           key={car._id}
                           onClick={() => handleSearchResultClick(car)}
-                          className="w-full flex items-center px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+                          className="w-full flex items-center px-4 py-3 hover:bg-gray-50 transition-colors text-left cursor-pointer"
                         >
                           <img
                             src={car.images?.[0] || "/placeholder-car.jpg"}
@@ -462,7 +446,7 @@ const Navbar = () => {
                 {/* Notifications */}
                 <button
                   onClick={() => navigate("/notifications")}
-                  className="relative p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                  className="relative p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors cursor-pointer"
                 >
                   <Bell className="h-5 w-5" />
                   {getUnreadNotificationsCount() > 0 && (
@@ -474,7 +458,7 @@ const Navbar = () => {
                 <div className="relative" ref={profileRef}>
                   <button
                     onClick={toggleProfile}
-                    className="flex items-center space-x-3 text-gray-700 hover:text-green-600 p-1 rounded-lg focus:outline-none transition-colors"
+                    className="flex items-center space-x-3 text-gray-700 hover:text-green-600 p-1 rounded-lg focus:outline-none transition-colors cursor-pointer"
                   >
                     <div className="flex items-center space-x-2">
                       {/* Enhanced Profile Picture */}
@@ -590,7 +574,7 @@ const Navbar = () => {
             {/* Mobile Menu Button */}
             <button
               onClick={toggleMenu}
-              className="lg:hidden p-2 rounded-lg text-gray-600 hover:text-green-600 hover:bg-green-50 focus:outline-none transition-colors"
+              className="lg:hidden p-2 rounded-lg text-gray-600 hover:text-green-600 hover:bg-green-50 focus:outline-none transition-colors cursor-pointer"
             >
               {isMenuOpen ? (
                 <X className="h-6 w-6" />

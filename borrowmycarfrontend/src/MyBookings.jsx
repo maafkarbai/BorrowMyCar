@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import {
   Calendar,
@@ -12,10 +12,10 @@ import {
   XCircle,
   AlertCircle,
   Eye,
-  MessageCircle,
 } from "lucide-react";
 import API from "./api";
 import { useAuth } from "./context/AuthContext";
+import UserAvatar from "./components/UserAvatar";
 
 const MyBookings = () => {
   const { user } = useAuth();
@@ -27,6 +27,7 @@ const MyBookings = () => {
   const [message, setMessage] = useState({ type: "", text: "" });
 
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (user) {
@@ -304,7 +305,7 @@ const MyBookings = () => {
             </p>
             {user?.role === "renter" && (
               <button
-                onClick={() => (window.location.href = "/browse")}
+                onClick={() => navigate("/browse")}
                 className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors"
               >
                 Browse Cars
@@ -401,7 +402,8 @@ const MyBookings = () => {
                               Renter Information
                             </h4>
                             <div className="flex items-center gap-4 text-sm">
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-2">
+                                <UserAvatar user={booking.renter} size="sm" />
                                 <span className="font-medium">
                                   {booking.renter.name}
                                 </span>
@@ -428,7 +430,8 @@ const MyBookings = () => {
                               Car Owner
                             </h4>
                             <div className="flex items-center gap-4 text-sm">
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-2">
+                                <UserAvatar user={booking.car.owner} size="sm" />
                                 <span className="font-medium">
                                   {booking.car.owner.name}
                                 </span>
@@ -542,25 +545,13 @@ const MyBookings = () => {
 
                       {/* View Details Button */}
                       <button
-                        onClick={() =>
-                          (window.location.href = `/cars/${booking.car?._id}`)
-                        }
+                        onClick={() => navigate(`/cars/${booking.car?._id}`)}
                         className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200 transition-colors flex items-center justify-center"
                       >
                         <Eye className="w-3 h-3 mr-1" />
                         View Car
                       </button>
 
-                      {/* Contact Button */}
-                      <button
-                        onClick={() =>
-                          (window.location.href = `/messages?booking=${booking._id}`)
-                        }
-                        className="px-3 py-1.5 bg-blue-100 text-blue-700 text-sm rounded hover:bg-blue-200 transition-colors flex items-center justify-center"
-                      >
-                        <MessageCircle className="w-3 h-3 mr-1" />
-                        Message
-                      </button>
                     </div>
                   </div>
                 </div>

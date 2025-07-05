@@ -294,7 +294,7 @@ const PaymentModal = ({
                   ))}
                   <button
                     type="button"
-                    className="text-blue-600 text-sm hover:underline"
+                    className="text-blue-600 text-sm hover:underline cursor-pointer"
                     onClick={() => setSelectedSavedCard("")}
                   >
                     Use a different card
@@ -573,7 +573,7 @@ const PaymentModal = ({
           <h2 className="text-xl font-semibold">Complete Payment</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full"
+            className="p-2 hover:bg-gray-100 rounded-full cursor-pointer"
             disabled={processing}
           >
             <X className="h-5 w-5" />
@@ -672,7 +672,7 @@ const PaymentModal = ({
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
               disabled={processing}
             >
               Cancel
@@ -680,7 +680,7 @@ const PaymentModal = ({
             <button
               onClick={processPayment}
               disabled={processing}
-              className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center"
             >
               {processing ? (
                 <>

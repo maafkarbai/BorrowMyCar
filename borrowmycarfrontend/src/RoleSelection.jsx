@@ -7,7 +7,7 @@ const RoleSelection = () => {
 
   const handleContinue = () => {
     if (selectedRole) {
-      navigate("/auth/signup", { state: { role: selectedRole } });
+      navigate("/signup", { state: { role: selectedRole } });
     }
   };
 
@@ -119,7 +119,7 @@ const RoleSelection = () => {
             disabled={!selectedRole}
             className={`px-12 py-4 rounded-xl font-semibold text-lg transition-all duration-200 ${
               selectedRole
-                ? "bg-green-600 text-white hover:bg-green-700 shadow-lg hover:shadow-xl"
+                ? "bg-green-600 text-white hover:bg-green-700 shadow-lg hover:shadow-xl cursor-pointer"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
             }`}
           >
@@ -132,8 +132,8 @@ const RoleSelection = () => {
           <p className="text-gray-600">
             Already have an account?{" "}
             <button
-              onClick={() => navigate("/auth/login")}
-              className="font-semibold text-green-600 hover:text-green-700 hover:underline transition-colors"
+              onClick={() => navigate("/login")}
+              className="font-semibold text-green-600 hover:text-green-700 hover:underline transition-colors cursor-pointer"
             >
               Sign in here
             </button>

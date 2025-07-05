@@ -58,6 +58,7 @@ const sendTokenResponse = (user, statusCode, res, message = "Success", rememberM
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     path: '/',
+    domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined,
   };
 
   res.cookie('jwt', token, cookieOptions);
@@ -1208,7 +1209,8 @@ export const logout = handleAsyncErrorLocal(async (req, res) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-    path: '/'
+    path: '/',
+    domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined,
   });
 
   res.json({

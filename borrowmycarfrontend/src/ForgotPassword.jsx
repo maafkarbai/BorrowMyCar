@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import API from "./api";
 
 const ForgotPassword = () => {
+  const navigate = useNavigate();
   const [step, setStep] = useState("request"); // "request" or "verify"
   const [formData, setFormData] = useState({
     email: "",
@@ -77,7 +78,7 @@ const ForgotPassword = () => {
         setSuccess(response.data.message);
         // Optional: Redirect to login after a delay
         setTimeout(() => {
-          window.location.href = "/login";
+          navigate("/login");
         }, 3000);
       }
     } catch (err) {

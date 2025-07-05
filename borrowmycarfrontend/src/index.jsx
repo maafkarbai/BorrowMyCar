@@ -28,6 +28,16 @@ import ListingManagement from "./ListingManagement.jsx";
 import OrderManagement from "./OrderManagement.jsx";
 import UserProfile from "./UserProfile.jsx";
 import NotFound from "./NotFound.jsx";
+import About from "./About.jsx";
+import Story from "./Story.jsx";
+import Contact from "./Contact.jsx";
+import Help from "./Help.jsx";
+import Terms from "./Terms.jsx";
+import Privacy from "./Privacy.jsx";
+import RentalAgreement from "./RentalAgreement.jsx";
+import Insurance from "./Insurance.jsx";
+import Refunds from "./Refunds.jsx";
+import Cookies from "./Cookies.jsx";
 import Navbar from "./Navbar.jsx";
 import Footer from "./Footer.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -62,7 +72,6 @@ const router = createBrowserRouter([
   {
     path: "/",
     element: <Layout />,
-    errorElement: <NotFound />,
     children: [
       {
         index: true,
@@ -155,6 +164,69 @@ const router = createBrowserRouter([
             <OrderManagement />
           </ProtectedRoute>
         ),
+      },
+      {
+        path: "my-cars",
+        element: (
+          <ProtectedRoute requiredRole="owner" requireApproval={true}>
+            <ListingManagement />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "support",
+        element: <NotFound />,
+      },
+      {
+        path: "notifications",
+        element: (
+          <ProtectedRoute>
+            <NotFound />
+          </ProtectedRoute>
+        ),
+      },
+      // Company pages
+      {
+        path: "about",
+        element: <About />,
+      },
+      {
+        path: "story",
+        element: <Story />,
+      },
+      {
+        path: "contact",
+        element: <Contact />,
+      },
+      // Support pages
+      {
+        path: "help",
+        element: <Help />,
+      },
+      // Legal pages
+      {
+        path: "terms",
+        element: <Terms />,
+      },
+      {
+        path: "privacy",
+        element: <Privacy />,
+      },
+      {
+        path: "rental-agreement",
+        element: <RentalAgreement />,
+      },
+      {
+        path: "insurance",
+        element: <Insurance />,
+      },
+      {
+        path: "refunds",
+        element: <Refunds />,
+      },
+      {
+        path: "cookies",
+        element: <Cookies />,
       },
     ],
   },

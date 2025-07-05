@@ -1,7 +1,7 @@
 import request from 'supertest';
 import express from 'express';
 import { signup, login, getProfile } from '../../controllers/authController.js';
-import { User } from '../../models/User.js';
+import User from '../../models/User.js';
 import { protect } from '../../middlewares/authMiddleware.js';
 import { createTestUser, generateTestToken } from '../helpers/testHelpers.js';
 

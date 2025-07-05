@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Search,
   List,
@@ -6,11 +7,13 @@ import {
   Car,
   DollarSign,
   MapPin,
+  Key,
 } from "lucide-react";
 import API from "../api";
 import GeocodingSearch from "./GeocodingSearch";
 
 const MapSearchView = () => {
+  const navigate = useNavigate();
   const [cars, setCars] = useState([]);
   const [filteredCars, setFilteredCars] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -128,7 +131,7 @@ const MapSearchView = () => {
             <div className="flex bg-gray-100 rounded-lg p-1">
               <button
                 onClick={() => setViewMode("list")}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors cursor-pointer ${
                   viewMode === "list"
                     ? "bg-white text-green-600 shadow-sm"
                     : "text-gray-600 hover:text-gray-900"
@@ -139,7 +142,7 @@ const MapSearchView = () => {
               </button>
               <button
                 onClick={() => setViewMode("map")}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors cursor-pointer ${
                   viewMode === "map"
                     ? "bg-white text-green-600 shadow-sm"
                     : "text-gray-600 hover:text-gray-900"
@@ -172,7 +175,7 @@ const MapSearchView = () => {
             {searchLocation && (
               <button
                 onClick={clearLocationFilter}
-                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 text-sm"
+                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 text-sm cursor-pointer"
               >
                 Clear
               </button>
@@ -291,12 +294,11 @@ const MapSearchView = () => {
                             AED {car.price}/day
                           </span>
                           <button
-                            onClick={() =>
-                              (window.location.href = `/cars/${car._id}`)
-                            }
-                            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                            onClick={() => navigate(`/cars/${car._id}`)}
+                            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors flex items-center space-x-1 cursor-pointer"
                           >
-                            View Details
+                            <Key className="w-3 h-3" />
+                            <span>Rent Now</span>
                           </button>
                         </div>
                       </div>

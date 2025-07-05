@@ -1,7 +1,7 @@
 import request from 'supertest';
 import express from 'express';
 import mongoose from 'mongoose';
-import { User } from '../../models/User.js';
+import User from '../../models/User.js';
 import Car from '../../models/Car.js';
 import { getPublicUserProfile } from '../../controllers/authController.js';
 

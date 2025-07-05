@@ -62,17 +62,19 @@ API.interceptors.response.use(
           // Unauthorized - redirect to login (cookies cleared by server)
           console.log("🔐 Authentication failed - redirecting to login");
 
-          // Only redirect if not already on auth pages
+          // Only redirect if not already on auth pages and not during initial app load
           const currentPath = window.location.pathname;
           if (
             !currentPath.includes("/login") &&
             !currentPath.includes("/signup") &&
-            !currentPath.includes("/auth")
+            !currentPath.includes("/auth") &&
+            !currentPath.includes("/forgot-password") &&
+            document.readyState === 'complete' // Only redirect after page is fully loaded
           ) {
-            // Delay redirect to prevent immediate redirect loops
+            // Longer delay to prevent redirect loops during auth checks
             setTimeout(() => {
-              window.location.href = "/auth/login";
-            }, 100);
+              window.location.href = "/login";
+            }, 500);
           }
           break;
 

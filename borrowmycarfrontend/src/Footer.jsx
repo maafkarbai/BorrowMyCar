@@ -81,7 +81,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
           {/* Brand Section */}
           <div className="lg:col-span-2 space-y-4">
-            <a href="/" className="inline-block">
+            <a href="/" className="inline-block cursor-pointer">
               <img
                 src={Logo}
                 alt="BorrowMyCar Logo"
@@ -105,7 +105,7 @@ const Footer = () => {
                   href={social.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-green-600 transition-colors duration-200"
+                  className="text-gray-400 hover:text-green-600 transition-colors duration-200 cursor-pointer"
                   aria-label={`Follow us on ${social.name}`}
                 >
                   {social.icon}
@@ -124,7 +124,7 @@ const Footer = () => {
                 <li key={link.name}>
                   <a
                     href={link.href}
-                    className="text-sm text-gray-600 hover:text-green-600 transition-colors duration-200"
+                    className="text-sm text-gray-600 hover:text-green-600 transition-colors duration-200 cursor-pointer"
                   >
                     {link.name}
                   </a>
@@ -143,7 +143,7 @@ const Footer = () => {
                 <li key={link.name}>
                   <a
                     href={link.href}
-                    className="text-sm text-gray-600 hover:text-green-600 transition-colors duration-200"
+                    className="text-sm text-gray-600 hover:text-green-600 transition-colors duration-200 cursor-pointer"
                   >
                     {link.name}
                   </a>
@@ -162,7 +162,7 @@ const Footer = () => {
                 <li key={link.name}>
                   <a
                     href={link.href}
-                    className="text-sm text-gray-600 hover:text-green-600 transition-colors duration-200"
+                    className="text-sm text-gray-600 hover:text-green-600 transition-colors duration-200 cursor-pointer"
                   >
                     {link.name}
                   </a>
@@ -190,7 +190,7 @@ const Footer = () => {
                 placeholder={t("footer.emailPlaceholder")}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-colors text-sm"
               />
-              <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors text-sm whitespace-nowrap">
+              <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors text-sm whitespace-nowrap cursor-pointer">
                 {t("footer.subscribe")}
               </button>
             </div>
@@ -233,21 +233,21 @@ const Footer = () => {
               <div className="flex items-center space-x-4 text-xs text-gray-500">
                 <a
                   href="/terms"
-                  className="hover:text-green-600 transition-colors"
+                  className="hover:text-green-600 transition-colors cursor-pointer"
                 >
                   {t("footer.terms")}
                 </a>
                 <span>•</span>
                 <a
                   href="/privacy"
-                  className="hover:text-green-600 transition-colors"
+                  className="hover:text-green-600 transition-colors cursor-pointer"
                 >
                   {t("footer.privacy")}
                 </a>
                 <span>•</span>
                 <a
                   href="/cookies"
-                  className="hover:text-green-600 transition-colors"
+                  className="hover:text-green-600 transition-colors cursor-pointer"
                 >
                   {t("footer.cookies")}
                 </a>

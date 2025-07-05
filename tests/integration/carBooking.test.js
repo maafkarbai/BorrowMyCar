@@ -5,7 +5,7 @@ import { signup, login } from '../../controllers/authController.js';
 import { createCar, getCars } from '../../controllers/carController.js';
 import { createBooking, getMyBookings, updateBookingStatus } from '../../controllers/bookingController.js';
 import { protect } from '../../middlewares/authMiddleware.js';
-import { User } from '../../models/User.js';
+import User from '../../models/User.js';
 import Car from '../../models/Car.js';
 import Booking from '../../models/Booking.js';
 

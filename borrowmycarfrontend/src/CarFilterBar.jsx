@@ -121,7 +121,7 @@ const CarFilterBar = ({ onFiltersChange, onReset }) => {
         {activeFiltersCount > 0 && (
           <button
             onClick={handleReset}
-            className="text-red-600 hover:text-red-800 text-xs font-medium"
+            className="text-red-600 hover:text-red-800 text-xs font-medium cursor-pointer"
           >
             Clear All
           </button>
@@ -163,7 +163,7 @@ const CarFilterBar = ({ onFiltersChange, onReset }) => {
                 <button
                   key={index}
                   onClick={() => handleMakeModelSelect(model)}
-                  className="w-full text-left px-2 py-2 text-xs hover:bg-green-50 border-b last:border-b-0"
+                  className="w-full text-left px-2 py-2 text-xs hover:bg-green-50 border-b last:border-b-0 cursor-pointer"
                 >
                   {model}
                 </button>
@@ -276,7 +276,7 @@ const CarFilterBar = ({ onFiltersChange, onReset }) => {
                   setFilters(newFilters);
                   if (onFiltersChange) onFiltersChange(newFilters);
                 }}
-                className="bg-gray-100 hover:bg-green-100 text-gray-600 hover:text-green-700 px-3 py-1 rounded-full text-xs transition-colors"
+                className="bg-gray-100 hover:bg-green-100 text-gray-600 hover:text-green-700 px-3 py-1 rounded-full text-xs transition-colors cursor-pointer"
               >
                 {quickFilter.label}
               </button>

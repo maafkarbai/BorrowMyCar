@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { MapPin, Navigation, Star, Phone, User } from "lucide-react";
+import { MapPin, Navigation, Star, Phone } from "lucide-react";
+import UserAvatar from "./UserAvatar";
 
 const CarCard = ({ car, userLocation = null, showDistance = true }) => {
   const getDistanceText = () => {
@@ -14,7 +15,7 @@ const CarCard = ({ car, userLocation = null, showDistance = true }) => {
     <Link 
       to={`/cars/${car._id}`}
       className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow w-full text-left block"
-      aria-label={`View details for ${car.title}`}
+      aria-label={`Rent ${car.title}`}
     >
       <div className="relative">
         <img
@@ -70,17 +71,11 @@ const CarCard = ({ car, userLocation = null, showDistance = true }) => {
               onClick={(e) => e.stopPropagation()}
               className="flex items-center space-x-2 hover:bg-gray-50 rounded-lg p-2 -ml-2 transition-colors"
             >
-              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                {car.owner?.profileImage ? (
-                  <img 
-                    src={car.owner.profileImage} 
-                    alt={car.owner.name}
-                    className="w-8 h-8 rounded-full object-cover"
-                  />
-                ) : (
-                  <User className="w-4 h-4 text-green-600" />
-                )}
-              </div>
+              <UserAvatar 
+                user={car.owner} 
+                size="md"
+                className="flex-shrink-0"
+              />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">
                   {car.owner?.name || 'Owner'}
@@ -114,15 +109,27 @@ const CarCard = ({ car, userLocation = null, showDistance = true }) => {
         </div>
 
         <div className="flex justify-between items-center mt-3">
-          <div className="text-xs text-gray-500">
-            Listed by {car.owner?.name || 'Owner'}
-          </div>
-          <div className="text-right">
+          <div>
             <span className="text-xl font-bold text-gray-900">
               AED {car.price || car.pricePerDay}
             </span>
             <span className="text-sm text-gray-500 block">per day</span>
           </div>
+          <button 
+            className={`px-4 py-2 rounded-md font-medium transition-colors ${
+              isUnavailable 
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
+            disabled={isUnavailable}
+            onClick={(e) => {
+              if (isUnavailable) {
+                e.preventDefault();
+              }
+            }}
+          >
+            {isUnavailable ? 'Unavailable' : 'Rent Now'}
+          </button>
         </div>
       </div>
     </Link>
