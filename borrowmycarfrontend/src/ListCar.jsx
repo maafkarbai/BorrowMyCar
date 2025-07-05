@@ -395,6 +395,16 @@ const ListCar = () => {
       return false;
     }
 
+    if (description.trim().length < 10) {
+      setError("Description must be at least 10 characters long");
+      return false;
+    }
+
+    if (description.trim().length > 1000) {
+      setError("Description cannot exceed 1000 characters");
+      return false;
+    }
+
     if (!make || !model || !year || !color || !transmission || !fuelType || !seatingCapacity || !plateNumber.trim() || !mileage) {
       setError("Please fill in all car specification fields");
       return false;
@@ -483,9 +493,20 @@ const ListCar = () => {
     try {
       const formData = new FormData();
 
+      // Log form data for debugging
+      console.log("Form data before submission:", form);
+      console.log("Images before submission:", images);
+
       // Append form fields
       Object.keys(form).forEach((key) => {
-        formData.append(key, form[key]);
+        if (key === 'features' && Array.isArray(form[key])) {
+          // Append each feature separately for proper array handling
+          form[key].forEach((feature) => {
+            formData.append('features', feature);
+          });
+        } else {
+          formData.append(key, form[key]);
+        }
       });
 
       // Append images
@@ -493,11 +514,19 @@ const ListCar = () => {
         formData.append(`images`, image);
       });
 
-      const _response = await API.post("/cars", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      // Log FormData contents
+      console.log("FormData contents:");
+      for (let pair of formData.entries()) {
+        console.log(pair[0] + ': ' + pair[1]);
+      }
+      
+      // Verify FormData is not empty
+      if (![...formData.entries()].length) {
+        setError("No data was created. Please check all fields.");
+        return;
+      }
+
+      const _response = await API.post("/cars", formData);
 
       // Reset form on success
       setForm({
@@ -507,6 +536,18 @@ const ListCar = () => {
         pricePerDay: "",
         availabilityFrom: "",
         availabilityTo: "",
+        // Car specifications
+        make: "",
+        model: "",
+        year: "",
+        color: "",
+        transmission: "",
+        fuelType: "",
+        mileage: "",
+        seatingCapacity: "",
+        plateNumber: "",
+        specifications: "GCC Specs",
+        features: [],
       });
       setImages([]);
       setFileInputKey(Date.now()); // Reset file input
@@ -581,7 +622,7 @@ const ListCar = () => {
         {/* Description */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Description *
+            Description * (10-1000 characters)
           </label>
           <textarea
             name="description"
@@ -592,6 +633,15 @@ const ListCar = () => {
             rows="4"
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors resize-vertical"
           />
+          <div className="flex justify-between text-sm text-gray-500 mt-1">
+            <span>Minimum 10 characters required</span>
+            <span className={`${
+              form.description.length < 10 ? 'text-red-500' : 
+              form.description.length > 1000 ? 'text-red-500' : 'text-gray-500'
+            }`}>
+              {form.description.length}/1000
+            </span>
+          </div>
         </div>
 
         {/* City and Price */}
@@ -837,7 +887,7 @@ const ListCar = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Mileage (km)
+                Mileage (km) *
               </label>
               <input
                 type="number"
@@ -845,6 +895,7 @@ const ListCar = () => {
                 value={form.mileage}
                 placeholder="e.g., 50000"
                 onChange={handleChange}
+                required
                 min="0"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
               />

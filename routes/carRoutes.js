@@ -52,19 +52,106 @@ const carValidationRules = [
       "Fujairah",
       "Ras Al Khaimah",
       "Umm Al Quwain",
+      "Dubai Marina",
+      "Downtown Dubai",
+      "Jumeirah Lake Towers",
+      "Business Bay",
+      "Jumeirah",
+      "Deira",
+      "Bur Dubai",
+      "Palm Jumeirah",
+      "Dubai Sports City",
+      "Dubai Silicon Oasis",
+      "Dubai International City",
+      "Al Qusais",
+      "Al Nahda Dubai",
+      "Dubai Investment Park",
+      "Jumeirah Village Circle",
+      "Dubai Media City",
+      "Dubai Internet City",
+      "Dubai Healthcare City",
+      "Dubai Academic City",
+      "Dubai Festival City",
+      "Dubai Hills Estate",
+      "Dubai Creek Harbour",
+      "Al Barsha",
+      "Al Karama",
+      "Al Satwa",
+      "Al Wasl",
+      "Al Mizhar",
+      "Muhaisnah",
+      "Al Warqa",
+      "Nad Al Hamar",
+      "Oud Metha",
+      "Al Jaddaf",
+      "Dubai World Central",
+      "Motor City",
+      "Arabian Ranches",
+      "The Springs",
+      "The Meadows",
+      "Emirates Hills",
+      "The Lakes",
+      "The Greens",
+      "Discovery Gardens",
+      "Ibn Battuta",
+      "Dubai Production City",
+      "Dubai Studio City",
+      "Khalifa City",
+      "Al Reem Island",
+      "Saadiyat Island",
+      "Yas Island",
+      "Al Maryah Island",
+      "Al Raha",
+      "Al Reef",
+      "Al Ghadeer",
+      "Masdar City",
+      "Mohammed Bin Zayed City",
+      "Al Shamkha",
+      "Al Wathba",
+      "Al Maqtaa",
+      "Al Mushrif",
+      "Al Khalidiyah",
+      "Al Markaziyah",
+      "Al Bateen",
+      "Al Zaab",
+      "Al Manhal",
+      "Al Nahyan",
+      "Al Muroor",
+      "Al Wahda Sharjah",
+      "Al Majaz",
+      "Al Qasimia",
+      "Al Taawun",
+      "Al Nahda Sharjah",
+      "Al Khan",
+      "Al Mamzar",
+      "Al Twar",
+      "Muwaileh",
+      "University City Sharjah",
+      "Al Nuaimiya",
+      "Al Rashidiya",
+      "Al Rumailah",
+      "Al Jurf",
+      "Ajman Downtown",
+      "Al Rawda Ajman",
+      "Al Hamidiyah",
+      "Al Sawan",
+      "Ajman Marina",
+      "Al Rams",
+      "Al Jazirah Al Hamra",
+      "Al Nakheel",
+      "Al Hamra",
+      "Al Qurm",
+      "Khuzam",
+      "Al Seer",
+      "Al Mairid",
+      "Al Uraibi"
     ])
     .withMessage("Please select a valid UAE city"),
 
-  // Handle both price and pricePerDay from frontend
-  body("price")
-    .optional()
-    .isNumeric()
-    .withMessage("Price must be a number")
-    .isFloat({ min: 50, max: 5000 })
-    .withMessage("Price must be between AED 50 and AED 5000 per day"),
-
+  // Handle both price and pricePerDay from frontend - at least one is required
   body("pricePerDay")
-    .optional()
+    .notEmpty()
+    .withMessage("Price per day is required")
     .isNumeric()
     .withMessage("Price per day must be a number")
     .isFloat({ min: 50, max: 5000 })
@@ -121,6 +208,9 @@ const carValidationRules = [
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    console.log("Validation errors:", errors.array());
+    console.log("Request body at validation:", req.body);
+    
     const formattedErrors = errors.array().map((error) => ({
       field: error.path || error.param,
       message: error.msg,

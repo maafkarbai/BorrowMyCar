@@ -79,8 +79,10 @@ export const createCar = handleAsyncError(async (req, res) => {
   }
 
   // Extract and sanitize input data
+  console.log("Raw request body:", req.body);
+  console.log("Features from request:", req.body.features);
   const carData = sanitizeCarData(req.body);
-  console.log("Sanitized car data:", carData);
+  console.log("Sanitized car data:", JSON.stringify(carData, null, 2));
 
   // VALIDATION: Ensure price is set
   if (!carData.price || carData.price <= 0) {
