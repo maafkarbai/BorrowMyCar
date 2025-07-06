@@ -251,6 +251,13 @@ const Footer = () => {
                 >
                   {t("footer.cookies")}
                 </a>
+                <span>•</span>
+                <a
+                  href="/sitemap"
+                  className="hover:text-green-600 transition-colors cursor-pointer"
+                >
+                  Sitemap
+                </a>
               </div>
             </div>
 

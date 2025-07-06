@@ -38,6 +38,7 @@ import RentalAgreement from "./RentalAgreement.jsx";
 import Insurance from "./Insurance.jsx";
 import Refunds from "./Refunds.jsx";
 import Cookies from "./Cookies.jsx";
+import Sitemap from "./Sitemap.jsx";
 import Navbar from "./Navbar.jsx";
 import Footer from "./Footer.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -227,6 +228,10 @@ const router = createBrowserRouter([
       {
         path: "cookies",
         element: <Cookies />,
+      },
+      {
+        path: "sitemap",
+        element: <Sitemap />,
       },
     ],
   },

@@ -146,33 +146,10 @@ const Navbar = () => {
       ];
     }
 
-    const baseItems = [
+    // Keep only essential items in main navbar
+    return [
       { label: t("navigation.home"), path: "/", icon: Home },
       { label: t("navigation.browseCars"), path: "/browse", icon: Car },
-    ];
-
-    if (user.role === "admin") {
-      return [
-        ...baseItems,
-        { label: "Admin Dashboard", path: "/admin/dashboard", icon: BarChart3 },
-        { label: "User Management", path: "/admin?tab=users", icon: User },
-        { label: "Car Management", path: "/admin?tab=cars", icon: Shield },
-        { label: "Bookings", path: "/admin?tab=bookings", icon: Calendar },
-      ];
-    }
-
-    if (user.role === "owner") {
-      return [
-        ...baseItems,
-        { label: "My Cars", path: "/my-cars", icon: Car },
-        { label: t("navigation.myBookings"), path: "/my-bookings", icon: Calendar },
-      ];
-    }
-
-    // Default renter
-    return [
-      ...baseItems,
-      { label: t("navigation.myBookings"), path: "/my-bookings", icon: Calendar },
     ];
   };
 
@@ -185,14 +162,24 @@ const Navbar = () => {
 
   const profileMenuItems = [
     { label: t("profile.myProfile"), path: "/profile", icon: User },
-    { label: t("navigation.settings"), path: "/settings", icon: Settings },
+    { label: t("navigation.myBookings"), path: "/my-bookings", icon: Calendar },
     ...(user?.role === "owner"
       ? [
+          { label: "My Cars", path: "/my-cars", icon: Car },
           { label: "Seller Dashboard", path: "/seller/dashboard", icon: BarChart3 },
           { label: "My Listings", path: "/seller/listings", icon: Car },
           { label: "Orders", path: "/seller/orders", icon: Calendar },
         ]
       : []),
+    ...(user?.role === "admin"
+      ? [
+          { label: "Admin Dashboard", path: "/admin/dashboard", icon: BarChart3 },
+          { label: "User Management", path: "/admin?tab=users", icon: User },
+          { label: "Car Management", path: "/admin?tab=cars", icon: Shield },
+          { label: "Bookings", path: "/admin?tab=bookings", icon: Calendar },
+        ]
+      : []),
+    { label: t("navigation.settings"), path: "/settings", icon: Settings },
     { label: "Support", path: "/support", icon: HelpCircle },
   ];
 
