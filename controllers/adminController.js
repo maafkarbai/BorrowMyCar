@@ -360,16 +360,71 @@ export const deleteUser = handleAsyncError(async (req, res) => {
     });
   }
 
-  // Soft delete
-  user.deletedAt = new Date();
-  user.email = `deleted_${user._id}@deleted.com`;
-  user.phone = `deleted_${user._id}`;
-  await user.save();
-
-  res.json({
-    success: true,
-    message: "User deleted successfully",
+  // Check if user has active bookings
+  const activeBookings = await Booking.find({
+    renter: userId,
+    status: { $in: ["pending", "approved", "confirmed", "active"] },
   });
+
+  if (activeBookings.length > 0) {
+    return res.status(400).json({
+      success: false,
+      message: "Cannot delete user with active bookings",
+    });
+  }
+
+  // Check if user owns cars with active bookings
+  const userCars = await Car.find({ owner: userId });
+  const carIds = userCars.map(car => car._id);
+  
+  const carsWithActiveBookings = await Booking.find({
+    car: { $in: carIds },
+    status: { $in: ["pending", "approved", "confirmed", "active"] },
+  });
+
+  if (carsWithActiveBookings.length > 0) {
+    return res.status(400).json({
+      success: false,
+      message: "Cannot delete user who owns cars with active bookings",
+    });
+  }
+
+  try {
+    // Soft delete with timestamp in email/phone to avoid duplicates
+    const timestamp = Date.now();
+    user.deletedAt = new Date();
+    user.email = `deleted_${timestamp}_${user._id}@deleted.com`;
+    user.phone = `deleted_${timestamp}_${user._id}`;
+    
+    // Disable validation for this save to avoid phone validation issues
+    await user.save({ validateBeforeSave: false });
+
+    // Also soft delete user's cars
+    if (userCars.length > 0) {
+      await Car.updateMany(
+        { owner: userId },
+        { 
+          deletedAt: new Date(),
+          status: "deleted"
+        }
+      );
+    }
+
+    res.json({
+      success: true,
+      message: "User deleted successfully",
+      data: {
+        deletedCars: userCars.length
+      }
+    });
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete user",
+      error: error.message
+    });
+  }
 });
 
 // DELETE CAR (ADMIN)
@@ -502,12 +557,13 @@ export const bulkUserActions = handleAsyncError(async (req, res) => {
   if (action === "delete") {
     // Handle soft delete with email modification
     const users = await User.find({ _id: { $in: userIds } });
+    const timestamp = Date.now();
     await Promise.all(
       users.map(async (user) => {
         user.deletedAt = new Date();
-        user.email = `deleted_${user._id}@deleted.com`;
-        user.phone = `deleted_${user._id}`;
-        await user.save();
+        user.email = `deleted_${timestamp}_${user._id}@deleted.com`;
+        user.phone = `deleted_${timestamp}_${user._id}`;
+        await user.save({ validateBeforeSave: false });
       })
     );
   } else {
