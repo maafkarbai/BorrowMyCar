@@ -69,23 +69,39 @@ const UserAvatar = ({
   const userName = user?.name || user?.username || '';
   const profileImage = user?.profileImage || user?.avatar;
 
-  if (showImage && profileImage && !imageError) {
-    return (
-      <img 
-        src={profileImage} 
-        alt={userName}
-        className={`${getSizeClasses()} rounded-full object-cover ${className}`}
-        onError={() => {
-          setImageError(true);
-        }}
-      />
-    );
-  }
+  // Always use img tag with UI Avatars as fallback for consistency
+  const getAvatarSize = () => {
+    switch (size) {
+      case 'sm':
+        return 48;
+      case 'md':
+        return 64;
+      case 'lg':
+        return 96;
+      case 'xl':
+        return 128;
+      default:
+        return 64;
+    }
+  };
+
+  const avatarUrl = profileImage && !imageError 
+    ? profileImage 
+    : `https://ui-avatars.com/api/?name=${encodeURIComponent(userName || 'User')}&background=10b981&color=ffffff&size=${getAvatarSize()}`;
 
   return (
-    <div className={`${getSizeClasses()} ${getBackgroundColor(userName)} rounded-full flex items-center justify-center text-white font-semibold ${className}`}>
-      {getInitials(userName)}
-    </div>
+    <img 
+      src={avatarUrl} 
+      alt={userName || 'User'}
+      className={`${getSizeClasses()} rounded-full object-cover ${className}`}
+      onError={(e) => {
+        if (profileImage && !imageError) {
+          // If custom image fails, fall back to UI Avatars
+          setImageError(true);
+          e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName || 'User')}&background=10b981&color=ffffff&size=${getAvatarSize()}`;
+        }
+      }}
+    />
   );
 };
 

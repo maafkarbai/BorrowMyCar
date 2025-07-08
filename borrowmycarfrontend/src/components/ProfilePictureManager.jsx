@@ -153,23 +153,27 @@ const ProfilePictureManager = ({
           {user?.profileImage ? (
             <img
               src={user.profileImage}
-              alt={`${user.name}'s profile`}
+              alt={`${user?.name || "User"}'s profile`}
               className={`${config.image} object-cover`}
               onError={(e) => {
                 e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                  user.name || "User"
+                  user?.name || "User"
                 )}&background=10b981&color=ffffff&size=200`;
               }}
             />
           ) : (
-            <div className="flex items-center justify-center w-full h-full bg-gradient-to-br from-gray-200 to-gray-300">
-              <User className={`${config.icon} text-gray-500`} />
-            </div>
+            <img
+              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                user?.name || "User"
+              )}&background=10b981&color=ffffff&size=200`}
+              alt={`${user?.name || "User"}'s profile`}
+              className={`${config.image} object-cover`}
+            />
           )}
 
           {/* Upload/Edit Overlay */}
           {editable && (
-            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center rounded-full">
               <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                 <button
                   onClick={() => fileInputRef.current?.click()}
@@ -189,7 +193,7 @@ const ProfilePictureManager = ({
           <button
             onClick={handleRemove}
             disabled={removing || uploading}
-            className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed opacity-0 group-hover:opacity-100"
             title="Remove profile picture"
           >
             {removing ? (

@@ -11,7 +11,7 @@ const Login = () => {
     rememberMe: false,
   });
   const [error, setError] = useState("");
-  
+
   const navigate = useNavigate();
   const location = useLocation();
   const { login, loading } = useAuth();
@@ -20,7 +20,7 @@ const Login = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
@@ -71,7 +71,9 @@ const Login = () => {
               </h1>
               <p className="mt-2 text-gray-600">
                 Sign in to your{" "}
-                <span className="font-semibold text-green-500">BorrowMyCar</span>{" "}
+                <span className="font-semibold text-green-500">
+                  BorrowMyCar
+                </span>{" "}
                 account
               </p>
             </div>
@@ -174,7 +176,7 @@ const Login = () => {
         {/* Right Side - Welcome Section */}
         <div className="hidden lg:flex lg:flex-1 lg:items-center lg:justify-center bg-gradient-to-br from-green-50 to-emerald-100 p-8">
           <div className="text-center max-w-md space-y-6">
-            <div className="w-64 h-48 bg-gradient-to-r from-green-400 to-emerald-500 rounded-2xl shadow-lg flex items-center justify-center text-white text-6xl">
+            <div className="w-64 m-auto h-48 bg-gradient-to-r from-green-400 to-emerald-500 rounded-2xl shadow-lg flex items-center justify-center text-white text-6xl">
               🚗
             </div>
             <div className="space-y-3">
@@ -185,7 +187,8 @@ const Login = () => {
                 Ready to hit the road again?
               </p>
               <p className="text-sm text-gray-500">
-                Access your bookings, browse available cars, and manage your rentals.
+                Access your bookings, browse available cars, and manage your
+                rentals.
               </p>
             </div>
           </div>
