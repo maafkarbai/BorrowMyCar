@@ -348,6 +348,67 @@ export const getAllBookings = handleAsyncError(async (req, res) => {
   });
 });
 
+// MODIFY USER (ADMIN)
+export const modifyUser = handleAsyncError(async (req, res) => {
+  const { userId } = req.params;
+  const { name, email, phone, role, preferredCity, isApproved } = req.body;
+
+  const user = await User.findById(userId);
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "User not found",
+    });
+  }
+
+  // Update fields if provided
+  if (name !== undefined) user.name = name;
+  if (email !== undefined) user.email = email;
+  if (phone !== undefined) user.phone = phone;
+  if (role !== undefined && ["renter", "owner"].includes(role)) user.role = role;
+  if (preferredCity !== undefined) user.preferredCity = preferredCity;
+  if (isApproved !== undefined) user.isApproved = isApproved;
+
+  await user.save();
+
+  res.json({
+    success: true,
+    message: "User updated successfully",
+    data: { user },
+  });
+});
+
+// BLOCK/UNBLOCK USER (ADMIN)
+export const blockUser = handleAsyncError(async (req, res) => {
+  const { userId } = req.params;
+  const { isBlocked, blockReason } = req.body;
+
+  const user = await User.findById(userId);
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "User not found",
+    });
+  }
+
+  user.isBlocked = isBlocked;
+  if (isBlocked) {
+    user.blockedAt = new Date();
+    user.blockReason = blockReason || "Admin decision";
+  } else {
+    user.blockedAt = null;
+    user.blockReason = null;
+  }
+
+  await user.save();
+
+  res.json({
+    success: true,
+    message: `User ${isBlocked ? "blocked" : "unblocked"} successfully`,
+    data: { user },
+  });
+});
+
 // DELETE USER (ADMIN)
 export const deleteUser = handleAsyncError(async (req, res) => {
   const { userId } = req.params;

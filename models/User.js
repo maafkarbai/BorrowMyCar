@@ -110,6 +110,10 @@ const userSchema = new mongoose.Schema(
     isEmailVerified: { type: Boolean, default: false },
     isPhoneVerified: { type: Boolean, default: false },
     lastLoginAt: { type: Date },
+    // Account blocking
+    isBlocked: { type: Boolean, default: false },
+    blockedAt: { type: Date },
+    blockReason: { type: String },
     // Soft delete
     deletedAt: { type: Date, default: null },
   },

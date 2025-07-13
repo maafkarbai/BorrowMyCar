@@ -393,6 +393,8 @@ const UserCard = ({
   approveUser,
   rejectUser,
   deleteUser,
+  modifyUser,
+  toggleBlockUser,
 }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-4 hover:shadow-md transition-shadow duration-200">
@@ -450,15 +452,22 @@ const UserCard = ({
               </div>
               <div>
                 <p className="text-sm text-gray-500">Status</p>
-                <span
-                  className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                    user.isApproved
-                      ? "bg-green-100 text-green-800"
-                      : "bg-yellow-100 text-yellow-800"
-                  }`}
-                >
-                  {user.isApproved ? "Approved" : "Pending"}
-                </span>
+                <div className="flex flex-col gap-1">
+                  <span
+                    className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                      user.isApproved
+                        ? "bg-green-100 text-green-800"
+                        : "bg-yellow-100 text-yellow-800"
+                    }`}
+                  >
+                    {user.isApproved ? "Approved" : "Pending"}
+                  </span>
+                  {user.isBlocked && (
+                    <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      Blocked
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -536,6 +545,52 @@ const UserCard = ({
             </svg>
             View Details
           </button>
+          <button
+            onClick={() => modifyUser(user._id)}
+            className="inline-flex items-center px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors duration-200"
+          >
+            <svg
+              className="w-4 h-4 mr-1"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+              />
+            </svg>
+            Modify
+          </button>
+          <button
+            onClick={() => toggleBlockUser(user._id, user.isBlocked)}
+            className={`inline-flex items-center px-3 py-2 text-sm font-medium text-white ${
+              user.isBlocked
+                ? "bg-orange-600 hover:bg-orange-700 focus:ring-orange-500"
+                : "bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500"
+            } rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200`}
+          >
+            <svg
+              className="w-4 h-4 mr-1"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d={
+                  user.isBlocked
+                    ? "M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"
+                    : "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                }
+              />
+            </svg>
+            {user.isBlocked ? "Unblock" : "Block"}
+          </button>
           {showActions && !user.isApproved && (
             <>
               <button
@@ -576,27 +631,27 @@ const UserCard = ({
                 </svg>
                 Reject
               </button>
-              <button
-                onClick={() => deleteUser(user._id)}
-                className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-gray-600 rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200"
-              >
-                <svg
-                  className="w-4 h-4 mr-1"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                  />
-                </svg>
-                Delete
-              </button>
             </>
           )}
+          <button
+            onClick={() => deleteUser(user._id)}
+            className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-gray-600 rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200"
+          >
+            <svg
+              className="w-4 h-4 mr-1"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
+            </svg>
+            Delete
+          </button>
         </div>
       </div>
     </div>
@@ -851,6 +906,192 @@ const SystemConfigModal = ({
   );
 };
 
+// Modify User Modal
+const ModifyUserModal = ({ user, setShowModifyUser, saveModifiedUser }) => {
+  const [formData, setFormData] = useState({
+    name: user?.name || "",
+    email: user?.email || "",
+    phone: user?.phone || "",
+    role: user?.role || "renter",
+    preferredCity: user?.preferredCity || "",
+    isApproved: user?.isApproved || false,
+  });
+
+  // Update form data when user changes
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        role: user.role || "renter",
+        preferredCity: user.preferredCity || "",
+        isApproved: user.isApproved || false,
+      });
+    }
+  }, [user]);
+
+  if (!user) return null;
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    saveModifiedUser(user._id, formData);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex justify-between items-start">
+            <h2 className="text-2xl font-bold text-gray-900">Modify User</h2>
+            <button
+              onClick={() => setShowModifyUser(null)}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Name
+              </label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email
+              </label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Phone
+              </label>
+              <input
+                type="text"
+                value={formData.phone}
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Role
+              </label>
+              <select
+                value={formData.role}
+                onChange={(e) =>
+                  setFormData({ ...formData, role: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="renter">Renter</option>
+                <option value="owner">Owner</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Preferred City
+              </label>
+              <select
+                value={formData.preferredCity}
+                onChange={(e) =>
+                  setFormData({ ...formData, preferredCity: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select a city</option>
+                <option value="Dubai">Dubai</option>
+                <option value="Abu Dhabi">Abu Dhabi</option>
+                <option value="Sharjah">Sharjah</option>
+                <option value="Ajman">Ajman</option>
+                <option value="Fujairah">Fujairah</option>
+                <option value="Ras Al Khaimah">Ras Al Khaimah</option>
+                <option value="Umm Al Quwain">Umm Al Quwain</option>
+              </select>
+            </div>
+
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="isApproved"
+                checked={formData.isApproved}
+                onChange={(e) =>
+                  setFormData({ ...formData, isApproved: e.target.checked })
+                }
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label
+                htmlFor="isApproved"
+                className="ml-2 block text-sm text-gray-700"
+              >
+                Approved
+              </label>
+            </div>
+
+            {user.isBlocked && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <p className="text-sm text-yellow-800">
+                  <strong>User is blocked</strong>
+                  {user.blockReason && (
+                    <>
+                      <br />
+                      Reason: {user.blockReason}
+                    </>
+                  )}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-6 flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setShowModifyUser(null)}
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 // Bulk Actions Bar
 const BulkActionsBar = ({
   selectedUsers,
@@ -914,6 +1155,7 @@ const AdminDashboard = () => {
   const [_selectedCars, _setSelectedCars] = useState([]);
   const [showUserDetails, setShowUserDetails] = useState(null);
   const [showSystemConfig, setShowSystemConfig] = useState(false);
+  const [showModifyUser, setShowModifyUser] = useState(null);
   const [activityLog, setActivityLog] = useState([]);
   const [systemConfig, setSystemConfig] = useState(null);
   const [pagination, setPagination] = useState({
@@ -940,19 +1182,21 @@ const AdminDashboard = () => {
       navigate("/admin");
       return;
     }
+    
+    const initializeData = async () => {
+      await Promise.all([
+        fetchStats(),
+        fetchUsers(),
+        fetchCars(),
+        fetchBookings(),
+        fetchActivityLog(),
+        fetchSystemConfig(),
+      ]);
+    };
+    
     initializeData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminUser, navigate]);
-
-  const initializeData = async () => {
-    await Promise.all([
-      fetchStats(),
-      fetchUsers(),
-      fetchCars(),
-      fetchBookings(),
-      fetchActivityLog(),
-      fetchSystemConfig(),
-    ]);
-  };
 
   const fetchStats = async () => {
     try {
@@ -1263,6 +1507,48 @@ const AdminDashboard = () => {
       setSelectedUsers([]);
     } else {
       setSelectedUsers(allUsers.map((user) => user._id));
+    }
+  };
+
+  const modifyUser = (userId) => {
+    const user = allUsers.find((u) => u._id === userId);
+    if (user) {
+      setShowModifyUser(user);
+    }
+  };
+
+  const toggleBlockUser = async (userId, isCurrentlyBlocked) => {
+    const action = isCurrentlyBlocked ? "unblock" : "block";
+    if (!window.confirm(`Are you sure you want to ${action} this user?`)) return;
+
+    try {
+      const adminAPI = getAdminAPI();
+      const blockReason = isCurrentlyBlocked ? null : prompt("Enter reason for blocking (optional):");
+      
+      await adminAPI.patch(`/admin/users/${userId}/block`, {
+        isBlocked: !isCurrentlyBlocked,
+        blockReason,
+      });
+      
+      await Promise.all([fetchUsers(), fetchStats()]);
+      setError("");
+    } catch (err) {
+      console.error(`Error ${action}ing user:`, err);
+      setError(`Failed to ${action} user`);
+    }
+  };
+
+  const saveModifiedUser = async (userId, updatedData) => {
+    try {
+      const adminAPI = getAdminAPI();
+      await adminAPI.put(`/admin/users/${userId}`, updatedData);
+      
+      await Promise.all([fetchUsers(), fetchStats()]);
+      setShowModifyUser(null);
+      setError("");
+    } catch (err) {
+      console.error("Error modifying user:", err);
+      setError("Failed to modify user");
     }
   };
 
@@ -1637,6 +1923,8 @@ const AdminDashboard = () => {
                         approveUser={approveUser}
                         rejectUser={rejectUser}
                         deleteUser={deleteUser}
+                        modifyUser={modifyUser}
+                        toggleBlockUser={toggleBlockUser}
                       />
                     ))}
                     <Pagination
@@ -1980,6 +2268,11 @@ const AdminDashboard = () => {
         setShowSystemConfig={setShowSystemConfig}
         systemConfig={systemConfig}
         updateSystemConfig={updateSystemConfig}
+      />
+      <ModifyUserModal
+        user={showModifyUser}
+        setShowModifyUser={setShowModifyUser}
+        saveModifiedUser={saveModifiedUser}
       />
     </>
   );

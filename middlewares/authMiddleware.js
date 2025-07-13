@@ -56,6 +56,15 @@ export const protect = handleAsyncError(async (req, res, next) => {
       });
     }
 
+    // Check if user account is blocked
+    if (user.isBlocked) {
+      return res.status(403).json({
+        success: false,
+        message: user.blockReason || "Your account has been blocked. Please contact support.",
+        code: "ACCOUNT_BLOCKED",
+      });
+    }
+
     // Add user to request object
     req.user = user;
     next();
@@ -123,7 +132,7 @@ export const optionalAuth = handleAsyncError(async (req, res, next) => {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const user = await User.findById(decoded.id).select("-password");
-      if (user && !user.deletedAt) {
+      if (user && !user.deletedAt && !user.isBlocked) {
         req.user = user;
       }
     } catch (error) {
