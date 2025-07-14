@@ -72,7 +72,7 @@ describe('CarCard Component', () => {
   it('shows car image with fallback', () => {
     renderCarCard();
 
-    const image = screen.getByAltText('Toyota Camry 2023');
+    const image = screen.getByAltText('Toyota Camry 2023 - Image 1');
     expect(image).toBeInTheDocument();
     expect(image.src).toBe('https://example.com/image1.jpg');
   });
@@ -81,7 +81,7 @@ describe('CarCard Component', () => {
     const carWithoutImages = { ...mockCar, images: [] };
     renderCarCard({ car: carWithoutImages });
 
-    const image = screen.getByAltText('Toyota Camry 2023');
+    const image = screen.getByAltText('Toyota Camry 2023 - Image 1');
     expect(image).toBeInTheDocument();
     // Should have a fallback image
   });
@@ -256,6 +256,139 @@ describe('CarCard Component', () => {
       renderCarCard({ car: carWithHighRating });
       
       expect(screen.getByText('4.9')).toBeInTheDocument();
+    });
+  });
+
+  // Tests for new carousel functionality
+  describe('Carousel Features', () => {
+    it('displays carousel controls when multiple images exist', () => {
+      renderCarCard();
+      
+      // Should show navigation arrows
+      expect(screen.getByLabelText('Previous image')).toBeInTheDocument();
+      expect(screen.getByLabelText('Next image')).toBeInTheDocument();
+      
+      // Should show image indicators
+      const indicators = screen.getAllByRole('button', { name: /Go to image/i });
+      expect(indicators).toHaveLength(2);
+      
+      // Should show image counter
+      expect(screen.getByText('1 / 2')).toBeInTheDocument();
+    });
+
+    it('hides carousel controls when only one image exists', () => {
+      const carWithOneImage = {
+        ...mockCar,
+        images: ['https://example.com/image1.jpg']
+      };
+      renderCarCard({ car: carWithOneImage });
+      
+      // Should not show navigation arrows
+      expect(screen.queryByLabelText('Previous image')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Next image')).not.toBeInTheDocument();
+      
+      // Should not show image indicators
+      expect(screen.queryByRole('button', { name: /Go to image/i })).not.toBeInTheDocument();
+      
+      // Should not show image counter
+      expect(screen.queryByText('1 / 1')).not.toBeInTheDocument();
+    });
+
+    it('navigates to next image when next button is clicked', () => {
+      renderCarCard();
+      
+      const nextButton = screen.getByLabelText('Next image');
+      fireEvent.click(nextButton);
+      
+      // Should show second image
+      const image = screen.getByAltText('Toyota Camry 2023 - Image 2');
+      expect(image).toBeInTheDocument();
+      expect(image.src).toBe('https://example.com/image2.jpg');
+      
+      // Should update counter
+      expect(screen.getByText('2 / 2')).toBeInTheDocument();
+    });
+
+    it('navigates to previous image when previous button is clicked', () => {
+      renderCarCard();
+      
+      // First go to next image
+      const nextButton = screen.getByLabelText('Next image');
+      fireEvent.click(nextButton);
+      
+      // Then go back to previous
+      const prevButton = screen.getByLabelText('Previous image');
+      fireEvent.click(prevButton);
+      
+      // Should show first image again
+      const image = screen.getByAltText('Toyota Camry 2023 - Image 1');
+      expect(image).toBeInTheDocument();
+      expect(image.src).toBe('https://example.com/image1.jpg');
+      
+      // Should update counter
+      expect(screen.getByText('1 / 2')).toBeInTheDocument();
+    });
+
+    it('cycles through images correctly', () => {
+      renderCarCard();
+      
+      const nextButton = screen.getByLabelText('Next image');
+      
+      // Click next twice (should cycle back to first image)
+      fireEvent.click(nextButton);
+      fireEvent.click(nextButton);
+      
+      // Should show first image again
+      const image = screen.getByAltText('Toyota Camry 2023 - Image 1');
+      expect(image).toBeInTheDocument();
+      expect(image.src).toBe('https://example.com/image1.jpg');
+      
+      // Should update counter
+      expect(screen.getByText('1 / 2')).toBeInTheDocument();
+    });
+
+    it('navigates to specific image when indicator is clicked', () => {
+      renderCarCard();
+      
+      const indicators = screen.getAllByRole('button', { name: /Go to image/i });
+      fireEvent.click(indicators[1]); // Click second indicator
+      
+      // Should show second image
+      const image = screen.getByAltText('Toyota Camry 2023 - Image 2');
+      expect(image).toBeInTheDocument();
+      expect(image.src).toBe('https://example.com/image2.jpg');
+      
+      // Should update counter
+      expect(screen.getByText('2 / 2')).toBeInTheDocument();
+    });
+
+    it('prevents event bubbling on carousel controls', () => {
+      const mockStopPropagation = vi.fn();
+      renderCarCard();
+      
+      const nextButton = screen.getByLabelText('Next image');
+      
+      // Simulate click event
+      fireEvent.click(nextButton, { 
+        stopPropagation: mockStopPropagation 
+      });
+      
+      expect(nextButton).toBeInTheDocument();
+    });
+
+    it('shows correct image counter format', () => {
+      const carWithManyImages = {
+        ...mockCar,
+        images: [
+          'https://example.com/image1.jpg',
+          'https://example.com/image2.jpg',
+          'https://example.com/image3.jpg',
+          'https://example.com/image4.jpg'
+        ]
+      };
+      renderCarCard({ car: carWithManyImages });
+      
+      expect(screen.getByText('1 / 4')).toBeInTheDocument();
     });
   });
 });

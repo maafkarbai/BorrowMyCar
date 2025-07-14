@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 import Booking from "../models/Booking.js";
 import Car from "../models/Car.js";
+import Notification from "../models/Notification.js";
 import { handleAsyncError } from "../utils/errorHandler.js";
 
 const stripe = process.env.STRIPE_SECRET_KEY
@@ -106,6 +107,18 @@ export const processPayment = handleAsyncError(async (req, res) => {
             booking.status = "confirmed";
             booking.paidAt = new Date();
             await booking.save();
+
+            // Send payment success notification
+            try {
+              await Notification.createPaymentNotification(
+                booking.renter,
+                "payment_successful",
+                booking.totalAmount,
+                booking._id
+              );
+            } catch (notificationError) {
+              console.error("Failed to send payment success notification:", notificationError);
+            }
           }
         } catch (stripeError) {
           console.error("Stripe error:", stripeError);
@@ -248,6 +261,18 @@ export const confirmPayment = handleAsyncError(async (req, res) => {
       booking.paidAt = new Date();
       booking.transactionId = paymentIntentId;
       await booking.save();
+
+      // Send payment success notification
+      try {
+        await Notification.createPaymentNotification(
+          booking.renter,
+          "payment_successful",
+          booking.totalAmount,
+          booking._id
+        );
+      } catch (notificationError) {
+        console.error("Failed to send payment success notification:", notificationError);
+      }
     }
 
     res.json({
@@ -402,12 +427,44 @@ export const handleStripeWebhook = handleAsyncError(async (req, res) => {
             booking.paidAt = new Date();
             booking.transactionId = paymentIntent.id;
             await booking.save();
+
+            // Send payment success notification
+            try {
+              await Notification.createPaymentNotification(
+                booking.renter,
+                "payment_successful",
+                booking.totalAmount,
+                booking._id
+              );
+            } catch (notificationError) {
+              console.error("Failed to send payment success notification:", notificationError);
+            }
           }
         }
         break;
       case "payment_intent.payment_failed":
         const failedPayment = event.data.object;
         console.log("Payment failed:", failedPayment.id);
+        
+        // Send payment failure notification
+        if (
+          failedPayment.metadata.bookingId &&
+          !failedPayment.metadata.bookingId.startsWith("temp_")
+        ) {
+          try {
+            const booking = await Booking.findById(failedPayment.metadata.bookingId);
+            if (booking) {
+              await Notification.createPaymentNotification(
+                booking.renter,
+                "payment_failed",
+                booking.totalAmount,
+                booking._id
+              );
+            }
+          } catch (notificationError) {
+            console.error("Failed to send payment failure notification:", notificationError);
+          }
+        }
         break;
       default:
         console.log(`Unhandled event type ${event.type}`);

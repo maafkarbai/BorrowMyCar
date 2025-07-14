@@ -75,19 +75,21 @@ globalThis.URL = vi.fn().mockImplementation((url) => ({
 }));
 
 // Mock react-router-dom
-vi.mock('react-router-dom', () => ({
-  BrowserRouter: ({ children }) => children,
-  Routes: ({ children }) => children,
-  Route: ({ children }) => children,
-  Link: ({ children, to, ...props }) => {
-    const React = globalThis.require('react');
-    return React.createElement('a', { href: to, ...props }, children);
-  },
-  useNavigate: () => vi.fn(),
-  useLocation: () => ({ pathname: '/', search: '', hash: '', state: null, key: 'default' }),
-  useParams: () => ({}),
-  Navigate: () => null,
-}));
+vi.mock('react-router-dom', async () => {
+  const React = await import('react');
+  return {
+    BrowserRouter: ({ children }) => children,
+    Routes: ({ children }) => children,
+    Route: ({ children }) => children,
+    Link: ({ children, to, ...props }) => {
+      return React.createElement('a', { href: to, ...props }, children);
+    },
+    useNavigate: () => vi.fn(),
+    useLocation: () => ({ pathname: '/', search: '', hash: '', state: null, key: 'default' }),
+    useParams: () => ({}),
+    Navigate: () => null,
+  };
+});
 
 // Mock geolocation
 Object.defineProperty(globalThis.navigator, 'geolocation', {
@@ -145,8 +147,8 @@ vi.mock('../api', () => ({
 }));
 
 // Mock Lucide React icons
-vi.mock('lucide-react', () => {
-  const React = globalThis.require('react');
+vi.mock('lucide-react', async () => {
+  const React = await import('react');
   const MockIcon = ({ className, ...props }) => 
     React.createElement('div', { className: `mock-icon ${className || ''}`, ...props });
   

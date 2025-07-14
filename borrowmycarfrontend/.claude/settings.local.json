@@ -16,7 +16,8 @@
       "Bash(bun install:*)",
       "Bash(find:*)",
       "Bash(npm run build:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(cd:*)"
     ],
     "deny": []
   }

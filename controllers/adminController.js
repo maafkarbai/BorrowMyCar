@@ -2,6 +2,7 @@
 import User from "../models/User.js";
 import Car from "../models/Car.js";
 import Booking from "../models/Booking.js";
+import Notification from "../models/Notification.js";
 import { handleAsyncError } from "../utils/errorHandler.js";
 
 // ADMIN DASHBOARD STATS
@@ -207,6 +208,18 @@ export const updateUserApproval = handleAsyncError(async (req, res) => {
   }
 
   await user.save();
+
+  // Send notification to user
+  try {
+    if (isApproved) {
+      await Notification.createAccountApprovalNotification(userId);
+    } else {
+      await Notification.createAccountRejectionNotification(userId, reason || "Please review your documents and try again.");
+    }
+  } catch (notificationError) {
+    console.error("Failed to send notification:", notificationError);
+    // Continue with the response even if notification fails
+  }
 
   res.json({
     success: true,

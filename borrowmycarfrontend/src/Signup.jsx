@@ -194,8 +194,10 @@ const Signup = () => {
 
   const handleVerificationSuccess = (verificationData) => {
     if (verificationData.user) {
+      // User was successfully logged in after email verification
       navigate("/", { replace: true });
     } else {
+      // Registration successful but no automatic login
       setShowOTPVerification(false);
       setStep(4);
     }
@@ -584,47 +586,39 @@ const Signup = () => {
     </div>
   );
 
-  // Step 4: Success
-  const renderStep4 = () => (
-    <div className="text-center space-y-6">
-      <div className="mx-auto w-24 h-24 bg-green-100 rounded-full flex items-center justify-center">
-        <span className="text-green-600 text-4xl">✓</span>
-      </div>
-
-      <div className="space-y-2">
-        <h2 className="text-2xl font-bold text-gray-900">
-          Registration Successful!
-        </h2>
-        <p className="text-gray-600">
-          Welcome to BorrowMyCar! Your account has been created successfully.
-        </p>
-      </div>
-
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="font-medium text-blue-900 mb-2">What's Next?</h3>
-        <div className="text-sm text-blue-800 space-y-1">
-          <p>📧 Check your email for verification instructions</p>
-          <p>⏱️ Our team will review your documents within 24-48 hours</p>
-          <p>🎉 You'll receive approval notification via email</p>
+  // Step 4: Success - Redirect to dedicated success page
+  const renderStep4 = () => {
+    // Redirect to dedicated registration success page
+    navigate("/registration-success", { 
+      state: { 
+        user: { 
+          name: formData.name, 
+          email: formData.email,
+          phone: formData.phone,
+          role: formData.role
+        }, 
+        role: formData.role 
+      },
+      replace: true
+    });
+    
+    // Return a loading state while redirecting
+    return (
+      <div className="text-center space-y-6">
+        <div className="mx-auto w-24 h-24 bg-green-100 rounded-full flex items-center justify-center">
+          <span className="text-green-600 text-4xl">✓</span>
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold text-gray-900">
+            Registration Successful!
+          </h2>
+          <p className="text-gray-600">
+            Redirecting to welcome page...
+          </p>
         </div>
       </div>
-
-      <div className="space-y-3">
-        <Link
-          to="/login"
-          className="w-full inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
-        >
-          Sign In to Your Account
-        </Link>
-        <Link
-          to="/"
-          className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
-        >
-          Return to Homepage
-        </Link>
-      </div>
-    </div>
-  );
+    );
+  };
 
   // Show OTP verification if needed
   if (showOTPVerification) {
