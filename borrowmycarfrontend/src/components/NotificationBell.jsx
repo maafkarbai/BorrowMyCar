@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { BellIcon } from "@heroicons/react/24/outline";
-import { BellIcon as BellIconSolid } from "@heroicons/react/24/solid";
+import { Bell, BellRing } from "lucide-react";
 import { useNotifications } from "../context/NotificationContext";
 import NotificationDropdown from "./NotificationDropdown";
 
@@ -23,9 +22,6 @@ const NotificationBell = () => {
 
   const handleClick = () => {
     setIsOpen(!isOpen);
-    if (!isOpen) {
-      fetchNotifications(1, false);
-    }
   };
 
   return (
@@ -36,9 +32,9 @@ const NotificationBell = () => {
         aria-label="Notifications"
       >
         {unreadCount > 0 ? (
-          <BellIconSolid className="h-6 w-6" />
+          <BellRing className="h-6 w-6" />
         ) : (
-          <BellIcon className="h-6 w-6" />
+          <Bell className="h-6 w-6" />
         )}
         
         {unreadCount > 0 && (

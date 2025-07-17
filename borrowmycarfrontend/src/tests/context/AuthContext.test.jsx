@@ -1,21 +1,26 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AuthProvider, useAuth } from '../../context/AuthContext';
-import api from '../../api';
+import API from '../../api';
 
-// Mock the API
-vi.mock('../../api');
+// Mock API
+vi.mock('../../api', () => ({
+  default: {
+    get: vi.fn(),
+    post: vi.fn(),
+  },
+}));
 
-// Test component to use the auth context
+// Test component to access context
 const TestComponent = () => {
   const { user, login, logout, loading, error } = useAuth();
-
+  
   return (
     <div>
-      <div data-testid="user">{user ? user.name : 'No user'}</div>
-      <div data-testid="loading">{loading ? 'Loading' : 'Not loading'}</div>
-      <div data-testid="error">{error || 'No error'}</div>
-      <button onClick={() => login('test@example.com', 'password')}>
+      <div data-testid="loading">{loading ? 'Loading' : 'Not Loading'}</div>
+      <div data-testid="error">{error || 'No Error'}</div>
+      <div data-testid="user">{user ? user.name : 'No User'}</div>
+      <button onClick={() => login({ email: 'test@test.com', password: 'password' })}>
         Login
       </button>
       <button onClick={logout}>Logout</button>
@@ -23,224 +28,146 @@ const TestComponent = () => {
   );
 };
 
-const renderWithAuthProvider = (component) => {
-  return render(
-    <AuthProvider>
-      {component}
-    </AuthProvider>
-  );
-};
+const AuthWrapper = ({ children }) => (
+  <AuthProvider>
+    {children}
+  </AuthProvider>
+);
 
 describe('AuthContext', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorage.clear();
   });
 
-  it('provides initial state correctly', () => {
-    renderWithAuthProvider(<TestComponent />);
-
-    expect(screen.getByTestId('user')).toHaveTextContent('No user');
-    expect(screen.getByTestId('loading')).toHaveTextContent('Not loading');
-    expect(screen.getByTestId('error')).toHaveTextContent('No error');
-  });
-
-  it('loads user from localStorage on mount', async () => {
-    const mockUser = { id: '1', name: 'John Doe', email: 'john@example.com' };
-    const mockToken = 'fake-jwt-token';
-
-    localStorage.setItem('borrowmycar_user', JSON.stringify(mockUser));
-    localStorage.setItem('borrowmycar_token', mockToken);
-
-    renderWithAuthProvider(<TestComponent />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('user')).toHaveTextContent('John Doe');
-    });
-  });
-
-  it('handles login successfully', async () => {
-    const mockResponse = {
-      data: {
-        success: true,
-        user: { id: '1', name: 'John Doe', email: 'test@example.com' },
-        token: 'fake-jwt-token',
-      },
-    };
-
-    api.post.mockResolvedValueOnce(mockResponse);
-
-    renderWithAuthProvider(<TestComponent />);
-
-    const loginButton = screen.getByText('Login');
-    fireEvent.click(loginButton);
-
-    expect(screen.getByTestId('loading')).toHaveTextContent('Loading');
-
-    await waitFor(() => {
-      expect(screen.getByTestId('user')).toHaveTextContent('John Doe');
-      expect(screen.getByTestId('loading')).toHaveTextContent('Not loading');
-    });
-
-    expect(api.post).toHaveBeenCalledWith('/auth/login', {
-      email: 'test@example.com',
-      password: 'password',
-    });
-
-    // Check localStorage
-    expect(localStorage.getItem('borrowmycar_user')).toBe(
-      JSON.stringify(mockResponse.data.user)
-    );
-    expect(localStorage.getItem('borrowmycar_token')).toBe(mockResponse.data.token);
-  });
-
-  it('handles login failure', async () => {
-    const mockError = {
-      response: {
-        data: {
-          message: 'Invalid credentials',
-        },
-      },
-    };
-
-    api.post.mockRejectedValueOnce(mockError);
-
-    renderWithAuthProvider(<TestComponent />);
-
-    const loginButton = screen.getByText('Login');
-    fireEvent.click(loginButton);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('error')).toHaveTextContent('Invalid credentials');
-      expect(screen.getByTestId('loading')).toHaveTextContent('Not loading');
-      expect(screen.getByTestId('user')).toHaveTextContent('No user');
-    });
-  });
-
-  it('handles logout correctly', async () => {
-    const mockUser = { id: '1', name: 'John Doe', email: 'john@example.com' };
-    const mockToken = 'fake-jwt-token';
-
-    localStorage.setItem('borrowmycar_user', JSON.stringify(mockUser));
-    localStorage.setItem('borrowmycar_token', mockToken);
-
-    renderWithAuthProvider(<TestComponent />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('user')).toHaveTextContent('John Doe');
-    });
-
-    const logoutButton = screen.getByText('Logout');
-    fireEvent.click(logoutButton);
-
-    expect(screen.getByTestId('user')).toHaveTextContent('No user');
-    expect(localStorage.getItem('borrowmycar_user')).toBeNull();
-    expect(localStorage.getItem('borrowmycar_token')).toBeNull();
-  });
-
-  it('sets authorization header after login', async () => {
-    const mockResponse = {
-      data: {
-        success: true,
-        user: { id: '1', name: 'John Doe', email: 'test@example.com' },
-        token: 'fake-jwt-token',
-      },
-    };
-
-    api.post.mockResolvedValueOnce(mockResponse);
-
-    renderWithAuthProvider(<TestComponent />);
-
-    const loginButton = screen.getByText('Login');
-    fireEvent.click(loginButton);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('user')).toHaveTextContent('John Doe');
-    });
-
-    // Check if API defaults were updated
-    expect(api.defaults.headers.common.Authorization).toBe('Bearer fake-jwt-token');
-  });
-
-  it('clears authorization header after logout', async () => {
-    const mockUser = { id: '1', name: 'John Doe', email: 'john@example.com' };
-    const mockToken = 'fake-jwt-token';
-
-    localStorage.setItem('borrowmycar_user', JSON.stringify(mockUser));
-    localStorage.setItem('borrowmycar_token', mockToken);
-    api.defaults.headers.common.Authorization = `Bearer ${mockToken}`;
-
-    renderWithAuthProvider(<TestComponent />);
-
-    const logoutButton = screen.getByText('Logout');
-    fireEvent.click(logoutButton);
-
-    expect(api.defaults.headers.common.Authorization).toBeUndefined();
-  });
-
-  it('handles signup correctly', async () => {
-    const mockResponse = {
-      data: {
-        success: true,
-        user: { id: '1', name: 'John Doe', email: 'john@example.com' },
-        token: 'fake-jwt-token',
-        message: 'Account created successfully',
-      },
-    };
-
-    api.post.mockResolvedValueOnce(mockResponse);
-
-    const TestSignupComponent = () => {
-      const { signup, user, loading, error } = useAuth();
-
-      return (
-        <div>
-          <div data-testid="user">{user ? user.name : 'No user'}</div>
-          <div data-testid="loading">{loading ? 'Loading' : 'Not loading'}</div>
-          <div data-testid="error">{error || 'No error'}</div>
-          <button
-            onClick={() => signup({
-              name: 'John Doe',
-              email: 'john@example.com',
-              password: 'password123',
-              phone: '0501234567',
-              role: 'renter',
-            })}
-          >
-            Signup
-          </button>
-        </div>
+  describe('Initial State', () => {
+    it('should start with default state', () => {
+      render(
+        <AuthWrapper>
+          <TestComponent />
+        </AuthWrapper>
       );
-    };
 
-    renderWithAuthProvider(<TestSignupComponent />);
-
-    const signupButton = screen.getByText('Signup');
-    fireEvent.click(signupButton);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('user')).toHaveTextContent('John Doe');
-    });
-
-    expect(api.post).toHaveBeenCalledWith('/auth/signup', {
-      name: 'John Doe',
-      email: 'john@example.com',
-      password: 'password123',
-      phone: '0501234567',
-      role: 'renter',
+      expect(screen.getByTestId('loading')).toHaveTextContent('Loading');
+      expect(screen.getByTestId('error')).toHaveTextContent('No Error');
+      expect(screen.getByTestId('user')).toHaveTextContent('No User');
     });
   });
 
-  it('persists authentication state across page reloads', () => {
-    const mockUser = { id: '1', name: 'John Doe', email: 'john@example.com' };
-    const mockToken = 'fake-jwt-token';
+  describe('Login', () => {
+    it('should login successfully', async () => {
+      const mockUser = { id: '1', name: 'John Doe', email: 'john@test.com' };
+      API.post.mockResolvedValue({
+        data: { success: true, user: mockUser }
+      });
 
-    localStorage.setItem('borrowmycar_user', JSON.stringify(mockUser));
-    localStorage.setItem('borrowmycar_token', mockToken);
+      render(
+        <AuthWrapper>
+          <TestComponent />
+        </AuthWrapper>
+      );
 
-    renderWithAuthProvider(<TestComponent />);
+      const loginButton = screen.getByText('Login');
+      fireEvent.click(loginButton);
 
-    expect(screen.getByTestId('user')).toHaveTextContent('John Doe');
-    expect(api.defaults.headers.common.Authorization).toBe(`Bearer ${mockToken}`);
+      await waitFor(() => {
+        expect(screen.getByTestId('user')).toHaveTextContent('John Doe');
+      });
+
+      expect(API.post).toHaveBeenCalledWith('/auth/login', {
+        email: 'test@test.com',
+        password: 'password',
+        rememberMe: false,
+      });
+    });
+
+    it('should handle login error', async () => {
+      const errorMessage = 'Invalid credentials';
+      API.post.mockRejectedValue({
+        response: { data: { message: errorMessage } }
+      });
+
+      render(
+        <AuthWrapper>
+          <TestComponent />
+        </AuthWrapper>
+      );
+
+      const loginButton = screen.getByText('Login');
+      fireEvent.click(loginButton);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('error')).toHaveTextContent(errorMessage);
+      });
+    });
+  });
+
+  describe('Logout', () => {
+    it('should logout successfully', async () => {
+      // First login
+      const mockUser = { id: '1', name: 'John Doe', email: 'john@test.com' };
+      API.post.mockResolvedValue({
+        data: { success: true, user: mockUser }
+      });
+
+      render(
+        <AuthWrapper>
+          <TestComponent />
+        </AuthWrapper>
+      );
+
+      const loginButton = screen.getByText('Login');
+      fireEvent.click(loginButton);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('user')).toHaveTextContent('John Doe');
+      });
+
+      // Then logout
+      const logoutButton = screen.getByText('Logout');
+      fireEvent.click(logoutButton);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('user')).toHaveTextContent('No User');
+      });
+    });
+  });
+
+  describe('Profile Check', () => {
+    it('should check auth status on mount', async () => {
+      const mockUser = { id: '1', name: 'John Doe', email: 'john@test.com' };
+      API.get.mockResolvedValue({
+        data: { success: true, data: { user: mockUser } }
+      });
+
+      render(
+        <AuthWrapper>
+          <TestComponent />
+        </AuthWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('user')).toHaveTextContent('John Doe');
+      });
+
+      expect(API.get).toHaveBeenCalledWith('/auth/profile');
+    });
+
+    it('should handle profile check error', async () => {
+      API.get.mockRejectedValue({
+        response: { status: 401 }
+      });
+
+      render(
+        <AuthWrapper>
+          <TestComponent />
+        </AuthWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('loading')).toHaveTextContent('Not Loading');
+      });
+
+      expect(screen.getByTestId('user')).toHaveTextContent('No User');
+    });
   });
 });

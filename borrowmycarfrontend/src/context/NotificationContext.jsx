@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useEffect } from "react";
+import { createContext, useContext, useReducer, useEffect, useCallback } from "react";
 import API from "../api";
 
 const NotificationContext = createContext();
@@ -91,7 +91,7 @@ export const NotificationProvider = ({ children }) => {
   const [state, dispatch] = useReducer(notificationReducer, initialState);
 
   // Fetch notifications
-  const fetchNotifications = async (page = 1, unreadOnly = false) => {
+  const fetchNotifications = useCallback(async (page = 1, unreadOnly = false) => {
     dispatch({ type: "SET_LOADING", payload: true });
     try {
       const response = await API.get(`/notifications?page=${page}&unreadOnly=${unreadOnly}`);
@@ -108,7 +108,7 @@ export const NotificationProvider = ({ children }) => {
         payload: error.response?.data?.message || "Failed to fetch notifications",
       });
     }
-  };
+  }, []);
 
   // Get unread count
   const getUnreadCount = async () => {

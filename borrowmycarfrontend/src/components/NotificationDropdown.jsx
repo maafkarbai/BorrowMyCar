@@ -16,7 +16,7 @@ const NotificationDropdown = ({ isOpen, onClose }) => {
     if (isOpen) {
       fetchNotifications(1, false);
     }
-  }, [isOpen, fetchNotifications]);
+  }, [isOpen]);
 
   const handleMarkAllAsRead = async () => {
     await markAllAsRead();
