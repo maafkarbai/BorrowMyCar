@@ -13,8 +13,8 @@ export const formatUAEPhone = (phone) => {
 
   // If no digits remain, handle edge cases
   if (cleanPhone.length === 0) {
-    // Return empty string for whitespace-only input
-    return phone.trim() === '' ? '' : phone;
+    // Return empty string for whitespace-only input or invalid input
+    return phone.trim() === '' ? '' : '';
   }
 
   // Handle different input formats
@@ -24,16 +24,25 @@ export const formatUAEPhone = (phone) => {
   } else if (cleanPhone.startsWith("00971") && cleanPhone.length === 14) {
     // International format: 00971501234567 -> 0501234567
     return `0${cleanPhone.substring(5)}`;
-  } else if (cleanPhone.startsWith("0") && cleanPhone.length === 10) {
-    // Local format: 0501234567 (already correct)
+  } else if (cleanPhone.startsWith("0") && (cleanPhone.length === 10 || cleanPhone.length === 9)) {
+    // Local format: 0501234567 or 043001234 (already correct)
     return cleanPhone;
   } else if (cleanPhone.length === 9) {
     // Without leading zero: 501234567 -> 0501234567
     return `0${cleanPhone}`;
+  } else if (cleanPhone.length === 8) {
+    // Landline without leading zero: 43001234 -> 043001234
+    return `0${cleanPhone}`;
   }
 
-  // Return as is if format is unclear
-  return phone;
+  // For unclear formats, try to determine if it's a valid pattern
+  if (cleanPhone.length === 3 && /^[0-9]{3}$/.test(cleanPhone)) {
+    // Short number, return as is
+    return cleanPhone;
+  }
+
+  // Return empty string for invalid input
+  return '';
 };
 
 /**

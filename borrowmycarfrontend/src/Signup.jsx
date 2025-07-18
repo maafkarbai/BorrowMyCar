@@ -34,15 +34,20 @@ const Signup = () => {
   const [pendingEmail, setPendingEmail] = useState("");
 
   const uaeCities = [
-    "Dubai", "Abu Dhabi", "Sharjah", "Ajman", 
-    "Fujairah", "Ras Al Khaimah", "Umm Al Quwain"
+    "Dubai",
+    "Abu Dhabi",
+    "Sharjah",
+    "Ajman",
+    "Fujairah",
+    "Ras Al Khaimah",
+    "Umm Al Quwain",
   ];
 
   // Handle role from navigation state
   useEffect(() => {
     const selectedRole = location.state?.role;
     if (selectedRole) {
-      setFormData(prev => ({ ...prev, role: selectedRole }));
+      setFormData((prev) => ({ ...prev, role: selectedRole }));
     } else {
       navigate("/auth", { replace: true });
     }
@@ -50,16 +55,16 @@ const Signup = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: "" }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
   const handlePhoneChange = (phoneValue) => {
-    setFormData(prev => ({ ...prev, phone: phoneValue }));
+    setFormData((prev) => ({ ...prev, phone: phoneValue }));
     if (errors.phone) {
-      setErrors(prev => ({ ...prev, phone: "" }));
+      setErrors((prev) => ({ ...prev, phone: "" }));
     }
   };
 
@@ -69,21 +74,29 @@ const Signup = () => {
 
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        setErrors(prev => ({ ...prev, [name]: "File size must be less than 5MB" }));
-        return;
-      }
-
-      const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-      if (!allowedTypes.includes(file.type)) {
-        setErrors(prev => ({ 
-          ...prev, 
-          [name]: "Only JPEG, PNG, and WebP files are allowed" 
+        setErrors((prev) => ({
+          ...prev,
+          [name]: "File size must be less than 5MB",
         }));
         return;
       }
 
-      setFiles(prev => ({ ...prev, [name]: file }));
-      setErrors(prev => ({ ...prev, [name]: "" }));
+      const allowedTypes = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/webp",
+      ];
+      if (!allowedTypes.includes(file.type)) {
+        setErrors((prev) => ({
+          ...prev,
+          [name]: "Only JPEG, PNG, and WebP files are allowed",
+        }));
+        return;
+      }
+
+      setFiles((prev) => ({ ...prev, [name]: file }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
@@ -94,7 +107,10 @@ const Signup = () => {
       newErrors.name = "Name must be at least 2 characters";
     }
 
-    if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    if (
+      !formData.email.trim() ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)
+    ) {
       newErrors.email = "Please enter a valid email address";
     }
 
@@ -106,7 +122,8 @@ const Signup = () => {
       const validLandline = /^0[2-4679][0-9]{7}$/.test(phoneDigits);
 
       if (!validMobile && !validLandline) {
-        newErrors.phone = "Please enter a valid UAE phone number (e.g., 0501234567)";
+        newErrors.phone =
+          "Please enter a valid UAE phone number (e.g., 0501234567)";
       }
     }
 
@@ -177,8 +194,10 @@ const Signup = () => {
 
   const handleVerificationSuccess = (verificationData) => {
     if (verificationData.user) {
+      // User was successfully logged in after email verification
       navigate("/", { replace: true });
     } else {
+      // Registration successful but no automatic login
       setShowOTPVerification(false);
       setStep(4);
     }
@@ -194,13 +213,18 @@ const Signup = () => {
   const renderStep1 = () => (
     <div className="space-y-6">
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-gray-900">Create Your Account</h2>
+        <h2 className="text-2xl font-bold text-gray-900">
+          Create Your Account
+        </h2>
         <p className="text-gray-600">Let's start with your basic information</p>
       </div>
 
       <div className="space-y-4">
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="name"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Full Name *
           </label>
           <input
@@ -214,11 +238,16 @@ const Signup = () => {
               errors.name ? "border-red-500" : "border-gray-300"
             }`}
           />
-          {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+          {errors.name && (
+            <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+          )}
         </div>
 
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="email"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Email Address *
           </label>
           <input
@@ -232,11 +261,16 @@ const Signup = () => {
               errors.email ? "border-red-500" : "border-gray-300"
             }`}
           />
-          {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+          {errors.email && (
+            <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+          )}
         </div>
 
         <div>
-          <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="phone"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             UAE Phone Number *
           </label>
           <PhoneInput
@@ -253,7 +287,9 @@ const Signup = () => {
             Selected Role
           </label>
           <div className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-700">
-            {formData.role === "renter" ? "🚗 Rent cars from others" : "🔑 List my car for rent"}
+            {formData.role === "renter"
+              ? "🚗 Rent cars from others"
+              : "🔑 List my car for rent"}
           </div>
           <p className="text-xs text-gray-500 mt-1">
             <Link to="/auth" className="text-green-600 hover:underline">
@@ -263,7 +299,10 @@ const Signup = () => {
         </div>
 
         <div>
-          <label htmlFor="preferredCity" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="preferredCity"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Preferred City *
           </label>
           <select
@@ -274,13 +313,18 @@ const Signup = () => {
             className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
           >
             {uaeCities.map((city) => (
-              <option key={city} value={city}>{city}</option>
+              <option key={city} value={city}>
+                {city}
+              </option>
             ))}
           </select>
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="password"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Password *
           </label>
           <input
@@ -294,11 +338,16 @@ const Signup = () => {
               errors.password ? "border-red-500" : "border-gray-300"
             }`}
           />
-          {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
+          {errors.password && (
+            <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+          )}
         </div>
 
         <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="confirmPassword"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Confirm Password *
           </label>
           <input
@@ -322,7 +371,9 @@ const Signup = () => {
             </div>
           )}
           {errors.confirmPassword && (
-            <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>
+            <p className="text-red-500 text-xs mt-1">
+              {errors.confirmPassword}
+            </p>
           )}
         </div>
       </div>
@@ -334,13 +385,16 @@ const Signup = () => {
     <div className="space-y-6">
       <div className="text-center space-y-2">
         <h2 className="text-2xl font-bold text-gray-900">Upload Documents</h2>
-        <p className="text-gray-600">We need to verify your identity for safety</p>
+        <p className="text-gray-600">
+          We need to verify your identity for safety
+        </p>
       </div>
 
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            UAE Driving License * <span className="text-green-600 text-xs ml-1">(Required)</span>
+            UAE / International / GCC Driving License *{" "}
+            <span className="text-green-600 text-xs ml-1">(Required)</span>
           </label>
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-green-500 transition-colors">
             <input
@@ -372,7 +426,8 @@ const Signup = () => {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Profile Photo <span className="text-gray-500 text-xs ml-1">(Optional)</span>
+            Profile Photo{" "}
+            <span className="text-gray-500 text-xs ml-1">(Optional)</span>
           </label>
           <div className="flex items-center space-x-4">
             <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-gray-200 bg-gray-100 flex items-center justify-center">
@@ -421,7 +476,9 @@ const Signup = () => {
             <span className="text-blue-500 text-lg">ℹ️</span>
           </div>
           <div className="ml-3">
-            <h3 className="text-sm font-medium text-blue-800">Document Guidelines</h3>
+            <h3 className="text-sm font-medium text-blue-800">
+              Document Guidelines
+            </h3>
             <div className="mt-2 text-sm text-blue-700">
               <ul className="list-disc space-y-1 ml-4">
                 <li>All files must be less than 5MB</li>
@@ -440,13 +497,19 @@ const Signup = () => {
   const renderStep3 = () => (
     <div className="space-y-6">
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-gray-900">Review Your Information</h2>
-        <p className="text-gray-600">Please review your details before submitting</p>
+        <h2 className="text-2xl font-bold text-gray-900">
+          Review Your Information
+        </h2>
+        <p className="text-gray-600">
+          Please review your details before submitting
+        </p>
       </div>
 
       <div className="bg-gray-50 rounded-lg p-6 space-y-4">
         <div>
-          <h3 className="font-medium text-gray-900 mb-3">Personal Information</h3>
+          <h3 className="font-medium text-gray-900 mb-3">
+            Personal Information
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
               <span className="text-gray-500">Name:</span>
@@ -458,11 +521,15 @@ const Signup = () => {
             </div>
             <div>
               <span className="text-gray-500">Phone:</span>
-              <span className="ml-2 font-medium">🇦🇪 +971{formData.phone.replace(/^0/, "")}</span>
+              <span className="ml-2 font-medium">
+                🇦🇪 +971{formData.phone.replace(/^0/, "")}
+              </span>
             </div>
             <div>
               <span className="text-gray-500">Role:</span>
-              <span className="ml-2 font-medium capitalize">{formData.role}</span>
+              <span className="ml-2 font-medium capitalize">
+                {formData.role}
+              </span>
             </div>
             <div>
               <span className="text-gray-500">Preferred City:</span>
@@ -478,12 +545,16 @@ const Signup = () => {
           <div className="space-y-2 text-sm">
             <div className="flex items-center">
               <span className="text-green-600">✓</span>
-              <span className="ml-2">Driving License: {files.drivingLicense?.name}</span>
+              <span className="ml-2">
+                Driving License: {files.drivingLicense?.name}
+              </span>
             </div>
             {files.profileImage && (
               <div className="flex items-center">
                 <span className="text-green-600">✓</span>
-                <span className="ml-2">Profile Photo: {files.profileImage.name}</span>
+                <span className="ml-2">
+                  Profile Photo: {files.profileImage.name}
+                </span>
               </div>
             )}
           </div>
@@ -496,7 +567,9 @@ const Signup = () => {
             <span className="text-yellow-500 text-lg">⚠️</span>
           </div>
           <div className="ml-3">
-            <h3 className="text-sm font-medium text-yellow-800">Account Approval Required</h3>
+            <h3 className="text-sm font-medium text-yellow-800">
+              Account Approval Required
+            </h3>
             <p className="mt-1 text-sm text-yellow-700">
               Your account will be reviewed by our team within 24-48 hours.
               You'll receive an email notification once approved.
@@ -513,45 +586,39 @@ const Signup = () => {
     </div>
   );
 
-  // Step 4: Success
-  const renderStep4 = () => (
-    <div className="text-center space-y-6">
-      <div className="mx-auto w-24 h-24 bg-green-100 rounded-full flex items-center justify-center">
-        <span className="text-green-600 text-4xl">✓</span>
-      </div>
-
-      <div className="space-y-2">
-        <h2 className="text-2xl font-bold text-gray-900">Registration Successful!</h2>
-        <p className="text-gray-600">
-          Welcome to BorrowMyCar! Your account has been created successfully.
-        </p>
-      </div>
-
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="font-medium text-blue-900 mb-2">What's Next?</h3>
-        <div className="text-sm text-blue-800 space-y-1">
-          <p>📧 Check your email for verification instructions</p>
-          <p>⏱️ Our team will review your documents within 24-48 hours</p>
-          <p>🎉 You'll receive approval notification via email</p>
+  // Step 4: Success - Redirect to dedicated success page
+  const renderStep4 = () => {
+    // Redirect to dedicated registration success page
+    navigate("/registration-success", { 
+      state: { 
+        user: { 
+          name: formData.name, 
+          email: formData.email,
+          phone: formData.phone,
+          role: formData.role
+        }, 
+        role: formData.role 
+      },
+      replace: true
+    });
+    
+    // Return a loading state while redirecting
+    return (
+      <div className="text-center space-y-6">
+        <div className="mx-auto w-24 h-24 bg-green-100 rounded-full flex items-center justify-center">
+          <span className="text-green-600 text-4xl">✓</span>
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold text-gray-900">
+            Registration Successful!
+          </h2>
+          <p className="text-gray-600">
+            Redirecting to welcome page...
+          </p>
         </div>
       </div>
-
-      <div className="space-y-3">
-        <Link
-          to="/login"
-          className="w-full inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
-        >
-          Sign In to Your Account
-        </Link>
-        <Link
-          to="/"
-          className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
-        >
-          Return to Homepage
-        </Link>
-      </div>
-    </div>
-  );
+    );
+  };
 
   // Show OTP verification if needed
   if (showOTPVerification) {
@@ -578,21 +645,28 @@ const Signup = () => {
               <div className="mx-auto w-16 h-16 bg-gradient-to-r from-green-400 to-emerald-500 rounded-xl shadow-lg flex items-center justify-center text-2xl">
                 🚗
               </div>
-              <h1 className="mt-4 text-2xl font-bold text-gray-900">BorrowMyCar</h1>
+              <h1 className="mt-4 text-2xl font-bold text-gray-900">
+                BorrowMyCar
+              </h1>
               <p className="text-gray-600">Your trusted car sharing platform</p>
             </div>
 
             {/* Progress Indicator */}
             {step < 4 && (
               <div className="space-y-4">
-                <h3 className="font-medium text-gray-900">Registration Progress</h3>
+                <h3 className="font-medium text-gray-900">
+                  Registration Progress
+                </h3>
                 <div className="space-y-3">
                   {[
                     { step: 1, label: "Basic Information", icon: "👤" },
                     { step: 2, label: "Document Upload", icon: "📄" },
                     { step: 3, label: "Review & Submit", icon: "✅" },
                   ].map((item) => (
-                    <div key={item.step} className="flex items-center space-x-3">
+                    <div
+                      key={item.step}
+                      className="flex items-center space-x-3"
+                    >
                       <div
                         className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
                           step >= item.step
@@ -607,7 +681,9 @@ const Signup = () => {
                       <div className="flex-1">
                         <p
                           className={`text-sm font-medium ${
-                            step >= item.step ? "text-green-600" : "text-gray-500"
+                            step >= item.step
+                              ? "text-green-600"
+                              : "text-gray-500"
                           }`}
                         >
                           {item.label}

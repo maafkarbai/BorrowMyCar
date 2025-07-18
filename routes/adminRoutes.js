@@ -4,6 +4,8 @@ import {
   getAdminStats,
   getAllUsers,
   updateUserApproval,
+  modifyUser,
+  blockUser,
   getAllCars,
   updateCarApproval,
   getAllBookings,
@@ -47,6 +49,39 @@ router.patch(
 // Simplified approve/reject endpoints for frontend
 router.patch("/users/:userId/approve", updateUserApproval);
 router.patch("/users/:userId/reject", updateUserApproval);
+
+// Modify user endpoint
+router.put(
+  "/users/:userId",
+  [
+    body("name").optional().trim().notEmpty().withMessage("Name is required"),
+    body("email").optional().isEmail().withMessage("Invalid email"),
+    body("phone").optional().matches(/^[0-9+()-\s]+$/).withMessage("Invalid phone number"),
+    body("role").optional().isIn(["renter", "owner"]).withMessage("Invalid role"),
+    body("preferredCity").optional().isIn([
+      "Dubai", "Abu Dhabi", "Sharjah", "Ajman",
+      "Fujairah", "Ras Al Khaimah", "Umm Al Quwain"
+    ]).withMessage("Invalid city"),
+    body("isApproved").optional().isBoolean().withMessage("isApproved must be boolean"),
+  ],
+  handleValidationErrors,
+  modifyUser
+);
+
+// Block/unblock user endpoint
+router.patch(
+  "/users/:userId/block",
+  [
+    body("isBlocked").isBoolean().withMessage("isBlocked must be boolean"),
+    body("blockReason")
+      .optional()
+      .isLength({ max: 500 })
+      .withMessage("Block reason must be less than 500 characters"),
+  ],
+  handleValidationErrors,
+  blockUser
+);
+
 router.delete("/users/:userId", deleteUser);
 
 // Car management

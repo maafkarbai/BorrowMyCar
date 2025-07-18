@@ -1,6 +1,7 @@
 // controllers/bookingController.js (Fixed Imports)
 import Booking from "../models/Booking.js"; // Default import
 import Car from "../models/Car.js"; // Default import
+import Notification from "../models/Notification.js"; // Default import
 
 import { handleAsyncError } from "../utils/errorHandler.js";
 
@@ -169,6 +170,30 @@ export const createBooking = handleAsyncError(async (req, res) => {
 
     const savedBooking = await booking.save();
 
+    // Send notifications
+    try {
+      // Notify renter about booking creation
+      await Notification.createBookingNotification(
+        user.id,
+        "booking_created",
+        savedBooking._id,
+        car.title,
+        { carId: car._id }
+      );
+
+      // Notify owner about new booking request
+      await Notification.createBookingNotification(
+        car.owner,
+        "new_booking_request",
+        savedBooking._id,
+        car.title,
+        { carId: car._id }
+      );
+    } catch (notificationError) {
+      console.error("Failed to send booking notifications:", notificationError);
+      // Continue with the response even if notification fails
+    }
+
     res.status(201).json({
       success: true,
       message: "Booking created successfully",
@@ -308,6 +333,52 @@ export const updateBookingStatus = handleAsyncError(async (req, res) => {
     booking.status = status;
     await booking.save();
 
+    // Send notifications based on status change
+    try {
+      if (status === "approved") {
+        // Notify renter about booking approval
+        await Notification.createBookingNotification(
+          booking.renter,
+          "booking_approved",
+          booking._id,
+          booking.car.title,
+          { carId: booking.car._id }
+        );
+      } else if (status === "rejected") {
+        // Notify renter about booking rejection
+        await Notification.createBookingNotification(
+          booking.renter,
+          "booking_rejected",
+          booking._id,
+          booking.car.title,
+          { carId: booking.car._id }
+        );
+      } else if (status === "completed") {
+        // Notify both renter and owner about completion
+        await Notification.createBookingNotification(
+          booking.renter,
+          "booking_completed",
+          booking._id,
+          booking.car.title,
+          { carId: booking.car._id }
+        );
+        // Note: Owner can also get a completion notification if needed
+      } else if (status === "cancelled") {
+        // Notify the other party about cancellation
+        const notificationReceiver = isRenter ? booking.car.owner : booking.renter;
+        await Notification.createBookingNotification(
+          notificationReceiver,
+          "booking_cancelled",
+          booking._id,
+          booking.car.title,
+          { carId: booking.car._id }
+        );
+      }
+    } catch (notificationError) {
+      console.error("Failed to send booking status notifications:", notificationError);
+      // Continue with the response even if notification fails
+    }
+
     res.json({
       success: true,
       message: "Booking status updated successfully",
@@ -413,6 +484,48 @@ export const cancelBooking = handleAsyncError(async (req, res) => {
       booking.cancellationReason = cancellationReason;
     }
     await booking.save();
+
+    // Send cancellation notifications
+    try {
+      if (isRenter) {
+        // Notify owner about renter cancellation
+        await Notification.createBookingNotification(
+          booking.car.owner,
+          "booking_cancelled",
+          booking._id,
+          booking.car.title,
+          { carId: booking.car._id }
+        );
+      } else if (isOwner) {
+        // Notify renter about owner cancellation
+        await Notification.createBookingNotification(
+          booking.renter,
+          "booking_cancelled",
+          booking._id,
+          booking.car.title,
+          { carId: booking.car._id }
+        );
+      } else if (isAdmin) {
+        // Notify both parties about admin cancellation
+        await Notification.createBookingNotification(
+          booking.renter,
+          "booking_cancelled",
+          booking._id,
+          booking.car.title,
+          { carId: booking.car._id }
+        );
+        await Notification.createBookingNotification(
+          booking.car.owner,
+          "booking_cancelled",
+          booking._id,
+          booking.car.title,
+          { carId: booking.car._id }
+        );
+      }
+    } catch (notificationError) {
+      console.error("Failed to send cancellation notifications:", notificationError);
+      // Continue with the response even if notification fails
+    }
 
     res.json({
       success: true,

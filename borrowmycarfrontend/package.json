@@ -5,9 +5,10 @@
     "preview": "vite preview",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "lint:fix": "eslint . --ext js,jsx --fix",
-    "test": "vitest",
-    "test:watch": "vitest --watch",
-    "test:ui": "vitest --ui"
+    "test": "node ../scripts/runTests.js",
+    "test:functionality": "node ../scripts/runTests.js functionality",
+    "test:security": "node ../scripts/runTests.js security",
+    "test:compatibility": "node ../scripts/runTests.js compatibility"
   },
   "name": "borrowmycarfrontend",
   "module": "src/index.jsx",
@@ -16,13 +17,11 @@
   "devDependencies": {
     "@types/bun": "latest",
     "@vitejs/plugin-react": "^4.6.0",
-    "@vitest/ui": "^3.2.4",
     "eslint": "^9.0.0",
     "eslint-plugin-react": "^7.37.0",
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.0",
-    "jsdom": "^26.0.0",
-    "vitest": "^3.2.4"
+    "jsdom": "^26.0.0"
   },
   "peerDependencies": {
     "typescript": "^5"

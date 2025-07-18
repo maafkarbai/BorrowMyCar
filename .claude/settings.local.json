@@ -30,7 +30,13 @@
       "Bash(then echo \"$file - EXISTS\")",
       "Bash(else echo \"$file - MISSING\")",
       "Bash(fi)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(cd:*)",
+      "Bash(chmod:*)",
+      "Bash(mkdir:*)",
+      "Bash(cd:*)",
+      "Bash(cd:*)",
+      "Bash(npm test:*)"
     ],
     "deny": []
   }

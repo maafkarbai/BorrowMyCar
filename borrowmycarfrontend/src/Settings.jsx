@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import API from "./api";
 import ProfilePictureManager from "./components/ProfilePictureManager";
+import { useNotifications } from "./context/NotificationContext";
 
 const Settings = () => {
   const [user, setUser] = useState(null);
@@ -30,6 +31,7 @@ const Settings = () => {
   const [activeTab, setActiveTab] = useState("profile");
   const [updateLoading, setUpdateLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
+  const { preferences, updatePreferences } = useNotifications();
 
   // Profile form state
   const [profileForm, setProfileForm] = useState({
@@ -50,14 +52,13 @@ const Settings = () => {
     confirm: false,
   });
 
-  // Notification settings
-  const [notifications, setNotifications] = useState({
-    emailBookings: true,
-    emailPromotions: false,
-    smsBookings: true,
-    smsReminders: true,
-    pushNotifications: true,
-  });
+  // Notification settings - initialized from context
+  const [notifications, setNotifications] = useState(preferences);
+
+  // Sync notification preferences from context
+  useEffect(() => {
+    setNotifications(preferences);
+  }, [preferences]);
 
   // Privacy settings
   const [privacy, setPrivacy] = useState({
@@ -173,7 +174,7 @@ const Settings = () => {
   const handleNotificationUpdate = async () => {
     setUpdateLoading(true);
     try {
-      await API.patch("/auth/preferences", { notifications });
+      await updatePreferences(notifications);
       showMessage("success", "Notification preferences updated");
     } catch {
       showMessage("error", "Failed to update notification preferences");

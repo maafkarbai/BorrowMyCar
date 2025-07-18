@@ -1,8 +1,10 @@
 // src/components/OTPVerification.jsx - OTP verification component
 import { useState, useEffect, useRef } from "react";
+import { useAuth } from "../context/AuthContext";
 import API from "../api";
 
 const OTPVerification = ({ email, onVerificationSuccess, onBackToSignup }) => {
+  const { verifyEmail } = useAuth();
   const [otp, setOTP] = useState(["", "", "", "", "", ""]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -90,35 +92,26 @@ const OTPVerification = ({ email, onVerificationSuccess, onBackToSignup }) => {
     setError("");
 
     try {
-      const response = await API.post("/auth/verify-email", {
-        email,
-        otp: otpToVerify,
-      });
+      const result = await verifyEmail(email, otpToVerify);
 
       if (process.env.NODE_ENV === 'development') {
-        console.log("Email verification successful:", response.data);
+        console.log("Email verification successful:", result);
       }
 
-      // Call success callback with user data and token
-      onVerificationSuccess(response.data);
+      if (result.success) {
+        // Call success callback with user data - user should be logged in at this point
+        onVerificationSuccess(result);
+      } else {
+        setError(result.error || "Verification failed");
+        setOTP(["", "", "", "", "", ""]);
+        inputRefs.current[0]?.focus();
+      }
       
     } catch (error) {
       console.error("Email verification error:", error);
-      
-      if (error.response) {
-        const message = error.response.data?.message || "Verification failed";
-        setError(message);
-        
-        // Clear OTP on invalid code
-        if (error.response.status === 400) {
-          setOTP(["", "", "", "", "", ""]);
-          inputRefs.current[0]?.focus();
-        }
-      } else if (error.request) {
-        setError("Network error. Please check your connection and try again.");
-      } else {
-        setError("An unexpected error occurred. Please try again.");
-      }
+      setError("An unexpected error occurred. Please try again.");
+      setOTP(["", "", "", "", "", ""]);
+      inputRefs.current[0]?.focus();
     } finally {
       setIsLoading(false);
     }

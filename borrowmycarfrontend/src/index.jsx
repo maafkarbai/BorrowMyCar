@@ -15,6 +15,10 @@ import RoleSelection from "./RoleSelection.jsx";
 import CarDetails from "./CarDetails.jsx";
 import Checkout from "./pages/Checkout.jsx";
 import BookingSuccess from "./pages/BookingSuccess.jsx";
+import BookingConfirmed from "./BookingConfirmed.jsx";
+import RegistrationSuccess from "./RegistrationSuccess.jsx";
+import CarListingSuccess from "./CarListingSuccess.jsx";
+import PaymentSuccess from "./PaymentSuccess.jsx";
 import ListCar from "./ListCar.jsx";
 import HowItWorks from "./HowItWorks.jsx";
 import MyBookings from "./MyBookings.jsx";
@@ -28,6 +32,7 @@ import ListingManagement from "./ListingManagement.jsx";
 import OrderManagement from "./OrderManagement.jsx";
 import UserProfile from "./UserProfile.jsx";
 import NotFound from "./NotFound.jsx";
+import NotificationsPage from "./NotificationsPage.jsx";
 import About from "./About.jsx";
 import Story from "./Story.jsx";
 import Contact from "./Contact.jsx";
@@ -46,6 +51,7 @@ import ProtectedAdminRoute from "./components/ProtectedAdminRoute.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import { AdminAuthProvider } from "./context/AdminAuthProvider.jsx";
 import { PaymentProvider } from "./context/PaymentContext.jsx";
+import { NotificationProvider } from "./context/NotificationContext.jsx";
 import { HelmetProvider } from "react-helmet-async";
 import "./global.css";
 import "./i18n";
@@ -107,6 +113,34 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <BookingSuccess />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "booking-confirmed",
+        element: (
+          <ProtectedRoute>
+            <BookingConfirmed />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "registration-success",
+        element: <RegistrationSuccess />,
+      },
+      {
+        path: "car-listing-success",
+        element: (
+          <ProtectedRoute requiredRole="owner">
+            <CarListingSuccess />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "payment-success",
+        element: (
+          <ProtectedRoute>
+            <PaymentSuccess />
           </ProtectedRoute>
         ),
       },
@@ -182,7 +216,7 @@ const router = createBrowserRouter([
         path: "notifications",
         element: (
           <ProtectedRoute>
-            <NotFound />
+            <NotificationsPage />
           </ProtectedRoute>
         ),
       },
@@ -307,7 +341,9 @@ createRoot(document.getElementById("root")).render(
       <AuthProvider>
         <AdminAuthProvider>
           <PaymentProvider>
-            <RouterProvider router={router} />
+            <NotificationProvider>
+              <RouterProvider router={router} />
+            </NotificationProvider>
           </PaymentProvider>
         </AdminAuthProvider>
       </AuthProvider>

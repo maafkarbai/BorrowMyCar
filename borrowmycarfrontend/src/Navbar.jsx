@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import API from "./api";
 import LanguageToggle from "./components/LanguageToggle";
+import NotificationBell from "./components/NotificationBell";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "./context/AuthContext";
 
@@ -28,7 +29,6 @@ const Navbar = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [notifications, setNotifications] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -40,45 +40,6 @@ const Navbar = () => {
   const { t } = useTranslation();
   const { user, loading, logout } = useAuth();
 
-  // Fetch notifications when user is authenticated
-  useEffect(() => {
-    if (user) {
-      fetchNotifications();
-    }
-  }, [user]);
-
-  // Fetch notifications for authenticated users
-  const fetchNotifications = async () => {
-    try {
-      // Replace with actual notifications endpoint when available
-      // const response = await API.get('/notifications');
-      // setNotifications(response.data.data.notifications);
-
-      // Mock notifications for now
-      setNotifications([
-        {
-          id: 1,
-          type: "booking",
-          message: "New booking request received",
-          unread: true,
-        },
-        {
-          id: 2,
-          type: "message",
-          message: "You have a new message",
-          unread: true,
-        },
-        {
-          id: 3,
-          type: "system",
-          message: "Your car listing was approved",
-          unread: false,
-        },
-      ]);
-    } catch (error) {
-      console.error("Failed to fetch notifications:", error);
-    }
-  };
 
   // Handle scroll effect
   useEffect(() => {
@@ -154,9 +115,6 @@ const Navbar = () => {
   };
 
 
-  const getUnreadNotificationsCount = () => {
-    return notifications.filter((n) => n.unread).length;
-  };
 
   const navItems = getNavItems();
 
@@ -186,12 +144,10 @@ const Navbar = () => {
   const handleLogout = async () => {
     try {
       await logout();
-      setNotifications([]);
       setIsProfileOpen(false);
       navigate("/");
     } catch (error) {
       console.error("Logout failed:", error);
-      setNotifications([]);
       setIsProfileOpen(false);
       navigate("/");
     }
@@ -431,17 +387,7 @@ const Navbar = () => {
                   </Link>
                 )}
                 {/* Notifications */}
-                <button
-                  onClick={() => navigate("/notifications")}
-                  className="relative p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors cursor-pointer"
-                >
-                  <Bell className="h-5 w-5" />
-                  {getUnreadNotificationsCount() > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
-                      {getUnreadNotificationsCount()}
-                    </span>
-                  )}
-                </button>
+                <NotificationBell />
                 <div className="relative" ref={profileRef}>
                   <button
                     onClick={toggleProfile}

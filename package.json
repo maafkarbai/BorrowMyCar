@@ -13,8 +13,12 @@
     "seed:admin": "node scripts/seedAdmin.js",
     "setup": "npm install && cd borrowmycarfrontend && npm install",
     "build": "cd borrowmycarfrontend && npm run build",
-    "test": "NODE_OPTIONS=\"--experimental-vm-modules\" jest --testTimeout=10000",
-    "test:watch": "NODE_OPTIONS=\"--experimental-vm-modules\" jest --watch --testTimeout=10000",
+    "test": "node tests/run-all-tests.cjs",
+    "test:usability": "cd tests && node integration/01-auth-usability.test.cjs && node integration/02-car-management.test.cjs && node integration/03-booking-workflow.test.cjs",
+    "test:security": "cd tests && node security/04-authentication-security.test.cjs && node security/05-data-security.test.cjs",
+    "test:validation": "cd tests && node unit/06-input-validation.test.cjs && node unit/07-business-logic-validation.test.cjs",
+    "test:performance": "cd tests && node performance/08-response-time.test.cjs && node performance/09-load-testing.test.cjs && node performance/10-scalability.test.cjs",
+    "test:demo": "cd tests && node test-framework-demo.cjs",
     "cleanup:indexes": "node scripts/cleanupIndexes.js",
     "fresh:start": "npm run cleanup:indexes && npm run seed && npm run dev:both"
   },
@@ -30,7 +34,6 @@
     "i18next": "^25.2.1",
     "i18next-fs-backend": "^2.6.0",
     "i18next-http-middleware": "^3.7.4",
-    "jest": "^30.0.3",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.0.4",
     "multer": "^1.4.5-lts.1",
@@ -40,6 +43,7 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
+    "mongodb-memory-server": "^9.1.0",
     "nodemon": "^3.0.2",
     "supertest": "^7.0.0"
   }

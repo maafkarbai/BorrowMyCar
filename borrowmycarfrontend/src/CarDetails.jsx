@@ -241,12 +241,12 @@ const CarDetails = () => {
 
       const response = await API.post("/bookings", bookingPayload);
 
-      navigate("/my-bookings", {
+      navigate("/booking-confirmed", {
         state: {
-          message: "Booking confirmed successfully!",
-          bookingId: response.data._id,
-          paymentMethod: paymentResult.paymentMethod,
+          booking: response.data,
+          car: car,
         },
+        replace: true
       });
     } catch (err) {
       console.error("Booking creation error:", err);

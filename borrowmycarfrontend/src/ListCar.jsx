@@ -526,7 +526,16 @@ const ListCar = () => {
         return;
       }
 
-      const _response = await API.post("/cars", formData);
+      const response = await API.post("/cars", formData);
+
+      // On success, redirect to car listing success page
+      navigate("/car-listing-success", {
+        state: { 
+          car: response.data.car,
+          isFirstListing: true // You can track this based on user's listings count
+        },
+        replace: true
+      });
 
       // Reset form on success
       setForm({
@@ -551,10 +560,6 @@ const ListCar = () => {
       });
       setImages([]);
       setFileInputKey(Date.now()); // Reset file input
-
-      navigate("/browse", {
-        state: { message: "Car listed successfully!" },
-      });
     } catch (err) {
       console.error("Error listing car:", err);
       setError(
