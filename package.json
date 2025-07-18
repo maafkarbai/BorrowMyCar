@@ -13,12 +13,15 @@
     "seed:admin": "node scripts/seedAdmin.js",
     "setup": "npm install && cd borrowmycarfrontend && npm install",
     "build": "cd borrowmycarfrontend && npm run build",
-    "test": "node tests/run-all-tests.cjs",
-    "test:usability": "cd tests && node integration/01-auth-usability.test.cjs && node integration/02-car-management.test.cjs && node integration/03-booking-workflow.test.cjs",
-    "test:security": "cd tests && node security/04-authentication-security.test.cjs && node security/05-data-security.test.cjs",
-    "test:validation": "cd tests && node unit/06-input-validation.test.cjs && node unit/07-business-logic-validation.test.cjs",
-    "test:performance": "cd tests && node performance/08-response-time.test.cjs && node performance/09-load-testing.test.cjs && node performance/10-scalability.test.cjs",
-    "test:demo": "cd tests && node test-framework-demo.cjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui",
+    "test:auth": "vitest run tests/auth/",
+    "test:validation": "vitest run tests/validation/",
+    "test:booking": "vitest run tests/booking/",
+    "test:payment": "vitest run tests/payment/",
+    "test:frontend": "cd borrowmycarfrontend && npm test",
     "cleanup:indexes": "node scripts/cleanupIndexes.js",
     "fresh:start": "npm run cleanup:indexes && npm run seed && npm run dev:both"
   },
@@ -43,8 +46,11 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
+    "jest": "^29.7.0",
     "mongodb-memory-server": "^9.1.0",
     "nodemon": "^3.0.2",
-    "supertest": "^7.0.0"
+    "supertest": "^7.0.0",
+    "vitest": "^1.0.0",
+    "@vitest/ui": "^1.0.0"
   }
 }
