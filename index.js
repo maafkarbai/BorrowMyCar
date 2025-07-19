@@ -57,13 +57,35 @@ initializeDatabase();
 
 // Enhanced CORS configuration
 const corsOptions = {
-  origin: [
-    "http://localhost:3000",
-    "http://localhost:5173", // Vite default
-    "http://127.0.0.1:5173",
-    process.env.FRONTEND_URL,
-    process.env.PRODUCTION_URL,
-  ].filter(Boolean),
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      "http://localhost:3000",
+      "http://localhost:5173", // Vite default
+      "http://localhost:5174",
+      "http://localhost:5175",
+      "http://127.0.0.1:3000",
+      "http://127.0.0.1:5173",
+      "http://127.0.0.1:5174",
+      "http://127.0.0.1:5175",
+    ];
+    
+    // Add production domains
+    if (process.env.FRONTEND_URL) {
+      allowedOrigins.push(process.env.FRONTEND_URL);
+    }
+    if (process.env.PRODUCTION_URL) {
+      allowedOrigins.push(process.env.PRODUCTION_URL);
+    }
+    
+    // Allow Vercel preview deployments
+    if (origin && (origin.includes('.vercel.app') || origin.includes('.vercel.sh'))) {
+      callback(null, true);
+    } else if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
